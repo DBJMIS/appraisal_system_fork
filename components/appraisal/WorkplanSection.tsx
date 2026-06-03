@@ -424,6 +424,7 @@ export function WorkplanSection({
   const [evidenceCounts, setEvidenceCounts] = useState<Record<string, number>>({});
   const [activeEvidenceItem, setActiveEvidenceItem] = useState<WorkplanItemRow | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
 
   const toggleExpand = useCallback((id: string) => {
     setExpandedObjective((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -533,6 +534,34 @@ export function WorkplanSection({
       setError(err instanceof Error ? err.message : "Failed to load workplan");
     } finally {
       setLoading(false);
+    }
+  }, [appraisalId]);
+
+  const handleDownloadExcel = useCallback(async () => {
+    setExportingExcel(true);
+    try {
+      const res = await fetch(`/api/appraisals/${appraisalId}/workplan/export-excel`);
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        setError(data.error || "Failed to download workplan");
+        return;
+      }
+      const blob = await res.blob();
+      const disposition = res.headers.get("Content-Disposition") ?? "";
+      const match = /filename="([^"]+)"/i.exec(disposition);
+      const filename = match?.[1] ?? "workplan.xlsx";
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to download workplan");
+    } finally {
+      setExportingExcel(false);
     }
   }, [appraisalId]);
 
@@ -1165,6 +1194,21 @@ export function WorkplanSection({
               }}
             >
               <SaveIcon /> Save Assessment
+            </button>
+          )}
+          {items.length > 0 && !loading && (
+            <button
+              type="button"
+              onClick={handleDownloadExcel}
+              disabled={exportingExcel}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-[8px] bg-white text-[#0f1f3d] border border-[#dde5f5] text-[11px] font-semibold hover:bg-[#f8faff] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              {exportingExcel ? "Downloading…" : "Download Excel"}
             </button>
           )}
         </div>
