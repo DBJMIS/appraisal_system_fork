@@ -2,7 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getCurrentUser } from "@/lib/auth";
 import type { ColumnMapping } from "../analyse-columns/route";
-import { parseWorkplanDateForDb, parseWorkplanWeight, shouldSkipMappingTarget } from "@/lib/workplan-excel-parse";
+import {
+  applyCarryForward,
+  distributeEqualWeightsIfMissing,
+  getHierarchyColumnsFromMappings,
+  parseWorkplanDateForDb,
+  parseWorkplanWeight,
+  shouldSkipMappingTarget,
+} from "@/lib/workplan-excel-parse";
 import { resolveManagerAccessForAppraisal } from "@/lib/appraisal-manager-access";
 
 function getSupabaseAdmin() {
@@ -53,6 +60,7 @@ function applyMapping(
   };
 
   const out: WorkplanItemInsert[] = [];
+  let lastMajorTask = "";
   for (const row of nonEmpty) {
     const item: Partial<WorkplanItemInsert> = {
       corporate_objective: "",
@@ -96,7 +104,14 @@ function applyMapping(
         : act;
     }
 
-    if (item.major_task && (item.weight ?? 0) > 0) {
+    if (!item.major_task && lastMajorTask) {
+      item.major_task = lastMajorTask;
+    }
+    if (item.major_task) {
+      lastMajorTask = item.major_task;
+    }
+
+    if (item.major_task) {
       out.push({
         workplan_id: "",
         corporate_objective: item.corporate_objective ?? "",
@@ -184,27 +199,31 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
       return NextResponse.json({ error: "Workplan is locked; cannot import" }, { status: 422 });
     }
 
-    const itemsToInsert = applyMapping(rows, mapping);
-    const errors: string[] = [];
+    const hierarchyCols = getHierarchyColumnsFromMappings(mapping);
+    const carriedRows = applyCarryForward(rows, hierarchyCols);
+    const mappedItems = applyMapping(carriedRows, mapping);
+    const itemsToInsert: WorkplanItemInsert[] = [];
 
-    itemsToInsert.forEach((it, idx) => {
+    mappedItems.forEach((it, idx) => {
       const rowLabel = idx + 1;
       if (!it.major_task?.trim()) {
-        errors.push(`Row ${rowLabel} is missing a Major Task — this column is required.`);
+        console.warn(`[workplan/import-excel] Row ${rowLabel} skipped — missing Major Task after fill-down.`);
+        return;
       }
       if (it.weight == null || Number.isNaN(it.weight) || it.weight <= 0) {
-        errors.push(`Row ${rowLabel} is missing a valid Weight — check your Weighting column.`);
+        console.warn(`[workplan/import-excel] Row ${rowLabel} has invalid weight — defaulting to 0.`);
+        it.weight = 0;
       }
+      itemsToInsert.push(it);
     });
 
-    const totalWeight = itemsToInsert.reduce((s, i) => s + i.weight, 0);
-    if (itemsToInsert.length > 0 && Math.abs(totalWeight - 100) > 2) {
-      errors.push(
-        `Weights sum to ${totalWeight.toFixed(1)}% — please check your Weighting column. Note: enter numbers like 20 (percent points), not 0.20 unless you mean a fraction of 100%.`
+    const itemsWithWeights = distributeEqualWeightsIfMissing(itemsToInsert);
+
+    const totalWeight = itemsWithWeights.reduce((s, i) => s + i.weight, 0);
+    if (itemsWithWeights.length > 0 && Math.abs(totalWeight - 100) > 2) {
+      console.warn(
+        `[workplan/import-excel] Weights sum to ${totalWeight.toFixed(1)}% — expected ~100%.`
       );
-    }
-    if (errors.length > 0) {
-      return NextResponse.json({ errors }, { status: 422 });
     }
 
     const { error: delErr } = await supabase.from("workplan_items").delete().eq("workplan_id", workplanId);
@@ -213,7 +232,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
       return NextResponse.json({ error: delErr.message }, { status: 500 });
     }
 
-    const insertPayload = itemsToInsert.map((item) => ({
+    const insertPayload = itemsWithWeights.map((item) => ({
       ...item,
       workplan_id: workplanId,
     }));

@@ -8,6 +8,9 @@ import { Button } from "@/components/ui/button";
 import { UploadStepIndicator } from "./UploadStepIndicator";
 import type { ColumnMapping } from "@/app/api/appraisals/[id]/workplan/analyse-columns/route";
 import {
+  applyCarryForward,
+  distributeEqualWeightsIfMissing,
+  getHierarchyColumnsFromMappings,
   parseWorkplanDateForDb,
   parseWorkplanWeight,
   parseWorksheetToWorkplanRows,
@@ -76,6 +79,7 @@ function buildPreviewRowsWithSourceIndex(
   };
 
   const out: Array<{ item: Record<string, unknown>; sourceIndex: number }> = [];
+  let lastMajorTask = "";
 
   for (let sourceIndex = 0; sourceIndex < rows.length; sourceIndex++) {
     const row = rows[sourceIndex];
@@ -113,7 +117,14 @@ function buildPreviewRowsWithSourceIndex(
       item.key_output = ko ? `${act}\n${ko}` : act;
     }
 
-    if (item.major_task && (item.weight as number) > 0) {
+    if (!item.major_task && lastMajorTask) {
+      item.major_task = lastMajorTask;
+    }
+    if (item.major_task) {
+      lastMajorTask = item.major_task as string;
+    }
+
+    if (item.major_task) {
       out.push({ item, sourceIndex });
     }
   }
@@ -153,6 +164,9 @@ export function WorkplanUploadModal({
   const [dataHeaderRowIndex, setDataHeaderRowIndex] = useState(0);
   /** Step 4 only: `allRows` indices to omit from the import payload. */
   const [excludedSourceIndices, setExcludedSourceIndices] = useState<number[]>([]);
+  /** Step 4: hierarchy-enriched rows (AI + carry-forward fallback). */
+  const [enrichedRows, setEnrichedRows] = useState<Record<string, unknown>[] | null>(null);
+  const [enriching, setEnriching] = useState(false);
 
   useEffect(() => {
     if (step !== "sheet" || !workbookState?.workbook || !selectedSheet) return;
@@ -207,9 +221,47 @@ export function WorkplanUploadModal({
       .finally(() => setAnalysing(false));
   }, [workbookState, selectedSheet, appraisalId]);
 
+  useEffect(() => {
+    if (step !== "review" || allRows.length === 0 || mappings.length === 0) return;
+
+    let cancelled = false;
+    setEnriching(true);
+    setEnrichedRows(null);
+
+    fetch(`/api/appraisals/${appraisalId}/workplan/enrich-rows`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rows: allRows, mappings }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        if (data.rows && Array.isArray(data.rows)) {
+          setEnrichedRows(data.rows);
+        } else {
+          setEnrichedRows(applyCarryForward(allRows, getHierarchyColumnsFromMappings(mappings)));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setEnrichedRows(applyCarryForward(allRows, getHierarchyColumnsFromMappings(mappings)));
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setEnriching(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [step, allRows, mappings, appraisalId]);
+
   const previewRowsWithSource = useMemo(
-    () => (step === "review" ? buildPreviewRowsWithSourceIndex(allRows, mappings) : []),
-    [step, allRows, mappings]
+    () =>
+      step === "review" && enrichedRows
+        ? buildPreviewRowsWithSourceIndex(enrichedRows, mappings)
+        : [],
+    [step, enrichedRows, mappings]
   );
 
   const excludedSet = useMemo(() => new Set(excludedSourceIndices), [excludedSourceIndices]);
@@ -219,18 +271,32 @@ export function WorkplanUploadModal({
     [previewRowsWithSource, excludedSet]
   );
 
-  const previewItems = activePreviewRows.map((r) => r.item);
+  const previewItems = useMemo(
+    () => distributeEqualWeightsIfMissing(activePreviewRows.map((r) => ({ ...r.item }))),
+    [activePreviewRows]
+  );
+
+  const previewWeightBySourceIndex = useMemo(() => {
+    const map = new Map<number, number>();
+    activePreviewRows.forEach((r, i) => {
+      map.set(r.sourceIndex, (previewItems[i]?.weight as number) ?? 0);
+    });
+    return map;
+  }, [activePreviewRows, previewItems]);
+
   const totalWeight = previewItems.reduce((s, i) => s + ((i.weight as number) ?? 0), 0);
   const weightValid = previewItems.length === 0 || Math.abs(totalWeight - 100) <= 2;
   const hasRequired =
     previewItems.length > 0 &&
-    previewItems.every((i) => i.major_task && String(i.major_task).trim() && Number(i.weight ?? 0) > 0);
+    previewItems.every((i) => i.major_task && String(i.major_task).trim());
 
   const duplicateMeta = useMemo(() => {
     const keyToPreviewIndices = new Map<string, number[]>();
     activePreviewRows.forEach((row, previewIdx) => {
-      const key = String(row.item.major_task ?? "").trim().toLowerCase();
-      if (!key) return;
+      const mt = String(row.item.major_task ?? "").trim().toLowerCase();
+      const act = String(row.item.key_output ?? "").trim().toLowerCase();
+      const key = `${mt}\x1f${act}`;
+      if (!mt && !act) return;
       const arr = keyToPreviewIndices.get(key) ?? [];
       arr.push(previewIdx);
       keyToPreviewIndices.set(key, arr);
@@ -256,10 +322,11 @@ export function WorkplanUploadModal({
   }, [duplicateMeta.groups, duplicateMeta.participating, hasDupe]);
 
   const rowsToSubmit = useMemo(() => {
-    if (excludedSourceIndices.length === 0) return allRows;
+    const base = enrichedRows ?? allRows;
+    if (excludedSourceIndices.length === 0) return base;
     const ex = excludedSet;
-    return allRows.filter((_, idx) => !ex.has(idx));
-  }, [allRows, excludedSet, excludedSourceIndices.length]);
+    return base.filter((_, idx) => !ex.has(idx));
+  }, [enrichedRows, allRows, excludedSet, excludedSourceIndices.length]);
 
   const handleConfirmImport = useCallback(async () => {
     setImportError(null);
@@ -509,7 +576,11 @@ export function WorkplanUploadModal({
                     </span>
                     <button
                       type="button"
-                      onClick={() => setStep("review")}
+                      onClick={() => {
+                        setEnrichedRows(null);
+                        setExcludedSourceIndices([]);
+                        setStep("review");
+                      }}
                       className="px-3 py-2 rounded-[8px] bg-[#0d9488] text-white text-[11px] font-semibold hover:bg-[#0f766e]"
                     >
                       Preview import →
@@ -522,6 +593,15 @@ export function WorkplanUploadModal({
 
           {step === "review" && (
             <>
+              {enriching ? (
+                <div className="flex items-center gap-2 py-6 text-[#6d28d9]">
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#f5f3ff] border border-[#c4b5fd]">
+                    AI
+                  </span>
+                  <span className="text-[13px]">Analysing workplan structure...</span>
+                </div>
+              ) : (
+                <>
               {!weightValid && (
                 <div className="flex items-center gap-2 px-3 py-2 rounded-[8px] bg-[#fffbeb] border border-[#fcd34d] mb-4 text-[11px] text-[#92400e]">
                 Weights sum to {totalWeight.toFixed(1)}% — adjust before confirming
@@ -600,7 +680,7 @@ export function WorkplanUploadModal({
                             </Button>
                           )}
                           <span className="text-[12px] font-bold text-[#0d9488] tabular-nums">
-                            {(item.weight as number) ?? 0}%
+                            {(previewWeightBySourceIndex.get(sourceIndex) ?? (item.weight as number) ?? 0).toFixed(2)}%
                           </span>
                         </div>
                       </div>
@@ -638,6 +718,7 @@ export function WorkplanUploadModal({
                   type="button"
                   onClick={() => {
                     setExcludedSourceIndices([]);
+                    setEnrichedRows(null);
                     setStep("mapping");
                   }}
                   className="px-3 py-2 rounded-[8px] border border-[#dde5f5] bg-white text-[#4a5a82] text-[11px] font-semibold hover:bg-[#f8faff]"
@@ -651,7 +732,7 @@ export function WorkplanUploadModal({
                   <button
                     type="button"
                     onClick={handleConfirmImport}
-                    disabled={!weightValid || !hasRequired}
+                    disabled={!hasRequired}
                     className="px-3 py-2 rounded-[8px] bg-[#0d9488] text-white text-[11px] font-semibold hover:bg-[#0f766e] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Confirm & create workplan
@@ -664,6 +745,8 @@ export function WorkplanUploadModal({
                   )}
                 </div>
               </div>
+                </>
+              )}
             </>
           )}
 

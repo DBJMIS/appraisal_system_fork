@@ -1,4 +1,125 @@
 import * as XLSX from "xlsx";
+import Anthropic from "@anthropic-ai/sdk";
+import type { ColumnMapping } from "@/app/api/appraisals/[id]/workplan/analyse-columns/route";
+
+/** Only these three fields fill down (merged-cell hierarchy). Row-specific columns are excluded. */
+const CARRY_FORWARD_TARGET_FIELDS = [
+  "corporate_objective",
+  "division_objective",
+  "major_task",
+] as const;
+
+export function getHierarchyColumnsFromMappings(mappings: ColumnMapping[]): string[] {
+  return mappings
+    .filter((m) =>
+      CARRY_FORWARD_TARGET_FIELDS.includes(
+        (m.targetField ?? "") as (typeof CARRY_FORWARD_TARGET_FIELDS)[number]
+      )
+    )
+    .map((m) => m.excelColumn);
+}
+
+/** Fallback: simple carry-forward without AI */
+export function applyCarryForward(
+  rows: Record<string, unknown>[],
+  cols: string[]
+): Record<string, unknown>[] {
+  const last: Record<string, unknown> = {};
+  return rows.map((row) => {
+    const merged = { ...row };
+    for (const col of cols) {
+      if (merged[col]) {
+        last[col] = merged[col];
+      } else if (last[col]) {
+        merged[col] = last[col];
+      }
+    }
+    return merged;
+  });
+}
+
+function buildCompactHierarchyRows(
+  rows: Record<string, unknown>[],
+  hierarchyFields: string[]
+): Record<string, unknown>[] {
+  return rows.map((row, i) => {
+    const entry: Record<string, unknown> = { _idx: i };
+    for (const col of hierarchyFields) {
+      entry[col] = row[col] ?? null;
+    }
+    return entry;
+  });
+}
+
+function mergeEnrichedHierarchyIntoRows(
+  rows: Record<string, unknown>[],
+  enriched: Record<string, unknown>[],
+  hierarchyFields: string[]
+): Record<string, unknown>[] {
+  return rows.map((row, i) => {
+    const enrichedRow = enriched.find((e) => e._idx === i);
+    if (!enrichedRow) return row;
+    const merged = { ...row };
+    for (const col of hierarchyFields) {
+      if (
+        (row[col] === null || row[col] === undefined || row[col] === "") &&
+        enrichedRow[col]
+      ) {
+        merged[col] = enrichedRow[col];
+      }
+    }
+    return merged;
+  });
+}
+
+export async function enrichRowsWithAI(
+  rows: Record<string, unknown>[],
+  mappings: ColumnMapping[]
+): Promise<Record<string, unknown>[]> {
+  const hierarchyFields = getHierarchyColumnsFromMappings(mappings);
+  if (hierarchyFields.length === 0) return rows;
+
+  const compact = buildCompactHierarchyRows(rows, hierarchyFields);
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return applyCarryForward(rows, hierarchyFields);
+  }
+
+  const prompt = `You are given rows parsed from an Excel workplan. The Excel used merged cells, so 
+Corporate Objective, Division Objective, and Major Task columns are only filled on 
+the first row of each group — child rows have null in those columns.
+
+Your job: return the same array with every null hierarchy field filled in by 
+carrying forward the most recent non-null value from above. Do not invent or 
+change any actual text values. Only fill nulls using carry-forward logic.
+
+Return ONLY a JSON array. No explanation. No markdown. Each object must have 
+the same keys as the input plus the filled values.
+
+Rows:
+${JSON.stringify(compact, null, 2)}`;
+
+  try {
+    const anthropic = new Anthropic({ apiKey });
+    const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-20250514";
+    const msg = await anthropic.messages.create({
+      model,
+      max_tokens: 4000,
+      temperature: 0.1,
+      messages: [{ role: "user", content: prompt }],
+    });
+    const block = msg.content.find((b) => b.type === "text");
+    const text = block && "text" in block ? block.text : "[]";
+    const enriched = JSON.parse(text.replace(/```json|```/g, "").trim()) as Record<string, unknown>[];
+    if (!Array.isArray(enriched)) {
+      return applyCarryForward(rows, hierarchyFields);
+    }
+    return mergeEnrichedHierarchyIntoRows(rows, enriched, hierarchyFields);
+  } catch {
+    return applyCarryForward(rows, hierarchyFields);
+  }
+}
 
 /** Normalize Excel weight: DBJ uses 5,10,20 as points; decimals 0–1 treated as fractions of 100. */
 export function parseWorkplanWeight(raw: unknown): number {
@@ -8,6 +129,21 @@ export function parseWorkplanWeight(raw: unknown): number {
   if (rawWeight > 100) return rawWeight;
   if (rawWeight <= 1) return rawWeight * 100;
   return rawWeight;
+}
+
+/** When no row has a weight from Excel, split 100% evenly (DB requires NOT NULL weight). */
+export function distributeEqualWeightsIfMissing<T extends { weight?: number }>(items: T[]): T[] {
+  if (items.length === 0) return items;
+  if (items.some((i) => (i.weight ?? 0) > 0)) return items;
+
+  const perRow = Math.round((100 / items.length) * 100) / 100;
+  return items.map((item, idx) => {
+    let weight = perRow;
+    if (idx === items.length - 1) {
+      weight = Math.round((100 - perRow * (items.length - 1)) * 100) / 100;
+    }
+    return { ...item, weight };
+  });
 }
 
 export function findHeaderRow(worksheet: XLSX.WorkSheet): number {
@@ -53,20 +189,80 @@ export function extractTemplateMetadata(worksheet: XLSX.WorkSheet): Record<strin
   return meta;
 }
 
+function isFooterCell(value: unknown): boolean {
+  if (value === null || value === undefined || value === "") return false;
+  const s = String(value).trim();
+  const lower = s.toLowerCase();
+  if (lower === "key:" || lower.startsWith("key:")) return true;
+  if (/^\d+\.\s/.test(s)) return true;
+  if (lower.includes("technical competency")) return true;
+  if (lower.includes("critical functional/technical competencies")) return true;
+  if (lower.includes("required level")) return true;
+  if (lower.includes("actual performance rating")) return true;
+  if (lower.includes("total") || lower.includes("sum")) return true;
+  if (lower.includes("we agree")) return true;
+  if (lower.includes("employee___") || lower.includes("employee __")) return true;
+  if (/employee\s*:/i.test(s)) return true;
+  if (/gm\s*\/\s*hod/i.test(s)) return true;
+  if (lower.includes("hod")) return true;
+  if (lower.includes("for hr")) return true;
+  if (lower.startsWith("=")) return true;
+  if (lower.includes("supervisor___") || lower.includes("supervisor __")) return true;
+  return false;
+}
+
 export function isDataRow(row: unknown[]): boolean {
   if (!row || row.length === 0) return false;
   if (row.every((v) => v === null || v === "" || v === undefined)) return false;
+  for (const v of row) {
+    if (isFooterCell(v)) return false;
+  }
   const firstMeaningful = row.find((v) => v !== null && v !== "" && v !== undefined);
   if (firstMeaningful === undefined) return false;
   if (typeof firstMeaningful === "number") return true;
-  const lower = String(firstMeaningful).toLowerCase().trim();
-  if (lower.includes("total") || lower.includes("sum")) return false;
-  if (lower.includes("we agree")) return false;
-  if (lower.includes("employee___") || lower.includes("employee __")) return false;
-  if (lower.includes("hod")) return false;
-  if (lower.includes("for hr")) return false;
-  if (lower.startsWith("=")) return false;
-  if (lower.includes("supervisor___") || lower.includes("supervisor __")) return false;
+  return true;
+}
+
+function rowHasWorkplanContent(row: unknown[], headers: string[]): boolean {
+  const hasValue = (i: number) => {
+    const v = row[i];
+    return v !== null && v !== undefined && v !== "";
+  };
+
+  let hasCorporate = false;
+  let hasDivision = false;
+  let hasMajor = false;
+  let hasActivities = false;
+  let hasKeyOutput = false;
+  let hasPerf = false;
+
+  for (let i = 0; i < headers.length; i++) {
+    if (!hasValue(i)) continue;
+    const h = headers[i].toLowerCase().trim();
+    if (h.includes("corporate") && h.includes("objective")) hasCorporate = true;
+    else if (h.includes("division") && h.includes("objective")) hasDivision = true;
+    else if (h.includes("major") && h.includes("task")) hasMajor = true;
+    else if (h.includes("activit") && !h.includes("objective")) hasActivities = true;
+    else if (h.includes("key") && h.includes("output")) hasKeyOutput = true;
+    else if (h.includes("performance") && h.includes("standard")) hasPerf = true;
+  }
+
+  if (!hasCorporate && !hasDivision && !hasMajor && !hasActivities && !hasKeyOutput && !hasPerf) {
+    return false;
+  }
+
+  // Status-grid rows with only an isolated major-task label and no row content
+  if (
+    hasMajor &&
+    !hasCorporate &&
+    !hasDivision &&
+    !hasActivities &&
+    !hasKeyOutput &&
+    !hasPerf
+  ) {
+    return false;
+  }
+
   return true;
 }
 
@@ -124,10 +320,10 @@ export function parseWorksheetToWorkplanRows(sheet: XLSX.WorkSheet): {
   const headers = normalizeHeaderRow(raw[0]);
   const dataRows = raw.slice(1);
   const rowNumIdx = findRowNumberColumnIndex(headers);
-
   const filtered = dataRows.filter((row) => {
     const arr = row as unknown[];
     if (!isDataRow(arr)) return false;
+    if (!rowHasWorkplanContent(arr, headers)) return false;
     return rowPassesRowNumberColumn(arr, rowNumIdx);
   });
 
