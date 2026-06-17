@@ -1,14 +1,45 @@
 "use client";
 
+import { useState, type FormEvent } from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
+import { UAT_CREDENTIALS_PROVIDER_ID } from "@/lib/uat-credentials-constants";
 
 const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "v0.3.0";
+const SHOW_UAT_LOGIN = process.env.NEXT_PUBLIC_ENABLE_UAT_CREDENTIALS === "true";
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
   const error = searchParams.get("error");
+
+  const [uatEmail, setUatEmail] = useState("");
+  const [uatPassword, setUatPassword] = useState("");
+  const [uatLoading, setUatLoading] = useState(false);
+  const [uatError, setUatError] = useState(false);
+
+  const handleUatSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setUatLoading(true);
+    setUatError(false);
+    try {
+      const res = await signIn(UAT_CREDENTIALS_PROVIDER_ID, {
+        email: uatEmail.trim(),
+        password: uatPassword,
+        callbackUrl,
+        redirect: false,
+      });
+      if (res?.ok) {
+        window.location.href = callbackUrl;
+        return;
+      }
+      setUatError(true);
+    } catch {
+      setUatError(true);
+    } finally {
+      setUatLoading(false);
+    }
+  };
 
   return (
     <div
@@ -61,13 +92,13 @@ export default function LoginPage() {
             Sign in with your work account to continue.
           </p>
 
-          {/* Error messages - keep existing auth logic */}
-          {error === "CredentialsSignin" && (
+          {/* Error messages */}
+          {(error === "CredentialsSignin" || uatError) && (
             <p className="text-center text-sm text-destructive mb-4">
-              Sign in failed. Please try again.
+              Sign in failed. Please check your email and password.
             </p>
           )}
-          {error && error !== "CredentialsSignin" && (
+          {error && error !== "CredentialsSignin" && !uatError && (
             <p className="text-center text-sm text-muted-foreground mb-4">
               An error occurred. Please try again.
             </p>
@@ -87,6 +118,60 @@ export default function LoginPage() {
             </svg>
             <span className="font-body text-[14px] font-medium text-white">Sign in with Microsoft</span>
           </button>
+
+          {SHOW_UAT_LOGIN && (
+            <>
+              <div className="flex items-center gap-3 my-6">
+                <div className="flex-1 h-px bg-[#eef1f8]" />
+                <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a97b8]">
+                  UAT testing
+                </span>
+                <div className="flex-1 h-px bg-[#eef1f8]" />
+              </div>
+
+              <form onSubmit={handleUatSubmit} className="space-y-3">
+                <div>
+                  <label htmlFor="uat-email" className="block text-[11px] font-semibold text-[#4a5a82] mb-1.5">
+                    Email
+                  </label>
+                  <input
+                    id="uat-email"
+                    type="email"
+                    autoComplete="username"
+                    required
+                    value={uatEmail}
+                    onChange={(e) => setUatEmail(e.target.value)}
+                    className="w-full border border-[#dde5f5] rounded-[10px] px-3 py-2.5 text-[13px] text-[#0f1f3d] outline-none focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/10"
+                    placeholder="leonwull@dbankjm.com"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="uat-password" className="block text-[11px] font-semibold text-[#4a5a82] mb-1.5">
+                    Password
+                  </label>
+                  <input
+                    id="uat-password"
+                    type="password"
+                    autoComplete="current-password"
+                    required
+                    value={uatPassword}
+                    onChange={(e) => setUatPassword(e.target.value)}
+                    className="w-full border border-[#dde5f5] rounded-[10px] px-3 py-2.5 text-[13px] text-[#0f1f3d] outline-none focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/10"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={uatLoading}
+                  className="w-full rounded-[12px] py-[13px] border border-[#dde5f5] bg-[#f8faff] text-[#0f1f3d] text-[13px] font-semibold hover:bg-[#eef2fb] disabled:opacity-50 transition"
+                >
+                  {uatLoading ? "Signing in…" : "Sign in with test account"}
+                </button>
+                <p className="text-[10px] text-[#8a97b8] text-center leading-relaxed">
+                  For HR UAT only. Production staff should use Microsoft sign-in above.
+                </p>
+              </form>
+            </>
+          )}
 
           {/* Card footer */}
           <div className="flex justify-between items-center mt-5 pt-[18px] border-t border-[#eef1f8]">

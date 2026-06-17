@@ -2,6 +2,12 @@ import type { NextAuthOptions } from "next-auth";
 import AzureADProvider from "next-auth/providers/azure-ad";
 import { createClient } from "@supabase/supabase-js";
 import { createDataverseApiClient } from "@/lib/dynamics-sync";
+import { createUatCredentialsProvider } from "@/lib/auth-uat-provider";
+import {
+  UAT_CREDENTIALS_PROVIDER_ID,
+  isUatCredentialsEnabled,
+  type UatAuthorizedUser,
+} from "@/lib/uat-credentials";
 
 function getSupabaseService() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -10,22 +16,42 @@ function getSupabaseService() {
   return createClient(url, key);
 }
 
+const azureAdProvider = AzureADProvider({
+  clientId: process.env.AZURE_AD_CLIENT_ID!,
+  clientSecret: process.env.AZURE_AD_CLIENT_SECRET!,
+  tenantId: process.env.AZURE_AD_TENANT_ID!,
+  authorization: {
+    params: {
+      scope: "openid profile email User.Read",
+    },
+  },
+});
+
 export const authOptions: NextAuthOptions = {
   providers: [
-    AzureADProvider({
-      clientId: process.env.AZURE_AD_CLIENT_ID!,
-      clientSecret: process.env.AZURE_AD_CLIENT_SECRET!,
-      tenantId: process.env.AZURE_AD_TENANT_ID!,
-      authorization: {
-        params: {
-          scope: "openid profile email User.Read",
-        },
-      },
-    }),
+    azureAdProvider,
+    ...(isUatCredentialsEnabled() ? [createUatCredentialsProvider()] : []),
   ],
   secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
-    async jwt({ token, account, profile }) {
+    async jwt({ token, account, profile, user }) {
+      // Optional UAT path — skipped entirely when ENABLE_UAT_CREDENTIALS is not set.
+      if (account?.provider === UAT_CREDENTIALS_PROVIDER_ID && user) {
+        const u = user as UatAuthorizedUser;
+        token.email = u.email;
+        token.name = u.name;
+        token.employee_id = u.employee_id;
+        token.division_id = u.division_id ?? null;
+        token.roles = u.roles;
+        token.authSource = "uat";
+        return token;
+      }
+
+      if (token.authSource === "uat") {
+        return token;
+      }
+
+      // Azure AD SSO (unchanged)
       if (account && profile) {
         const p = profile as { email?: string; name?: string };
         token.email = p?.email ?? token.email;

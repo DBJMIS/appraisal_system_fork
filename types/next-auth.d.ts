@@ -18,5 +18,7 @@ declare module "next-auth/jwt" {
     roles: string[];
     employee_id: string | null;
     division_id?: string | null;
+    /** Set for optional UAT credential logins only; Azure AD sessions omit this. */
+    authSource?: "uat";
   }
 }
