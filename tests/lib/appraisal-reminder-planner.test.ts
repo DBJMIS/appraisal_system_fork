@@ -2,8 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_REMINDER_POLICY,
   currentOccurrence,
+  addDays,
+  cycleReminderPolicy,
   describeOffset,
-  loadReminderPolicy,
   reminderToday,
   retryDelayMinutes,
   shortOffsetLabel,
@@ -72,45 +73,53 @@ function plan(opts: {
 const keys = (p: ReturnType<typeof plan>) => p.map((r) => r.reminderKey);
 
 describe("reminder policy", () => {
-  it("defaults to 7,3,1,0 days before and 1,3,7 days overdue", () => {
-    const p = loadReminderPolicy({});
-    expect(p.daysBefore).toEqual([7, 3, 1, 0]);
-    expect(p.overdueDays).toEqual([1, 3, 7]);
-    expect(p.finalReviewNoticeDays).toBe(30);
-    expect(p.warnings).toEqual([]);
+  it("defaults to 7,3,1,0 days before, 1,3,7 days overdue and a 30-day notice when the cycle has no settings", () => {
+    for (const cycle of [null, undefined, { id: "c-x" }, { id: "c-x", reminder_days_before: null, overdue_reminder_days: null, final_review_notice_days: null }]) {
+      const p = cycleReminderPolicy(cycle);
+      expect(p.daysBefore).toEqual([7, 3, 1, 0]);
+      expect(p.overdueDays).toEqual([1, 3, 7]);
+      expect(p.finalReviewNoticeDays).toBe(30);
+      expect(p.warnings).toEqual([]);
+    }
   });
 
-  it("accepts valid overrides", () => {
-    const p = loadReminderPolicy({
-      APPRAISAL_REMINDER_DAYS_BEFORE: " 1, 14 ,7 ",
-      APPRAISAL_OVERDUE_REMINDER_DAYS: "2,5",
-      APPRAISAL_FINAL_REVIEW_NOTICE_DAYS: "21",
-    });
+  it("uses the cycle's own settings, sorted", () => {
+    const p = cycleReminderPolicy({ id: "c-x", reminder_days_before: [1, 14, 7], overdue_reminder_days: [5, 2], final_review_notice_days: 21 });
     expect(p.daysBefore).toEqual([14, 7, 1]);
     expect(p.overdueDays).toEqual([2, 5]);
     expect(p.finalReviewNoticeDays).toBe(21);
     expect(p.warnings).toEqual([]);
   });
 
+  it("falls back per field: a cycle may set only some values", () => {
+    const p = cycleReminderPolicy({ id: "c-x", overdue_reminder_days: [2] });
+    expect(p.daysBefore).toEqual([7, 3, 1, 0]);
+    expect(p.overdueDays).toEqual([2]);
+    expect(p.finalReviewNoticeDays).toBe(30);
+  });
+
   it.each([
-    ["APPRAISAL_REMINDER_DAYS_BEFORE", "7,abc"],
-    ["APPRAISAL_REMINDER_DAYS_BEFORE", "-1"],
-    ["APPRAISAL_REMINDER_DAYS_BEFORE", "7,7"],
-    ["APPRAISAL_REMINDER_DAYS_BEFORE", "61"],
-    ["APPRAISAL_REMINDER_DAYS_BEFORE", "1.5"],
-    ["APPRAISAL_REMINDER_DAYS_BEFORE", "1,2,3,4,5,6,7,8,9,10,11"],
-    ["APPRAISAL_OVERDUE_REMINDER_DAYS", "0,3"],
-    ["APPRAISAL_OVERDUE_REMINDER_DAYS", "1,3,999"],
-  ])("rejects %s=%s and falls back to the default with a warning", (name, value) => {
-    const p = loadReminderPolicy({ [name]: value });
+    ["reminder_days_before", [7, Number.NaN]],
+    ["reminder_days_before", [-1]],
+    ["reminder_days_before", [7, 7]],
+    ["reminder_days_before", [61]],
+    ["reminder_days_before", [1.5]],
+    ["reminder_days_before", []],
+    ["reminder_days_before", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]],
+    ["overdue_reminder_days", [0, 3]],
+    ["overdue_reminder_days", [1, 3, 999]],
+    ["overdue_reminder_days", "1,3"],
+  ])("ignores an invalid stored %s=%j and uses the default with a warning", (column, value) => {
+    const p = cycleReminderPolicy({ id: "c-x", [column]: value } as never);
     expect(p.daysBefore).toEqual([7, 3, 1, 0]);
     expect(p.overdueDays).toEqual([1, 3, 7]);
     expect(p.warnings).toHaveLength(1);
-    expect(p.warnings[0]).toContain(name);
+    expect(p.warnings[0]).toContain("Cycle c-x");
+    expect(p.warnings[0]).toContain(column);
   });
 
-  it("rejects an invalid Final Review notice window", () => {
-    const p = loadReminderPolicy({ APPRAISAL_FINAL_REVIEW_NOTICE_DAYS: "0" });
+  it.each([0, 91, 2.5])("ignores an invalid stored Final Review notice of %s", (value) => {
+    const p = cycleReminderPolicy({ id: "c-x", final_review_notice_days: value });
     expect(p.finalReviewNoticeDays).toBe(30);
     expect(p.warnings).toHaveLength(1);
   });
@@ -437,5 +446,106 @@ describe("isReminderStillRequired", () => {
     const s = state("PENDING_SIGNOFF", [], ANNUAL_CYCLE, "2027-03-28");
     expect(isReminderStillRequired({ notification_kind: "SIGNOFF_REMINDER", recipient_employee_id: "emp-1", due_date: null }, s.a, s.s)).toBe(false);
     expect((REMINDER_KINDS as readonly string[]).some((k) => /SIGN|ADOBE|AGREEMENT/.test(k))).toBe(false);
+  });
+});
+
+describe("per-cycle reminder settings", () => {
+  const DEFAULT_COLUMNS = { reminder_days_before: [7, 3, 1, 0], overdue_reminder_days: [1, 3, 7], final_review_notice_days: 30 };
+
+  function scenarios(cycle: ReminderCycle) {
+    const midyear = { ...MIDYEAR_CYCLE, ...cycle, id: "c-mid" };
+    const annual = { ...ANNUAL_CYCLE, ...cycle, id: "c-annual" };
+    const cycleAppraisals: ReminderAppraisal[] = [
+      appraisal("IN_PROGRESS", { id: "m-open", employee_id: "e1", cycle_id: "c-mid" }),
+      appraisal("IN_PROGRESS", { id: "m-sub", employee_id: "e2", cycle_id: "c-mid" }),
+      appraisal("IN_PROGRESS", { id: "m-done", employee_id: "e3", cycle_id: "c-mid" }),
+      appraisal("IN_PROGRESS", { id: "f-ip", employee_id: "e4", cycle_id: "c-annual" }),
+      appraisal("SELF_ASSESSMENT", { id: "f-sa", employee_id: "e5", cycle_id: "c-annual" }),
+      appraisal("MANAGER_REVIEW", { id: "f-mr", employee_id: "e6", cycle_id: "c-annual" }),
+    ];
+    const formalCheckIns: ReminderFormalCheckIn[] = [
+      { appraisal_id: "m-open", status: "OPEN" },
+      { appraisal_id: "m-sub", status: "EMPLOYEE_SUBMITTED" },
+      { appraisal_id: "m-done", status: "COMPLETE" },
+    ];
+    return { cycles: [midyear, annual], appraisals: cycleAppraisals, formalCheckIns };
+  }
+
+  function everyDay(from: string, to: string) {
+    const days: string[] = [];
+    for (let d = from; d <= to; d = addDays(d, 1)) days.push(d);
+    return days;
+  }
+
+  it("plans exactly what the previous global defaults planned, for cycles with no or default settings", () => {
+    const legacy = scenarios({} as ReminderCycle);
+    const stored = scenarios(DEFAULT_COLUMNS as ReminderCycle);
+    const nulls = scenarios({ reminder_days_before: null, overdue_reminder_days: null, final_review_notice_days: null } as ReminderCycle);
+    let planned = 0;
+    for (const today of everyDay("2026-09-15", "2027-05-15")) {
+      const before = planAppraisalReminders({ today, policy: DEFAULT_REMINDER_POLICY, ...legacy });
+      planned += before.length;
+      expect(planAppraisalReminders({ today, ...legacy })).toEqual(before);
+      expect(planAppraisalReminders({ today, ...stored })).toEqual(before);
+      expect(planAppraisalReminders({ today, ...nulls })).toEqual(before);
+
+      const upcomingBefore = upcomingAppraisalReminders({ today, policy: DEFAULT_REMINDER_POLICY, ...legacy }, 10);
+      expect(upcomingAppraisalReminders({ today, ...stored }, 10)).toEqual(upcomingBefore);
+      expect(upcomingAppraisalReminders({ today, ...nulls }, 10)).toEqual(upcomingBefore);
+    }
+    expect(planned).toBeGreaterThan(20);
+  });
+
+  it("uses the cycle's due reminder days instead of the defaults", () => {
+    const cycle = { ...MIDYEAR_CYCLE, reminder_days_before: [10, 5] };
+    expect(keys(plan({ today: "2026-10-20", formal: ["OPEN"], cycle }))).toEqual(["MIDYEAR_DUE_SOON:-10:2026-10-30"]);
+    expect(keys(plan({ today: "2026-10-25", formal: ["OPEN"], cycle }))).toEqual(["MIDYEAR_DUE_SOON:-5:2026-10-30"]);
+    // Beyond the unchanged 2-day catch-up after each configured day, and never on the default 7/3/1/0 days.
+    expect(plan({ today: "2026-10-23", formal: ["OPEN"], cycle })).toEqual([]);
+    expect(plan({ today: "2026-10-28", formal: ["OPEN"], cycle })).toEqual([]);
+    expect(plan({ today: "2026-10-29", formal: ["OPEN"], cycle })).toEqual([]);
+    expect(keys(plan({ today: "2026-10-31", formal: ["OPEN"], cycle }))).toEqual(["MIDYEAR_OVERDUE:+1:2026-10-30"]);
+  });
+
+  it("stops overdue reminders after the cycle's last configured overdue day", () => {
+    const cycle = { ...MIDYEAR_CYCLE, overdue_reminder_days: [2] };
+    expect(keys(plan({ today: "2026-11-01", formal: ["OPEN"], cycle }))).toEqual(["MIDYEAR_OVERDUE:+2:2026-10-30"]);
+    expect(keys(plan({ today: "2026-11-03", formal: ["OPEN"], cycle }))).toEqual(["MIDYEAR_OVERDUE:+2:2026-10-30"]);
+    expect(plan({ today: "2026-11-04", formal: ["OPEN"], cycle })).toEqual([]);
+    expect(plan({ today: "2026-11-06", formal: ["OPEN"], cycle })).toEqual([]);
+  });
+
+  it("uses the cycle's Final Review notice window", () => {
+    const cycle = { ...ANNUAL_CYCLE, final_review_notice_days: 10 };
+    expect(plan({ today: "2027-03-20", cycle })).toEqual([]);
+    expect(keys(plan({ today: "2027-03-21", cycle }))).toEqual(["FINAL_REVIEW_AVAILABLE:once:2027-03-31"]);
+  });
+
+  it("applies each cycle's own settings when several cycles are planned together", () => {
+    const fast = { ...MIDYEAR_CYCLE, id: "c-fast", reminder_days_before: [3] };
+    const slow = { ...MIDYEAR_CYCLE, id: "c-slow", reminder_days_before: [10] };
+    const plain = { ...MIDYEAR_CYCLE, id: "c-plain" };
+    const run = (today: string) =>
+      planAppraisalReminders({
+        today,
+        cycles: [fast, slow, plain],
+        appraisals: [
+          appraisal("IN_PROGRESS", { id: "a-fast", employee_id: "e-fast", cycle_id: "c-fast" }),
+          appraisal("IN_PROGRESS", { id: "a-slow", employee_id: "e-slow", cycle_id: "c-slow" }),
+          appraisal("IN_PROGRESS", { id: "a-plain", employee_id: "e-plain", cycle_id: "c-plain" }),
+        ],
+        formalCheckIns: ["a-fast", "a-slow", "a-plain"].map((id) => ({ appraisal_id: id, status: "OPEN" })),
+      }).map((r) => [r.appraisalId, r.reminderKey]);
+    expect(run("2026-10-20")).toEqual([["a-slow", "MIDYEAR_DUE_SOON:-10:2026-10-30"]]);
+    expect(run("2026-10-23")).toEqual([["a-plain", "MIDYEAR_DUE_SOON:-7:2026-10-30"]]);
+    expect(run("2026-10-27").sort()).toEqual([
+      ["a-fast", "MIDYEAR_DUE_SOON:-3:2026-10-30"],
+      ["a-plain", "MIDYEAR_DUE_SOON:-3:2026-10-30"],
+    ]);
+  });
+
+  it("uses the defaults for a cycle whose stored settings are invalid", () => {
+    const cycle = { ...MIDYEAR_CYCLE, reminder_days_before: [7, 7] };
+    expect(keys(plan({ today: "2026-10-23", formal: ["OPEN"], cycle }))).toEqual(["MIDYEAR_DUE_SOON:-7:2026-10-30"]);
   });
 });

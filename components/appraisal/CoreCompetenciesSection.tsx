@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { CompetencyAssessmentGrid, type CompetencyGridRow } from "./CompetencyAssessmentGrid";
+import { AppraisalSectionSkeleton } from "./AppraisalSectionSkeleton";
 
 interface Factor {
   id: string;
@@ -185,7 +186,7 @@ export function CoreCompetenciesSection({
   const saveDisabled = saving || (canEditWeights && !weightValid);
 
   if (loading) {
-    return <p className="py-4 text-[13px] text-ds-text-secondary">Loading core competencies…</p>;
+    return <AppraisalSectionSkeleton variant="competency" label="Loading core competencies…" />;
   }
 
   const rows: CompetencyGridRow[] = factors.map((factor) => {

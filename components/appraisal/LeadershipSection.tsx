@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { CompetencyAssessmentGrid, type CompetencyGridRow } from "./CompetencyAssessmentGrid";
+import { AppraisalSectionSkeleton } from "./AppraisalSectionSkeleton";
 
 interface Factor {
   id: string;
@@ -198,7 +199,7 @@ export function LeadershipSection({
   };
 
   if (loading) {
-    return <p className="py-4 text-[13px] text-ds-text-secondary">Loading leadership assessment…</p>;
+    return <AppraisalSectionSkeleton variant="competency" label="Loading leadership assessment…" rows={4} />;
   }
 
   const totalScore = factors

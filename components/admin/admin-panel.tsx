@@ -32,6 +32,7 @@ import {
   emptyCycleForm,
 } from "./admin-shared";
 import { CycleMidyearFields, midyearRequestFields, validateMidyearForm } from "./CycleMidyearFields";
+import { CycleReminderFields, reminderRequestFields, validateReminderForm } from "./CycleReminderFields";
 import { LOCKED_CYCLE_STATUSES } from "@/lib/midyear-config";
 
 const AlertIcon = () => (
@@ -161,12 +162,17 @@ export function AdminPanel() {
       setError(midyearError);
       return;
     }
+    const reminderError = validateReminderForm(data);
+    if (reminderError) {
+      setError(reminderError);
+      return;
+    }
     setError(null);
     if (mode === "create") {
       const res = await fetch("/api/admin/cycles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fiscal_year: data.fiscal_year, cycle_type: data.cycle_type, start_date: data.start_date, end_date: data.end_date, ...midyearRequestFields(data) }),
+        body: JSON.stringify({ fiscal_year: data.fiscal_year, cycle_type: data.cycle_type, start_date: data.start_date, end_date: data.end_date, ...midyearRequestFields(data), ...reminderRequestFields(data) }),
       });
       const result = await res.json().catch(() => ({}));
       if (!res.ok) { setError(result.error ?? "Failed to create cycle"); return; }
@@ -175,7 +181,7 @@ export function AdminPanel() {
       const res = await fetch(`/api/admin/cycles/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(midyearRequestFields(data)),
+        body: JSON.stringify({ ...midyearRequestFields(data), ...reminderRequestFields(data) }),
       });
       const result = await res.json().catch(() => ({}));
       if (!res.ok) { setError(result.error ?? "Failed to update cycle"); return; }
@@ -418,6 +424,11 @@ export function AdminPanel() {
             <div className="space-y-2"><Label>Start Date</Label><Input type="date" disabled={isEditingCycle} value={cycleModal.data.start_date} onChange={(e) => setCycleModal((p) => ({ ...p, data: { ...p.data, start_date: e.target.value } }))} /></div>
             <div className="space-y-2"><Label>End Date</Label><Input type="date" disabled={isEditingCycle} value={cycleModal.data.end_date} onChange={(e) => setCycleModal((p) => ({ ...p, data: { ...p.data, end_date: e.target.value } }))} /></div>
             <CycleMidyearFields
+              value={cycleModal.data}
+              locked={editingCycleLocked}
+              onChange={(patch) => setCycleModal((p) => ({ ...p, data: { ...p.data, ...patch } }))}
+            />
+            <CycleReminderFields
               value={cycleModal.data}
               locked={editingCycleLocked}
               onChange={(patch) => setCycleModal((p) => ({ ...p, data: { ...p.data, ...patch } }))}

@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase";
 import { AppraisalData } from "./AppraisalTabs";
 import type { SummaryResult } from "@/lib/summary-calc";
 import SummaryTabContent from "./SummaryTabContent";
+import { AppraisalSectionSkeleton } from "./AppraisalSectionSkeleton";
 
 interface SummaryTabProps {
   appraisalId: string;
@@ -94,7 +95,7 @@ export function SummaryTab({
   }, [displayResult, onSummaryResult]);
 
   return loading ? (
-    <p className="py-4 text-[13px] text-ds-text-secondary">Loading summary…</p>
+    <AppraisalSectionSkeleton variant="summary" label="Loading summary…" />
   ) : (
     <SummaryTabContent
       employee={employee}

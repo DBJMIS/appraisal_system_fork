@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { CompetencyAssessmentGrid, type CompetencyGridField, type CompetencyGridRow } from "./CompetencyAssessmentGrid";
+import { AppraisalSectionSkeleton } from "./AppraisalSectionSkeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -239,7 +240,7 @@ export function TechnicalCompetenciesSection({
   const saveDisabled = saving || (canEditSetup && competencies.length > 0 && !weightValid);
 
   if (loading) {
-    return <p className="py-4 text-[13px] text-ds-text-secondary">Loading technical competencies…</p>;
+    return <AppraisalSectionSkeleton variant="competency" label="Loading technical competencies…" rows={4} />;
   }
 
   const rows: CompetencyGridRow[] = competencies.map((comp, index) => {

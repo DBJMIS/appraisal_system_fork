@@ -18,11 +18,14 @@
 import type { EmailKind, EmailRecipientRole } from "@/lib/email-templates";
 import { isActiveFormalStatus } from "@/lib/midyear-lifecycle";
 import {
+  DEFAULT_REMINDER_POLICY,
   addDays,
   currentOccurrence,
+  cycleReminderPolicy,
   formatOffsetKey,
   toIsoDate,
   upcomingOccurrence,
+  type CycleReminderFields,
   type ReminderPolicy,
 } from "@/lib/appraisal-reminder-policy";
 
@@ -41,7 +44,7 @@ export type ReminderKind = (typeof REMINDER_KINDS)[number];
 export const isReminderKind = (value: unknown): value is ReminderKind =>
   typeof value === "string" && (REMINDER_KINDS as readonly string[]).includes(value);
 
-export interface ReminderCycle {
+export interface ReminderCycle extends CycleReminderFields {
   id: string;
   status: string | null;
   end_date: string | null;
@@ -134,7 +137,8 @@ export const occurrenceId = (appraisalId: string, recipientEmployeeId: string, k
 
 export interface PlanInput {
   today: string;
-  policy: ReminderPolicy;
+  /** Timing for anything a cycle does not configure itself; DEFAULT_REMINDER_POLICY when omitted. */
+  policy?: ReminderPolicy;
   cycles: ReminderCycle[];
   appraisals: ReminderAppraisal[];
   formalCheckIns: ReminderFormalCheckIn[];
@@ -163,7 +167,22 @@ function availabilityWindow(dueDate: string, policy: ReminderPolicy) {
 
 export interface AppraisalPlanContext {
   appraisal: ReminderAppraisal;
+  cycle: ReminderCycle | null;
   state: AppraisalReminderState;
+}
+
+/** Reminder timing per cycle (resolved once per cycle), using the cycle's own settings where present. */
+export function cyclePolicyResolver(fallback: ReminderPolicy = DEFAULT_REMINDER_POLICY) {
+  const byCycle = new Map<string, ReminderPolicy>();
+  return (cycle: ReminderCycle | null): ReminderPolicy => {
+    if (!cycle) return fallback;
+    let policy = byCycle.get(cycle.id);
+    if (!policy) {
+      policy = cycleReminderPolicy(cycle, fallback);
+      byCycle.set(cycle.id, policy);
+    }
+    return policy;
+  };
 }
 
 /** Current reminder state for every appraisal in the input (shared by planning and diagnostics). */
@@ -177,7 +196,7 @@ export function appraisalContexts(input: Pick<PlanInput, "today" | "cycles" | "a
   }
   return input.appraisals.map((a) => {
     const cycle = a.cycle_id ? cycles.get(a.cycle_id) ?? null : null;
-    return { appraisal: a, state: appraisalReminderState(a, cycle, formalByAppraisal.get(a.id) ?? [], input.today) };
+    return { appraisal: a, cycle, state: appraisalReminderState(a, cycle, formalByAppraisal.get(a.id) ?? [], input.today) };
   });
 }
 
@@ -210,10 +229,12 @@ function toReminder(
 }
 
 export function planAppraisalReminders(input: PlanInput): PlannedReminder[] {
-  const { today, policy } = input;
+  const { today } = input;
+  const policyFor = cyclePolicyResolver(input.policy);
   const planned: PlannedReminder[] = [];
 
-  for (const { appraisal: a, state } of appraisalContexts(input)) {
+  for (const { appraisal: a, cycle, state } of appraisalContexts(input)) {
+    const policy = policyFor(cycle);
     const add = (r: PlannedReminder | null) => r && planned.push(r);
 
     if (state.midyear) {
@@ -248,10 +269,12 @@ export function planAppraisalReminders(input: PlanInput): PlannedReminder[] {
  * soonest first. Appraisals with no outstanding step, or past their last overdue reminder, yield none.
  */
 export function upcomingAppraisalReminders(input: PlanInput, limit = 3): PlannedReminder[] {
-  const { today, policy } = input;
+  const { today } = input;
+  const policyFor = cyclePolicyResolver(input.policy);
   const next: PlannedReminder[] = [];
 
-  for (const { appraisal: a, state } of appraisalContexts(input)) {
+  for (const { appraisal: a, cycle, state } of appraisalContexts(input)) {
+    const policy = policyFor(cycle);
     const candidates: PlannedReminder[] = [];
     const add = (r: PlannedReminder | null) => r && candidates.push(r);
 

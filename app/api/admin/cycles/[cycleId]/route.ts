@@ -8,12 +8,21 @@ import {
   resolveMidyearChange,
   type MidyearCycleFields,
 } from "@/lib/midyear-config";
+import {
+  changedCycleReminderFields,
+  hasCycleReminderFields,
+  parseCycleReminderFields,
+  reminderSettingsWriteError,
+  type CycleReminderFields,
+} from "@/lib/appraisal-reminder-policy";
 
 /**
  * PATCH /api/admin/cycles/[cycleId]
- * Partial update of a cycle: status and/or the Mid-Year settings
- * (midyear_review_enabled, midyear_scoring_enabled, midyear_window_start, midyear_due_date).
- * Only fields present in the body change. Uses service role to bypass RLS.
+ * Partial update of a cycle: status, the Mid-Year settings
+ * (midyear_review_enabled, midyear_scoring_enabled, midyear_window_start, midyear_due_date)
+ * and/or the reminder settings (reminder_days_before, overdue_reminder_days, final_review_notice_days).
+ * Only fields present in the body change; reminder settings are written only when they differ from
+ * what the cycle uses now. Uses service role to bypass RLS.
  * Requires current user to have hr or admin role.
  */
 export async function PATCH(
@@ -42,7 +51,12 @@ export async function PATCH(
       return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
     const changesMidyear = hasMidyearFields(parsed.fields);
-    if (!status && !changesMidyear) {
+    const reminders = parseCycleReminderFields(body);
+    if (reminders.error) {
+      return NextResponse.json({ error: reminders.error }, { status: 400 });
+    }
+    const sendsReminders = hasCycleReminderFields(reminders.fields);
+    if (!status && !changesMidyear && !sendsReminders) {
       return NextResponse.json({ error: "status is required" }, { status: 400 });
     }
 
@@ -60,7 +74,8 @@ export async function PATCH(
     const update: Record<string, unknown> = {};
     if (status) update.status = status;
 
-    if (changesMidyear) {
+    let reminderUpdate: CycleReminderFields = {};
+    if (changesMidyear || sendsReminders) {
       const { data: cycle, error: cycleErr } = await supabase
         .from("appraisal_cycles")
         .select("*")
@@ -72,17 +87,32 @@ export async function PATCH(
       if (!cycle) {
         return NextResponse.json({ error: "Cycle not found" }, { status: 404 });
       }
-      if (LOCKED_CYCLE_STATUSES.includes(String(cycle.status))) {
+      const locked = LOCKED_CYCLE_STATUSES.includes(String(cycle.status));
+      if (changesMidyear) {
+        if (locked) {
+          return NextResponse.json(
+            { error: `Mid-Year settings cannot be changed on a ${cycle.status} cycle.` },
+            { status: 409 }
+          );
+        }
+        const midyear = resolveMidyearChange(cycle as Partial<MidyearCycleFields>, parsed.fields);
+        if (midyear.error) {
+          return NextResponse.json({ error: midyear.error }, { status: 400 });
+        }
+        Object.assign(update, midyear.update);
+      }
+      reminderUpdate = changedCycleReminderFields(cycle as CycleReminderFields, reminders.fields);
+      if (hasCycleReminderFields(reminderUpdate) && locked) {
         return NextResponse.json(
-          { error: `Mid-Year settings cannot be changed on a ${cycle.status} cycle.` },
+          { error: `Reminder settings cannot be changed on a ${cycle.status} cycle.` },
           { status: 409 }
         );
       }
-      const midyear = resolveMidyearChange(cycle as Partial<MidyearCycleFields>, parsed.fields);
-      if (midyear.error) {
-        return NextResponse.json({ error: midyear.error }, { status: 400 });
-      }
-      Object.assign(update, midyear.update);
+      Object.assign(update, reminderUpdate);
+    }
+
+    if (Object.keys(update).length === 0) {
+      return NextResponse.json({ ok: true });
     }
 
     const { error } = await supabase
@@ -91,7 +121,8 @@ export async function PATCH(
       .eq("id", cycleId);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      const message = hasCycleReminderFields(reminderUpdate) ? reminderSettingsWriteError(error) ?? error.message : error.message;
+      return NextResponse.json({ error: message }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true });

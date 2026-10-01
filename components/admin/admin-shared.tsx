@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { cycleReminderPolicy } from "@/lib/appraisal-reminder-policy";
 
 export interface Cycle {
   id: string;
@@ -15,6 +16,9 @@ export interface Cycle {
   midyear_scoring_enabled?: boolean;
   midyear_window_start?: string | null;
   midyear_due_date?: string | null;
+  reminder_days_before?: number[] | null;
+  overdue_reminder_days?: number[] | null;
+  final_review_notice_days?: number | null;
 }
 
 export interface Category {
@@ -74,7 +78,21 @@ export type CycleForm = {
   midyear_scoring_enabled: boolean;
   midyear_window_start: string;
   midyear_due_date: string;
+  /** Reminder settings as typed, e.g. "7, 3, 1, 0"; parsed and validated on save. */
+  reminder_days_before: string;
+  overdue_reminder_days: string;
+  final_review_notice_days: string;
 };
+
+/** Form text for a cycle's reminder settings (its stored values, or the defaults). */
+export function reminderFormFields(c: Partial<Cycle> | null): Pick<CycleForm, "reminder_days_before" | "overdue_reminder_days" | "final_review_notice_days"> {
+  const policy = cycleReminderPolicy(c);
+  return {
+    reminder_days_before: policy.daysBefore.join(", "),
+    overdue_reminder_days: policy.overdueDays.join(", "),
+    final_review_notice_days: String(policy.finalReviewNoticeDays),
+  };
+}
 
 export const emptyCategoryForm: CategoryForm = { name: "", category_type: "core", applies_to: "both" };
 export const emptyFactorForm: FactorForm = { category_id: "", name: "", description: "", display_order: 0, weight: 0 };
@@ -88,6 +106,7 @@ export const emptyCycleForm: CycleForm = {
   midyear_scoring_enabled: false,
   midyear_window_start: "",
   midyear_due_date: "",
+  ...reminderFormFields(null),
 };
 
 export function cycleToForm(c: Cycle): CycleForm {
@@ -100,6 +119,7 @@ export function cycleToForm(c: Cycle): CycleForm {
     midyear_scoring_enabled: c.midyear_review_enabled === true && c.midyear_scoring_enabled === true,
     midyear_window_start: c.midyear_window_start ?? "",
     midyear_due_date: c.midyear_due_date ?? "",
+    ...reminderFormFields(c),
   };
 }
 

@@ -1,4 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import fs from "node:fs";
+import path from "node:path";
 import { createScratchDb, introspect, replayMigrations } from "@/scripts/db/replay-migrations.mjs";
 import { extractUsage } from "@/scripts/db/extract-app-schema-usage.mjs";
 import {
@@ -948,6 +950,65 @@ describe("appraisal notification deliveries (0076) on synthetic rows", () => {
       [appraisalId]
     );
     expect(left.rows[0].n).toBe(0);
+  });
+});
+
+describe("cycle reminder settings (0078) on synthetic rows", () => {
+  const MIGRATION = fs.readFileSync(path.join(process.cwd(), "supabase/migrations/0078_cycle_reminder_settings.sql"), "utf8");
+  let cycleId: string;
+  const settings = () =>
+    live.db.query<{ reminder_days_before: number[]; overdue_reminder_days: number[]; final_review_notice_days: number }>(
+      `select reminder_days_before, overdue_reminder_days, final_review_notice_days from appraisal_cycles where id = $1`,
+      [cycleId]
+    );
+  const set = (assignment: string) => live.db.query(`update appraisal_cycles set ${assignment} where id = $1`, [cycleId]);
+
+  beforeAll(async () => {
+    // A cycle that existed before 0078: drop the columns, insert, then apply the migration again.
+    await live.db.exec(`
+      alter table appraisal_cycles drop column reminder_days_before, drop column overdue_reminder_days, drop column final_review_notice_days;
+      insert into appraisal_cycles (name, cycle_type, fiscal_year, start_date, end_date, status)
+        values ('Reminder cycle', 'annual', '2029', '2029-01-01', '2029-12-31', 'open');
+    `);
+    await live.db.exec(MIGRATION);
+    const cycle = await live.db.query<{ id: string }>(`select id from appraisal_cycles where name = 'Reminder cycle'`);
+    cycleId = cycle.rows[0].id;
+  });
+
+  it("gives existing cycles the current reminder policy", async () => {
+    expect((await settings()).rows[0]).toEqual({ reminder_days_before: [7, 3, 1, 0], overdue_reminder_days: [1, 3, 7], final_review_notice_days: 30 });
+  });
+
+  it("can be applied again without changing anything", async () => {
+    await set(`reminder_days_before = '{10,5}'`);
+    await live.db.exec(MIGRATION);
+    expect((await settings()).rows[0].reminder_days_before).toEqual([10, 5]);
+  });
+
+  it.each([
+    ["reminder_days_before = '{}'", "appraisal_cycles_reminder_days_before_check"],
+    ["reminder_days_before = '{61}'", "appraisal_cycles_reminder_days_before_check"],
+    ["reminder_days_before = '{-1}'", "appraisal_cycles_reminder_days_before_check"],
+    ["reminder_days_before = '{7,NULL}'", "appraisal_cycles_reminder_days_before_check"],
+    ["reminder_days_before = '{1,2,3,4,5,6,7,8,9,10,11}'", "appraisal_cycles_reminder_days_before_check"],
+    ["reminder_days_before = '{{1,2},{3,4}}'", "appraisal_cycles_reminder_days_before_check"],
+    ["overdue_reminder_days = '{0,3}'", "appraisal_cycles_overdue_reminder_days_check"],
+    ["overdue_reminder_days = '{1,61}'", "appraisal_cycles_overdue_reminder_days_check"],
+    ["final_review_notice_days = 0", "appraisal_cycles_final_review_notice_days_check"],
+    ["final_review_notice_days = 91", "appraisal_cycles_final_review_notice_days_check"],
+  ])("rejects %s", async (assignment, constraint) => {
+    await expect(set(assignment)).rejects.toThrow(new RegExp(constraint));
+  });
+
+  it("rejects NULL settings", async () => {
+    for (const column of ["reminder_days_before", "overdue_reminder_days", "final_review_notice_days"]) {
+      await expect(set(`${column} = NULL`)).rejects.toThrow(/null/i);
+    }
+  });
+
+  it("accepts the full allowed range", async () => {
+    await set(`reminder_days_before = '{60,0}', overdue_reminder_days = '{1,60}', final_review_notice_days = 90`);
+    expect((await settings()).rows[0]).toEqual({ reminder_days_before: [60, 0], overdue_reminder_days: [1, 60], final_review_notice_days: 90 });
   });
 });
 

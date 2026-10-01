@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getCurrentUser } from "@/lib/auth";
 import { MIDYEAR_FIELD_DEFAULTS, parseMidyearFields, resolveMidyearChange } from "@/lib/midyear-config";
+import {
+  changedCycleReminderFields,
+  parseCycleReminderFields,
+  reminderSettingsWriteError,
+} from "@/lib/appraisal-reminder-policy";
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -85,6 +90,9 @@ export async function POST(request: NextRequest) {
         ([k, v]) => v !== MIDYEAR_FIELD_DEFAULTS[k as keyof typeof MIDYEAR_FIELD_DEFAULTS]
       )
     );
+    const reminders = parseCycleReminderFields(body);
+    if (reminders.error) return NextResponse.json({ error: reminders.error }, { status: 400 });
+    const reminderInsert = changedCycleReminderFields(null, reminders.fields);
 
     const supabase = getSupabaseAdmin();
     if (!supabase) {
@@ -120,13 +128,14 @@ export async function POST(request: NextRequest) {
         end_date,
         status: "draft",
         ...midyearInsert,
+        ...reminderInsert,
       })
       .select("id")
       .single();
 
     if (insertError) {
       return NextResponse.json(
-        { error: insertError.message },
+        { error: (Object.keys(reminderInsert).length > 0 && reminderSettingsWriteError(insertError)) || insertError.message },
         { status: 500 }
       );
     }

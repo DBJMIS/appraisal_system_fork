@@ -17,12 +17,14 @@ import { isLocalAppUrl, loadEmailContext, resolveAppBaseUrl } from "@/lib/email-
 import { sanitizeGraphError } from "@/lib/admin-email-tools";
 import { createNotificationForEmployeeId } from "@/lib/notifications/create";
 import {
+  CYCLE_REMINDER_COLUMNS,
+  DEFAULT_REMINDER_POLICY,
   MAX_DELIVERIES_PER_RUN,
   MAX_DELIVERY_ATTEMPTS,
   RUN_TIME_BUDGET_MS,
   STALE_SENDING_MINUTES,
+  cycleReminderPolicy,
   describeOffset,
-  loadReminderPolicy,
   reminderToday,
   retryDelayMinutes,
   shortOffsetLabel,
@@ -48,6 +50,7 @@ import { isPermanentFailure } from "@/lib/reminder-operations-display";
 const REMINDABLE_APPRAISAL_STATUSES = ["IN_PROGRESS", "SELF_ASSESSMENT", "MANAGER_REVIEW"];
 const FORMAL_REVIEW_MODES = ["FORMAL", "FORMAL_SCORED"];
 const CYCLE_COLUMNS = "id, status, end_date, midyear_review_enabled, midyear_window_start, midyear_due_date";
+const PLANNING_CYCLE_COLUMNS = `${CYCLE_COLUMNS}, ${CYCLE_REMINDER_COLUMNS}`;
 const APPRAISAL_COLUMNS = "id, employee_id, manager_employee_id, cycle_id, status";
 export const DELIVERY_COLUMNS =
   "id, appraisal_id, recipient_employee_id, recipient_role, notification_kind, reminder_key, offset_days, due_date, status, attempt_count, claim_token, last_attempt_at, in_app_notified_at";
@@ -161,8 +164,20 @@ export interface PlanningData {
   existing: Set<string>;
 }
 
+const isMissingColumn = (error: { code?: string; message?: string }) =>
+  error.code === "42703" || /column .* does not exist/i.test(error.message ?? "");
+
+async function loadOpenCycles(supabase: SupabaseClient) {
+  const withSettings = await supabase.from("appraisal_cycles").select(PLANNING_CYCLE_COLUMNS).eq("status", "open");
+  // Until migration 0078 is applied the reminder columns do not exist; cycles then use the defaults.
+  if (withSettings.error && isMissingColumn(withSettings.error)) {
+    return supabase.from("appraisal_cycles").select(CYCLE_COLUMNS).eq("status", "open");
+  }
+  return withSettings;
+}
+
 export async function loadPlanningData(supabase: SupabaseClient): Promise<PlanningData> {
-  const { data: cycleRows, error: cycleErr } = await supabase.from("appraisal_cycles").select(CYCLE_COLUMNS).eq("status", "open");
+  const { data: cycleRows, error: cycleErr } = await loadOpenCycles(supabase);
   if (cycleErr) throw new Error(cycleErr.message);
   const cycles = (cycleRows ?? []) as ReminderCycle[];
   if (cycles.length === 0) return { cycles, appraisals: [], formalCheckIns: [], existing: new Set() };
@@ -447,17 +462,18 @@ export async function runAppraisalReminders(
   const now = options.now ?? new Date();
   const nowIso = now.toISOString();
   const today = reminderToday(now);
-  const loadedPolicy = options.policy ? { ...options.policy, warnings: [] } : loadReminderPolicy();
-  const warnings = [...loadedPolicy.warnings];
+  const fallbackPolicy = options.policy ?? DEFAULT_REMINDER_POLICY;
+  const warnings: string[] = [];
   const notices: ReminderRunNotice[] = [];
   const app = resolveAppBaseUrl();
   if (isLocalAppUrl(app.url) && process.env.NODE_ENV !== "production") notices.push(LOCAL_TESTING_NOTICE);
   else if (app.warning) warnings.push(app.warning);
 
   const data = await loadPlanningData(supabase);
+  for (const cycle of data.cycles) warnings.push(...cycleReminderPolicy(cycle, fallbackPolicy).warnings);
   const planInput = {
     today,
-    policy: loadedPolicy,
+    policy: fallbackPolicy,
     cycles: data.cycles,
     appraisals: data.appraisals,
     formalCheckIns: data.formalCheckIns,

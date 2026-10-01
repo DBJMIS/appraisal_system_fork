@@ -14,6 +14,7 @@ import { MidyearResultValue, MidyearScoreLine, useMidyearFinalReviewContext } fr
 import { MIDYEAR_BUTTON, MidyearLastSaved } from "@/components/appraisal/checkins/MidyearReviewWorkspace";
 import { DRAFT_SAVED_MS } from "@/hooks/useDraftSaveFeedback";
 import { NumericDraftInput } from "@/components/appraisal/workplan/NumericDraftInput";
+import { AppraisalSectionSkeleton } from "@/components/appraisal/AppraisalSectionSkeleton";
 import {
   Tooltip,
   TooltipContent,
@@ -983,7 +984,7 @@ export function WorkplanSection({
   }, [canApproveWorkplan, appraisalId, rejectReason, loadWorkplan]);
 
   if (loading) {
-    return <p style={{ color: "#646f79", padding: "16px 0" }}>Loading workplan…</p>;
+    return <AppraisalSectionSkeleton variant="workplan" label="Loading workplan…" />;
   }
 
   const downloadExcelButton = items.length > 0 && !loading && !oversight ? (

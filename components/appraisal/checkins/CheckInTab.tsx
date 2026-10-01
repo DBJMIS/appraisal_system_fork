@@ -8,6 +8,7 @@ import { NewCheckInModal } from "./NewCheckInModal";
 import { MidyearReviewBanner } from "./MidyearReviewBanner";
 import { ReopenMidyearDialog } from "./ReopenMidyearDialog";
 import { ScoreSnapshotsPanel } from "../ScoreSnapshotsPanel";
+import { AppraisalSectionSkeleton } from "../AppraisalSectionSkeleton";
 import { formalMidyearCreateBody, isFormalReviewMode, type MidyearConfig } from "@/lib/midyear-config";
 import {
   MIDYEAR_REVIEW_UPDATED_EVENT,
@@ -134,11 +135,7 @@ export function CheckInTab({
   };
 
   if (loading && !data) {
-    return (
-      <div className="py-6">
-        <p className="text-[13px] text-ds-text-secondary">Loading check-ins…</p>
-      </div>
-    );
+    return <AppraisalSectionSkeleton variant="checkins" label="Loading check-ins…" />;
   }
 
   if (!data) {

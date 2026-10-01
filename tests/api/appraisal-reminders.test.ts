@@ -95,8 +95,6 @@ beforeEach(() => {
   vi.clearAllMocks();
   seed();
   vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://ascend.example.test");
-  vi.stubEnv("APPRAISAL_REMINDER_DAYS_BEFORE", "");
-  vi.stubEnv("APPRAISAL_OVERDUE_REMINDER_DAYS", "");
   mocks.sendEmailViaGraph.mockResolvedValue({ success: true });
   mocks.notify.mockResolvedValue(undefined);
   vi.spyOn(console, "info").mockImplementation(() => {});
@@ -495,6 +493,71 @@ describe("runAppraisalReminders: app URL messages", () => {
     const summary = await run(NOW, true);
     expect(summary.notices).toEqual([]);
     expect(summary.warnings).toEqual([]);
+  });
+});
+
+describe("runAppraisalReminders: per-cycle reminder settings", () => {
+  const cycle = () => db.tables.appraisal_cycles[0];
+
+  it("dry run and real run both use the cycle's reminder days", async () => {
+    cycle().reminder_days_before = [4];
+    const preview = await run(NOW, true);
+    expect(preview.remindersPlanned).toBe(2);
+    expect(preview.reminders!.map((r) => r.offset)).toEqual(["4 days before due date", "4 days before due date"]);
+
+    const summary = await run();
+    expect(summary).toMatchObject({ remindersPlanned: 2, sent: 2 });
+    expect(deliveries().map((d) => d.reminder_key).sort()).toEqual([
+      "MIDYEAR_DUE_SOON:-4:2026-10-30",
+      "MIDYEAR_MANAGER_REVIEW_PENDING:-4:2026-10-30",
+    ]);
+    expect(deliveries().every((d) => d.scheduled_for === "2026-10-26" && d.offset_days === -4)).toBe(true);
+  });
+
+  it("dry run and real run agree when the cycle settings mean nothing is due today", async () => {
+    cycle().reminder_days_before = [10];
+    expect((await run(NOW, true)).remindersPlanned).toBe(0);
+    expect((await run()).remindersPlanned).toBe(0);
+    expect(deliveries()).toEqual([]);
+    expect(mocks.sendEmailViaGraph).not.toHaveBeenCalled();
+  });
+
+  it("uses the defaults for a cycle with no settings, and the old environment variables no longer apply", async () => {
+    vi.stubEnv("APPRAISAL_REMINDER_DAYS_BEFORE", "4");
+    vi.stubEnv("APPRAISAL_OVERDUE_REMINDER_DAYS", "2");
+    vi.stubEnv("APPRAISAL_FINAL_REVIEW_NOTICE_DAYS", "5");
+    const summary = await run();
+    expect(summary.warnings).toEqual([]);
+    expect(deliveries().map((d) => d.reminder_key).sort()).toEqual([EMP_KEY, MGR_KEY].sort());
+  });
+
+  it("falls back to the defaults while migration 0078 is not applied", async () => {
+    const realFrom = db.from.bind(db);
+    (db as unknown as { from: (t: string) => unknown }).from = (table: string) => {
+      const query = realFrom(table) as unknown as { select: (cols?: string, opts?: unknown) => unknown };
+      if (table === "appraisal_cycles") {
+        const realSelect = query.select.bind(query);
+        query.select = (cols?: string, opts?: unknown) =>
+          cols?.includes("reminder_days_before")
+            ? { eq: () => Promise.resolve({ data: null, error: { code: "42703", message: "column appraisal_cycles.reminder_days_before does not exist" } }) }
+            : realSelect(cols, opts);
+      }
+      return query;
+    };
+    const preview = await run(NOW, true);
+    expect(preview.remindersPlanned).toBe(2);
+    const summary = await run();
+    expect(summary).toMatchObject({ remindersPlanned: 2, sent: 2 });
+    expect(deliveries().map((d) => d.reminder_key).sort()).toEqual([EMP_KEY, MGR_KEY].sort());
+  });
+
+  it("warns about an invalid stored value and uses the default for it", async () => {
+    cycle().overdue_reminder_days = [0, 3];
+    const summary = await run(NOW, true);
+    expect(summary.remindersPlanned).toBe(2);
+    expect(summary.warnings).toEqual([
+      "Cycle c-1: overdue_reminder_days must be up to 10 unique whole numbers between 1 and 60; using the default 1,3,7.",
+    ]);
   });
 });
 

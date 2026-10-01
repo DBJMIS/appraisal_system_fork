@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { CompetencyAssessmentGrid, type CompetencyGridRow } from "./CompetencyAssessmentGrid";
+import { AppraisalSectionSkeleton } from "./AppraisalSectionSkeleton";
 
 interface Factor {
   id: string;
@@ -198,7 +199,7 @@ export function ProductivitySection({
   };
 
   if (loading) {
-    return <p className="py-4 text-[13px] text-ds-text-secondary">Loading productivity assessment…</p>;
+    return <AppraisalSectionSkeleton variant="competency" label="Loading productivity assessment…" rows={4} />;
   }
 
   const totalScore = factors
