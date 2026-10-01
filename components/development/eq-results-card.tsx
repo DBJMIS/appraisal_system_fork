@@ -31,29 +31,29 @@ function getStatus(score: number) {
   if (score >= 35)
     return {
       label: "Strength",
-      color: "#0F6E56",
-      bg: "#E1F5EE",
-      stroke: "#1D9E75",
+      color: "#2b2d31",
+      bg: "#f3f3f3",
+      stroke: "#0d0e10",
     };
   if (score >= 18)
     return {
       label: "Needs attention",
-      color: "#854F0B",
-      bg: "#FAEEDA",
-      stroke: "#BA7517",
+      color: "#8a5a00",
+      bg: "#fffbeb",
+      stroke: "#8a5a00",
     };
   return {
     label: "Dev. priority",
-    color: "#791F1F",
-    bg: "#FCEBEB",
-    stroke: "#E24B4A",
+    color: "#b42318",
+    bg: "#fef2f2",
+    stroke: "#b42318",
   };
 }
 
 function getOverallBand(total: number) {
-  if (total >= 175) return { label: "High EQ", color: "#0F6E56", bg: "#E1F5EE" };
-  if (total >= 90) return { label: "Developing EQ", color: "#854F0B", bg: "#FAEEDA" };
-  return { label: "Building EQ", color: "#791F1F", bg: "#FCEBEB" };
+  if (total >= 175) return { label: "High EQ", color: "#2b2d31", bg: "#f3f3f3" };
+  if (total >= 90) return { label: "Developing EQ", color: "#8a5a00", bg: "#fffbeb" };
+  return { label: "Building EQ", color: "#b42318", bg: "#fef2f2" };
 }
 
 function MiniArc({ score, stroke, delay }: { score: number; stroke: string; delay: number }) {
@@ -81,7 +81,7 @@ function MiniArc({ score, stroke, delay }: { score: number; stroke: string; dela
       height="48"
       style={{ transform: "rotate(-90deg)", display: "block", margin: "0 auto 6px" }}
     >
-      <circle cx="24" cy="24" r={r} fill="none" stroke="var(--color-border-tertiary, #e2e8f0)" strokeWidth="5" />
+      <circle cx="24" cy="24" r={r} fill="none" stroke="var(--color-border-tertiary, #e7e7e7)" strokeWidth="5" />
       <circle
         ref={circleRef}
         cx="24"
@@ -120,7 +120,7 @@ function MainRing({ total }: { total: number }) {
   return (
     <div style={{ position: "relative", flexShrink: 0, width: 130, height: 130 }}>
       <svg viewBox="0 0 130 130" width="130" height="130" style={{ transform: "rotate(-90deg)" }}>
-        <circle cx="65" cy="65" r={r} fill="none" stroke="var(--color-border-tertiary, #e2e8f0)" strokeWidth="10" />
+        <circle cx="65" cy="65" r={r} fill="none" stroke="var(--color-border-tertiary, #e7e7e7)" strokeWidth="10" />
         <circle
           ref={circleRef}
           cx="65"
@@ -150,7 +150,7 @@ function MainRing({ total }: { total: number }) {
             fontWeight: 600,
             lineHeight: 1,
             color: "var(--color-text-primary)",
-            fontFamily: "'Sora', sans-serif",
+            fontFamily: "var(--ds-font-sans)",
           }}
         >
           {total}
@@ -176,8 +176,8 @@ export function EqResultsCard({ result, onViewFull, daysUntilRetake = 90 }: Prop
     <div
       style={{
         background: "var(--color-background-primary, #fff)",
-        border: "0.5px solid var(--color-border-tertiary, #e2e8f0)",
-        borderRadius: 14,
+        border: "0.5px solid var(--color-border-tertiary, #e7e7e7)",
+        borderRadius: 8,
         overflow: "hidden",
       }}
     >
@@ -196,7 +196,7 @@ export function EqResultsCard({ result, onViewFull, daysUntilRetake = 90 }: Prop
               fontSize: 14,
               fontWeight: 600,
               color: "var(--color-text-primary)",
-              fontFamily: "'Sora', sans-serif",
+              fontFamily: "var(--ds-font-sans)",
             }}
           >
             Emotional intelligence
@@ -268,7 +268,7 @@ export function EqResultsCard({ result, onViewFull, daysUntilRetake = 90 }: Prop
                       style={{
                         width: 80,
                         height: 4,
-                        background: "var(--color-border-tertiary, #e2e8f0)",
+                        background: "var(--color-border-tertiary, #e7e7e7)",
                         borderRadius: 2,
                         overflow: "hidden",
                       }}
@@ -306,7 +306,7 @@ export function EqResultsCard({ result, onViewFull, daysUntilRetake = 90 }: Prop
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(5, 1fr)",
-          borderTop: "0.5px solid var(--color-border-tertiary, #e2e8f0)",
+          borderTop: "0.5px solid var(--color-border-tertiary, #e7e7e7)",
         }}
       >
         {COMPETENCIES.map(({ key, label }, i) => {
@@ -319,7 +319,7 @@ export function EqResultsCard({ result, onViewFull, daysUntilRetake = 90 }: Prop
               style={{
                 padding: "14px 8px",
                 textAlign: "center",
-                borderRight: isLast ? "none" : "0.5px solid var(--color-border-tertiary, #e2e8f0)",
+                borderRight: isLast ? "none" : "0.5px solid var(--color-border-tertiary, #e7e7e7)",
               }}
             >
               <MiniArc score={score} stroke={stroke} delay={300 + i * 100} />
@@ -330,7 +330,7 @@ export function EqResultsCard({ result, onViewFull, daysUntilRetake = 90 }: Prop
                   fontWeight: 600,
                   color: "var(--color-text-primary)",
                   lineHeight: 1,
-                  fontFamily: "'Sora', sans-serif",
+                  fontFamily: "var(--ds-font-sans)",
                 }}
               >
                 {score}
@@ -368,7 +368,7 @@ export function EqResultsCard({ result, onViewFull, daysUntilRetake = 90 }: Prop
       <div
         style={{
           padding: "11px 20px",
-          borderTop: "0.5px solid var(--color-border-tertiary, #e2e8f0)",
+          borderTop: "0.5px solid var(--color-border-tertiary, #e7e7e7)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -384,7 +384,7 @@ export function EqResultsCard({ result, onViewFull, daysUntilRetake = 90 }: Prop
             style={{
               fontSize: 11,
               fontWeight: 600,
-              color: "#0F6E56",
+              color: "#2b2d31",
               background: "none",
               border: "none",
               cursor: "pointer",

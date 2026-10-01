@@ -5,6 +5,7 @@ export type NotificationType =
   | "appraisal.sign_off_ready"
   | "appraisal.signed"
   | "appraisal.hr_closed"
+  | "appraisal.reminder"
   | "checkin.requested"
   | "checkin.completed"
   | "feedback.assigned"

@@ -1,4 +1,7 @@
 import type { Config } from "tailwindcss";
+import { dsTailwindTheme } from "./lib/design-tokens.ts";
+
+const dsSans = ["var(--ds-font-sans)", "Segoe UI", "system-ui", "-apple-system", "Helvetica Neue", "Arial", "sans-serif"];
 
 const config: Config = {
   darkMode: ["class"],
@@ -6,45 +9,51 @@ const config: Config = {
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./lib/**/*.{ts,tsx}",
   ],
   theme: {
     extend: {
       fontFamily: {
-        display: ["Sora", "sans-serif"],
-        body: ["DM Sans", "sans-serif"],
+        sans: dsSans,
+        display: dsSans,
+        body: dsSans,
         segoe: ["Segoe UI", "Segoe UI Web (West European)", "system-ui", "sans-serif"],
       },
+      fontSize: { ...dsTailwindTheme.fontSize },
       colors: {
+        ...dsTailwindTheme.colors,
+        // Legacy tokens below are still read by feature screens; they alias the approved palette.
+        // New work should use the `ds` namespace.
         navy: {
-          DEFAULT: "#0f1f3d",
-          mid: "#1a3260",
-          light: "#243d73",
+          DEFAULT: "#0d0e10",
+          mid: "#2b2d31",
+          light: "#3a3d42",
         },
         accent: {
-          DEFAULT: "#3b82f6",
-          bright: "#60a5fa",
+          DEFAULT: "#0d0e10",
+          bright: "#646f79",
         },
         gold: {
-          DEFAULT: "#f59e0b",
-          light: "#fcd34d",
+          DEFAULT: "#8a5a00",
+          light: "#fbe3a1",
         },
         teal: {
-          DEFAULT: "#0d9488",
+          DEFAULT: "#2e7d4f",
         },
         rose: {
-          DEFAULT: "#e11d48",
+          DEFAULT: "#b42318",
         },
         violet: {
-          DEFAULT: "#7c3aed",
+          DEFAULT: "#3d5a78",
         },
         surface: {
-          DEFAULT: "#f8faff",
-          2: "#eef2fb",
+          DEFAULT: "#f3f3f3",
+          2: "#ebebeb",
         },
-        "design-border": "#dde5f5",
-        "text-primary": "#0f1f3d",
-        "text-secondary": "#4a5a82",
-        "text-muted": "#8a97b8",
+        "design-border": "#e7e7e7",
+        "text-primary": "#0d0d0d",
+        "text-secondary": "#646f79",
+        "text-muted": "#646f79",
         // Legacy MS colors (keep for backwards compatibility)
         "ms-purple": "#742774",
         "ms-bg": "#f3f2f1",
@@ -93,14 +102,16 @@ const config: Config = {
         },
       },
       borderRadius: {
-        card: "14px",
+        ...dsTailwindTheme.borderRadius,
+        card: "8px",
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
-        sm: "8px",
+        sm: "4px",
       },
       boxShadow: {
-        card: "0 2px 12px rgba(15,31,61,0.07), 0 0 1px rgba(15,31,61,0.1)",
-        "card-hover": "0 8px 30px rgba(59,130,246,0.18), 0 2px 8px rgba(15,31,61,0.1)",
+        ...dsTailwindTheme.boxShadow,
+        card: "none",
+        "card-hover": "0 0 0 1px #d0d4d8",
       },
       animation: {
         "fade-up": "fadeUp 0.4s ease both",

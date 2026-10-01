@@ -49,19 +49,19 @@ export default function AchieveItPage() {
       />
 
       {loading && (
-        <div className="rounded-xl border border-border bg-surface p-6 text-center text-text-muted">
+        <div className="rounded-ds-panel border border-border bg-surface p-6 text-center text-text-muted">
           Loading plan…
         </div>
       )}
 
       {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200">
+        <div className="rounded-ds-panel border border-ds-error-border bg-ds-error-subtle p-4 text-ds-error dark:border-red-800 dark:bg-red-950/30 dark:text-red-200">
           {error}
         </div>
       )}
 
       {!loading && !error && data !== null && (
-        <div className="rounded-xl border border-border bg-surface overflow-hidden">
+        <div className="rounded-ds-panel border border-border bg-surface overflow-hidden">
           {Array.isArray(data) ? (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">

@@ -41,8 +41,9 @@ interface TabsListProps {
 export function TabsList({ children, className }: TabsListProps) {
   return (
     <div
+      role="tablist"
       className={cn(
-        "inline-flex h-10 items-center justify-start rounded-md bg-muted p-1 text-muted-foreground",
+        "inline-flex h-10 items-stretch justify-start gap-6 border-b border-ds-border text-ds-text-secondary",
         className
       )}
     >
@@ -70,10 +71,10 @@ export function TabsTrigger({ value, children, className, disabled }: TabsTrigge
       disabled={disabled}
       onClick={() => onValueChange(value)}
       className={cn(
-        "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+        "-mb-px inline-flex items-center justify-center whitespace-nowrap border-b-2 px-0.5 text-sm font-medium ring-offset-ds-background transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-focus focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
         isSelected
-          ? "bg-background text-foreground shadow-sm"
-          : "hover:bg-background/50 hover:text-foreground",
+          ? "border-ds-accent text-ds-text-primary"
+          : "border-transparent hover:text-ds-text-primary",
         className
       )}
     >
@@ -99,7 +100,7 @@ export function TabsContent({ value, children, className }: TabsContentProps) {
     <div
       role="tabpanel"
       className={cn(
-        "mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        "mt-4 ring-offset-ds-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-focus focus-visible:ring-offset-2",
         className
       )}
     >

@@ -63,13 +63,13 @@ export default async function DashboardPage() {
 
       {!employeeId && user && (
         <div
-          className="mx-auto max-w-7xl rounded-[14px] px-6 py-4"
+          className="mx-auto max-w-7xl rounded-ds-panel px-6 py-4"
           style={{
             backgroundColor: "#fffbeb",
-            border: "1px solid #fde68a",
+            border: "1px solid #fbe3a1",
           }}
         >
-          <p className="text-sm text-amber-800">
+          <p className="text-sm text-ds-warning">
             Your profile is not linked to an employee record. Connect your account in HR Administration to see
             your full appraisal data here.
           </p>

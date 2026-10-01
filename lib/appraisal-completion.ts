@@ -1,9 +1,8 @@
 /**
  * Appraisal completion calculation for the CompletionBar.
  * Aggregates workplan, factor ratings, and technical competencies.
+ * The server-side loader is fetchCompletionReport in lib/appraisal-completion-report.ts.
  */
-
-import type { SupabaseClient } from "@supabase/supabase-js";
 
 export interface CompletionSection {
   key: string;
@@ -48,6 +47,24 @@ interface TechnicalCompetency {
 }
 
 const WEIGHT_TOLERANCE = 0.01;
+
+/**
+ * Workplan objective structure required by completion, returned as the Workplan column labels that are missing.
+ * An objective is complete for planning when this returns an empty list. Shared with the Workplan editor's row hints.
+ */
+export function missingWorkplanItemFields(item: {
+  major_task?: string | null;
+  key_output?: string | null;
+  performance_standard?: string | null;
+  weight?: number | null;
+}): string[] {
+  const missing: string[] = [];
+  if ((item.major_task ?? "").trim() === "") missing.push("Major Tasks");
+  if ((item.key_output ?? "").trim() === "") missing.push("Key Outputs");
+  if ((item.performance_standard ?? "").trim() === "") missing.push("Performance Standard");
+  if (!((item.weight ?? 0) > 0)) missing.push("Weighting");
+  return missing;
+}
 
 function sumWeightForFactorIds(ratings: FactorRating[], factorIds: string[]): number {
   let sum = 0;
@@ -94,11 +111,7 @@ export function calcCompletion(params: {
   const wpTotal = Math.max(wpMinItems, workplanItems.length);
   let wpCompleted = 0;
   for (const item of workplanItems) {
-    const hasStructure =
-      (item.major_task ?? "").trim() !== "" &&
-      (item.key_output ?? "").trim() !== "" &&
-      (item.performance_standard ?? "").trim() !== "" &&
-      (item.weight ?? 0) > 0;
+    const hasStructure = missingWorkplanItemFields(item).length === 0;
     const hasActual = !needsActuals || (item.actual_result != null && !Number.isNaN(Number(item.actual_result)));
     if (hasStructure && (needsActuals ? hasActual : true)) {
       wpCompleted++;
@@ -234,16 +247,16 @@ export function calcCompletion(params: {
 
   const blockers: string[] = [];
   if (coreTotal > 0 && coreCompleted < coreTotal) {
-    blockers.push(isDraft ? "Core Competencies: complete all factors and set weights to total 100%" : `Core Competencies: ${coreTotal - coreCompleted} rating(s) missing`);
+    blockers.push(isDraft ? "Core Competencies: set and save weights for all factors. Total weight must equal 100%." : `Core Competencies: ${coreTotal - coreCompleted} rating(s) missing`);
   }
   if (techTotal > 0 && techCompleted < techTotal) {
     blockers.push(isDraft ? "Technical Skills: add competencies and set weights to total 100%" : `Technical Skills: ${techTotal - techCompleted} rating(s) missing`);
   }
   if (prodTotal > 0 && prodCompleted < prodTotal) {
-    blockers.push(isDraft ? "Productivity: complete all factors and set weights to total 100%" : `Productivity: ${prodTotal - prodCompleted} rating(s) missing`);
+    blockers.push(isDraft ? "Productivity: set and save weights for all factors. Total weight must equal 100%." : `Productivity: ${prodTotal - prodCompleted} rating(s) missing`);
   }
   if (showLeadership && leadTotal > 0 && leadCompleted < leadTotal) {
-    blockers.push(isDraft ? "Leadership: complete all factors and set weights to total 100%" : `Leadership: ${leadTotal - leadCompleted} rating(s) missing`);
+    blockers.push(isDraft ? "Leadership: set and save weights for all factors. Total weight must equal 100%." : `Leadership: ${leadTotal - leadCompleted} rating(s) missing`);
   }
   if (wpCompleted < wpTotal) {
     blockers.push(`Workplan: ${wpTotal - wpCompleted} objective(s) incomplete`);
@@ -258,128 +271,4 @@ export function calcCompletion(params: {
     canSubmit,
     blockers,
   };
-}
-
-/**
- * Fetches all data needed for completion and returns CompletionReport.
- * Used by GET /api/appraisals/[id]/completion and by submit APIs for validation.
- */
-export async function fetchCompletionReport(
-  supabase: SupabaseClient,
-  appraisalId: string,
-  options?: { showLeadershipParam?: boolean }
-): Promise<CompletionReport | null> {
-  const { data: appraisal, error: appErr } = await supabase
-    .from("appraisals")
-    .select("id, employee_id, status, is_management")
-    .eq("id", appraisalId)
-    .single();
-
-  if (appErr || !appraisal) return null;
-
-  const showLeadershipParam = options?.showLeadershipParam ?? false;
-  const showLeadership = showLeadershipParam || appraisal.is_management;
-  const { data: directReports } = await supabase
-    .from("employees")
-    .select("employee_id")
-    .eq("manager_employee_id", appraisal.employee_id)
-    .limit(1);
-  const hasDirectReports = (directReports?.length ?? 0) > 0;
-  const finalShowLeadership = showLeadership || hasDirectReports;
-
-  let workplanItems: Array<Record<string, unknown>> = [];
-  const { data: wpData } = await supabase
-    .from("workplans")
-    .select("id")
-    .eq("appraisal_id", appraisalId)
-    .maybeSingle();
-  if (wpData?.id) {
-    const { data: items } = await supabase
-      .from("workplan_items")
-      .select("*")
-      .eq("workplan_id", wpData.id)
-      .order("created_at", { ascending: true });
-    workplanItems = (items ?? []) as Array<Record<string, unknown>>;
-  }
-
-  const { data: ratingData } = await supabase
-    .from("appraisal_factor_ratings")
-    .select("factor_id, self_rating_code, manager_rating_code, weight")
-    .eq("appraisal_id", appraisalId);
-  const factorRatings = (ratingData ?? []) as Array<{ factor_id: string; self_rating_code?: string | null; manager_rating_code?: string | null; weight?: number | null }>;
-
-  const { data: coreCat } = await supabase
-    .from("evaluation_categories")
-    .select("id")
-    .eq("category_type", "core")
-    .eq("active", true);
-  const coreCatIds = (coreCat ?? []).map((c: { id: string }) => c.id);
-  const { data: prodCat } = await supabase
-    .from("evaluation_categories")
-    .select("id")
-    .eq("category_type", "productivity")
-    .eq("active", true);
-  const prodCatIds = (prodCat ?? []).map((c: { id: string }) => c.id);
-  const { data: leadCat } = await supabase
-    .from("evaluation_categories")
-    .select("id")
-    .eq("category_type", "leadership")
-    .eq("active", true);
-  const leadCatIds = (leadCat ?? []).map((c: { id: string }) => c.id);
-
-  const coreFactorIds: string[] = [];
-  const productivityFactorIds: string[] = [];
-  const leadershipFactorIds: string[] = [];
-  if (coreCatIds.length > 0) {
-    const { data: factors } = await supabase
-      .from("evaluation_factors")
-      .select("id")
-      .in("category_id", coreCatIds)
-      .eq("active", true);
-    (factors ?? []).forEach((f: { id: string }) => coreFactorIds.push(f.id));
-  }
-  if (prodCatIds.length > 0) {
-    const { data: prodFactors } = await supabase
-      .from("evaluation_factors")
-      .select("id")
-      .in("category_id", prodCatIds)
-      .eq("active", true);
-    (prodFactors ?? []).forEach((f: { id: string }) => productivityFactorIds.push(f.id));
-  }
-  if (leadCatIds.length > 0 && finalShowLeadership) {
-    const { data: leadFactors } = await supabase
-      .from("evaluation_factors")
-      .select("id")
-      .in("category_id", leadCatIds)
-      .eq("active", true);
-    (leadFactors ?? []).forEach((f: { id: string }) => leadershipFactorIds.push(f.id));
-  }
-
-  const { data: techData } = await supabase
-    .from("appraisal_technical_competencies")
-    .select("id, self_rating, manager_rating, weight")
-    .eq("appraisal_id", appraisalId)
-    .order("display_order");
-  const technicalCompetencies = (techData ?? []) as Array<{ id: string; self_rating?: string | null; manager_rating?: string | null; weight?: number | null }>;
-
-  return calcCompletion({
-    workplanItems: workplanItems as Array<{
-      id: string;
-      major_task?: string | null;
-      key_output?: string | null;
-      performance_standard?: string | null;
-      weight?: number | null;
-      actual_result?: number | null;
-      corporate_objective?: string | null;
-      division_objective?: string | null;
-      individual_objective?: string | null;
-    }>,
-    appraisalStatus: appraisal.status ?? "DRAFT",
-    factorRatings,
-    coreFactorIds,
-    productivityFactorIds,
-    leadershipFactorIds,
-    technicalCompetencies,
-    showLeadership: finalShowLeadership,
-  });
 }

@@ -103,7 +103,20 @@ export async function POST(req: NextRequest) {
     };
     if (!employeeId) return NextResponse.json({ error: "Missing employeeId" }, { status: 400 });
 
-    if (!canAccessEvidenceForEmployee(user, employeeId, { appraisalManagerId: appraisalManagerId ?? undefined })) {
+    const supabase = getSupabaseAdmin();
+
+    let verifiedManagerId: string | undefined;
+    if (appraisalManagerId) {
+      const { data: managed } = await supabase
+        .from("appraisals")
+        .select("id")
+        .eq("employee_id", employeeId)
+        .eq("manager_employee_id", appraisalManagerId)
+        .limit(1);
+      if (managed && managed.length > 0) verifiedManagerId = appraisalManagerId;
+    }
+
+    if (!canAccessEvidenceForEmployee(user, employeeId, { appraisalManagerId: verifiedManagerId })) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -123,8 +136,6 @@ export async function POST(req: NextRequest) {
         },
       });
     }
-
-    const supabase = getSupabaseAdmin();
 
     const { data: employee } = await supabase
       .from("employees")

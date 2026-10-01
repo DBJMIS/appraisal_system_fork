@@ -8,6 +8,7 @@ import { ReviewTypeBadge } from "@/components/ui/review-type-badge";
 import { EmployeeCell } from "@/components/ui/employee-cell";
 import { CycleChip } from "@/components/ui/cycle-chip";
 import { EmptyState } from "@/components/ui/empty-state";
+import { TeamAppraisalRowGroup, type TeamAppraisalRow } from "@/components/appraisal/TeamAppraisalRows";
 
 const DocumentIcon = () => (
   <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -42,22 +43,18 @@ const DocumentEmptyIcon = () => (
 
 interface AppraisalTableProps {
   section: "mine" | "team";
-  rows: Array<{
-    appraisalId: string;
-    employeeName: string;
-    cycleName: string;
-    reviewType: string;
-    status: string;
-    isDelegated?: boolean;
-    delegatedByName?: string | null;
-    delegatedToName?: string | null;
-  }>;
+  rows: Array<
+    TeamAppraisalRow & {
+      isDelegated?: boolean;
+      delegatedByName?: string | null;
+    }
+  >;
 }
 
 function AppraisalTable({ rows, section }: AppraisalTableProps) {
   return (
     <div
-      className="overflow-hidden rounded-[14px] bg-white"
+      className="overflow-hidden rounded-ds-panel bg-white"
       style={{
         boxShadow: "var(--shadow-card)",
         border: "1px solid var(--border-color)",
@@ -73,28 +70,31 @@ function AppraisalTable({ rows, section }: AppraisalTableProps) {
         </colgroup>
         <thead style={{ backgroundColor: "var(--surface)" }}>
           <tr style={{ borderBottom: "1px solid var(--border-color)" }}>
-            <th className="px-5 py-3 text-left text-[10.5px] font-bold uppercase tracking-wider text-text-muted">
+            <th className="px-5 py-3 text-left text-[10.5px] font-semibold uppercase tracking-wider text-text-muted">
               Employee
             </th>
-            <th className="px-5 py-3 text-left text-[10.5px] font-bold uppercase tracking-wider text-text-muted">
+            <th className="px-5 py-3 text-left text-[10.5px] font-semibold uppercase tracking-wider text-text-muted">
               Cycle
             </th>
-            <th className="px-5 py-3 text-left text-[10.5px] font-bold uppercase tracking-wider text-text-muted">
+            <th className="px-5 py-3 text-left text-[10.5px] font-semibold uppercase tracking-wider text-text-muted">
               Type
             </th>
-            <th className="px-5 py-3 text-left text-[10.5px] font-bold uppercase tracking-wider text-text-muted">
+            <th className="px-5 py-3 text-left text-[10.5px] font-semibold uppercase tracking-wider text-text-muted">
               Status
             </th>
-            <th className="px-5 py-3 text-right text-[10.5px] font-bold uppercase tracking-wider text-text-muted">
+            <th className="px-5 py-3 text-right text-[10.5px] font-semibold uppercase tracking-wider text-text-muted">
               Action
             </th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((row, idx) => (
+          {section === "team" && rows.map((row, idx) => (
+            <TeamAppraisalRowGroup key={row.appraisalId} row={row} first={idx === 0} />
+          ))}
+          {section === "mine" && rows.map((row, idx) => (
             <tr
               key={row.appraisalId}
-              className="group cursor-pointer transition-colors hover:bg-[#f4f8ff]"
+              className="group cursor-pointer transition-colors hover:bg-ds-surface"
               style={{
                 borderBottom: idx < rows.length - 1 ? "1px solid var(--border-color)" : undefined,
               }}
@@ -102,12 +102,6 @@ function AppraisalTable({ rows, section }: AppraisalTableProps) {
               <td className="px-5 py-3.5">
                 <div>
                   <EmployeeCell name={row.employeeName} />
-                  {section === "team" && row.delegatedToName && (
-                    <div className="mt-1 text-[11px] text-[#8a97b8]">
-                      <span className="mr-1">👤</span>
-                      Delegated to {row.delegatedToName}
-                    </div>
-                  )}
                 </div>
               </td>
               <td className="px-5 py-3.5">
@@ -119,11 +113,12 @@ function AppraisalTable({ rows, section }: AppraisalTableProps) {
               <td className="px-5 py-3.5">
                 <div className="flex items-center gap-2">
                   <StatusBadge status={row.status} />
-                  {section === "mine" && row.isDelegated && (
+                  {row.isDelegated && (
                     <span
-                      className="rounded-full bg-[#e6f4f1] px-2 py-0.5 text-[10px] font-semibold text-[#0f8a6e]"
+                      className="inline-flex items-center gap-1.5 rounded-ds-badge border border-ds-lavender-border bg-ds-lavender-subtle px-2 py-0.5 text-[10px] font-semibold text-ds-lavender-text"
                       title={`Delegated by ${row.delegatedByName ?? "manager"}`}
                     >
+                      <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-ds-lavender" />
                       Delegated
                     </span>
                   )}
@@ -181,7 +176,7 @@ export default async function AppraisalsPage() {
           <AppraisalTable section="mine" rows={myAppraisals} />
         ) : (
           <div
-            className="rounded-[14px] bg-white"
+            className="rounded-ds-panel bg-white"
             style={{
               boxShadow: "var(--shadow-card)",
               border: "1px solid var(--border-color)",
@@ -214,7 +209,7 @@ export default async function AppraisalsPage() {
       {/* HR Hint */}
       {!hasOwn && !hasReports && isHR && (
         <div
-          className="rounded-[14px] px-6 py-4"
+          className="rounded-ds-panel px-6 py-4"
           style={{
             backgroundColor: "var(--surface-2)",
             border: "1px solid var(--border-color)",

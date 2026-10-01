@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { avatarAccent } from "@/lib/avatar-accent";
 
 interface TeamMember {
   id: string;
@@ -67,13 +68,13 @@ export function DelegationTab({ appraisalId }: DelegationTabProps) {
 
   if (!delegation) {
     return (
-      <div className="rounded-[12px] border border-[#dde5f5] bg-white p-5">
-        <h3 className="text-[15px] font-semibold text-[#0f1f3d]">Delegate Access</h3>
-        <p className="mt-1 text-[12px] text-[#8a97b8]">
+      <div className="rounded-ds-panel border border-ds-border bg-white p-5">
+        <h3 className="text-[15px] font-semibold text-ds-text-primary">Delegate Access</h3>
+        <p className="mt-1 text-[12px] text-ds-text-secondary">
           Allow a team member to manage this appraisal on your behalf. You will retain full access.
         </p>
         <div className="mt-4">
-          <label className="mb-1 block text-[12px] font-medium text-[#4a5a82]">Select team member</label>
+          <label className="mb-1 block text-[12px] font-medium text-ds-text-secondary">Select team member</label>
           <select
             value={selectedId}
             onChange={(e) => {
@@ -82,7 +83,7 @@ export function DelegationTab({ appraisalId }: DelegationTabProps) {
               setSelectedId(found?.id ?? "");
               setSelectedName(found?.name ?? "");
             }}
-            className="w-full rounded-[8px] border border-[#dde5f5] bg-white px-3 py-2 text-[13px] text-[#0f1f3d]"
+            className="w-full rounded-[8px] border border-ds-border bg-white px-3 py-2 text-[13px] text-ds-text-primary"
           >
             <option value="">Select a team member...</option>
             {members.map((m) => (
@@ -122,7 +123,7 @@ export function DelegationTab({ appraisalId }: DelegationTabProps) {
               setSaving(false);
             }
           }}
-          className="mt-4 rounded-[8px] bg-[#0f1f3d] px-4 py-2 text-[12px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-4 rounded-[8px] bg-ds-text-primary px-4 py-2 text-[12px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
           {saving ? "Assigning..." : "Assign Delegate"}
         </button>
@@ -136,18 +137,22 @@ export function DelegationTab({ appraisalId }: DelegationTabProps) {
   const delegatedOn = new Date(delegation.created_at).toLocaleDateString();
 
   return (
-    <div className="rounded-[12px] border border-[#dde5f5] bg-white p-5">
-      <h3 className="text-[15px] font-semibold text-[#0f1f3d]">Delegate Access</h3>
-      <div className="mt-4 flex items-start gap-3 rounded-[10px] border border-[#dde5f5] bg-[#f8faff] p-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e6f4f1] text-[12px] font-semibold text-[#0f8a6e]">
+    <div className="rounded-ds-panel border border-ds-border bg-white p-5">
+      <h3 className="text-[15px] font-semibold text-ds-text-primary">Delegate Access</h3>
+      <div className="mt-4 flex items-start gap-3 rounded-ds-panel border border-ds-border bg-ds-surface p-3">
+        <div
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold"
+          style={avatarAccent(delegateName).style}
+        >
           {initials(delegateName)}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-semibold text-[#0f1f3d]">{delegateName}</p>
-          <p className="text-[12px] text-[#8a97b8]">{delegateTitle || "Team member"}</p>
-          <p className="mt-1 text-[11px] text-[#8a97b8]">Delegated on {delegatedOn}</p>
+          <p className="text-[13px] font-semibold text-ds-text-primary">{delegateName}</p>
+          <p className="text-[12px] text-ds-text-secondary">{delegateTitle || "Team member"}</p>
+          <p className="mt-1 text-[11px] text-ds-text-secondary">Delegated on {delegatedOn}</p>
         </div>
-        <span className="rounded-full bg-[#e6f4f1] px-2 py-0.5 text-[10px] font-semibold text-[#0f8a6e]">
+        <span className="inline-flex items-center gap-1.5 rounded-ds-badge border border-ds-lavender-border bg-ds-lavender-subtle px-2 py-0.5 text-[10px] font-semibold text-ds-lavender-text">
+          <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-ds-lavender" />
           Active
         </span>
       </div>
@@ -171,7 +176,7 @@ export function DelegationTab({ appraisalId }: DelegationTabProps) {
             setRemoving(false);
           }
         }}
-        className="mt-4 rounded-[8px] px-2 py-1 text-[12px] font-semibold text-[#dc2626] hover:bg-[#fef2f2]"
+        className="mt-4 rounded-[8px] px-2 py-1 text-[12px] font-semibold text-ds-error hover:bg-ds-error-subtle"
       >
         {removing ? "Removing..." : "Remove Delegate"}
       </button>

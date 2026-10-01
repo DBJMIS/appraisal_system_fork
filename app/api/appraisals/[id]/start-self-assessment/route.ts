@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { transitionStatus } from "@/lib/appraisal-workflow";
 import { allowAppraisalTestBypass } from "@/lib/appraisal-test-bypass";
 import { isAppraisalStatus } from "@/types/appraisal";
+import { midyearSelfAssessmentBlocker } from "@/lib/midyear-lifecycle";
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -28,7 +29,7 @@ export async function POST(
 
     const { data: appraisal, error: appErr } = await supabase
       .from("appraisals")
-      .select("id, status, employee_id")
+      .select("id, status, employee_id, cycle_id")
       .eq("id", appraisalId)
       .single();
 
@@ -49,6 +50,11 @@ export async function POST(
         { error: "Only the employee can start self-assessment" },
         { status: 403 }
       );
+    }
+
+    const midyearBlocker = await midyearSelfAssessmentBlocker(supabase, appraisal);
+    if (midyearBlocker) {
+      return NextResponse.json({ error: midyearBlocker }, { status: 409 });
     }
 
     const transErr = await transitionStatus(

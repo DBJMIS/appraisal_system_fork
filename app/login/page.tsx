@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
+import Image from "next/image";
 import { UAT_CREDENTIALS_PROVIDER_ID } from "@/lib/uat-credentials-constants";
 
 const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "v0.3.0";
@@ -50,88 +51,79 @@ export default function LoginPage() {
         backgroundPosition: "50% 35%",
       }}
     >
-      {/* Overlay */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background: "linear-gradient(160deg, rgba(10,22,50,0.72) 0%, rgba(10,22,50,0.55) 50%, rgba(10,22,50,0.82) 100%)",
-        }}
-        aria-hidden
-      />
-      {/* Top stripe */}
-      <div
-        className="absolute top-0 left-0 right-0 h-[3px]"
-        style={{ background: "linear-gradient(90deg, #0d9488, #3b82f6)" }}
-        aria-hidden
-      />
+      {/* Overlay: flat neutral scrim so the card stays the focus */}
+      <div className="absolute inset-0" style={{ background: "rgba(13, 14, 16, 0.62)" }} aria-hidden />
       <div className="absolute bottom-5 right-7 z-10 pointer-events-none">
-        <span className="rounded-md border border-white/20 bg-white/10 px-2 py-1 text-[10px] font-medium text-white/80 backdrop-blur-sm">
+        <span className="rounded-ds-badge border border-white/15 bg-white/10 px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-white/75">
           {APP_VERSION}
         </span>
       </div>
 
       {/* Card */}
-      <div className="relative z-10 w-[460px] bg-white rounded-[20px] overflow-hidden mx-4">
-        {/* Teal bar */}
-        <div className="h-[4px] bg-[#0d9488] w-full" aria-hidden />
-        <div className="p-10 px-10 pb-[34px]">
-          {/* Logo row */}
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 bg-[#0f1f3d] rounded-[10px] flex items-center justify-center shrink-0">
-              <span className="font-display text-[11px] font-bold text-[#5eead4] tracking-wide">DBJ</span>
-            </div>
-            <div>
-              <p className="font-display text-[12.5px] font-bold text-[#0f1f3d] leading-tight">Development Bank of Jamaica</p>
-              <p className="font-body text-[11px] font-normal text-[#8a97b8]">Performance Management System</p>
-            </div>
+      <main
+        data-login-card
+        className="relative z-10 mx-4 w-full max-w-[400px] rounded-[10px] border border-black/5 bg-ds-background shadow-ds-dialog"
+      >
+        {/* Institution / product */}
+        <header className="flex items-center gap-3 border-b border-ds-border px-7 py-4">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-ds-button bg-ds-accent">
+            <Image src="/brand/dbj-ascend-mark.png" alt="" width={242} height={234} priority className="h-[22px] w-[22px] object-contain" />
           </div>
+          <div className="min-w-0">
+            <p className="m-0 truncate text-[14px] font-semibold leading-[1.3] text-ds-text-primary">Development Bank of Jamaica</p>
+            <p className="m-0 truncate text-[12px] leading-[1.35] text-ds-text-secondary">Performance Management System</p>
+          </div>
+        </header>
 
+        <div className="px-7 pb-6 pt-6">
           {/* Heading */}
-          <h1 className="font-display text-[22px] font-bold text-[#0f1f3d] mb-1">Welcome back</h1>
-          <p className="font-body text-[13px] font-normal text-[#8a97b8] mb-7">
+          <h1 className="m-0 text-[20px] font-semibold leading-[1.25] tracking-[-0.01em] text-ds-text-primary">Welcome back</h1>
+          <p className="m-0 mt-1 text-[13px] leading-[1.45] text-ds-text-secondary">
             Sign in with your work account to continue.
           </p>
 
           {/* Error messages */}
           {(error === "CredentialsSignin" || uatError) && (
-            <p className="text-center text-sm text-destructive mb-4">
+            <p role="alert" className="m-0 mt-4 rounded-ds-control border border-ds-error-border bg-ds-error-subtle px-3 py-2 text-[13px] text-ds-error">
               Sign in failed. Please check your email and password.
             </p>
           )}
           {error && error !== "CredentialsSignin" && !uatError && (
-            <p className="text-center text-sm text-muted-foreground mb-4">
+            <p role="alert" className="m-0 mt-4 rounded-ds-control border border-ds-border bg-ds-surface px-3 py-2 text-[13px] text-ds-text-secondary">
               An error occurred. Please try again.
             </p>
           )}
 
-          {/* Microsoft SSO button */}
+          {/* Microsoft SSO button (primary) */}
           <button
             type="button"
             onClick={() => signIn("azure-ad", { callbackUrl })}
-            className="w-full bg-[#0f1f3d] rounded-[12px] py-[15px] flex items-center justify-center gap-3 hover:bg-[#162e5a] hover:-translate-y-px active:scale-[0.985] transition"
+            className="mt-5 flex h-10 w-full items-center justify-center gap-2.5 rounded-ds-button bg-ds-accent text-[14px] font-medium text-ds-on-primary transition-colors duration-100 hover:bg-ds-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-focus focus-visible:ring-offset-2"
           >
-            <svg width="18" height="18" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
-              <rect x="1" y="1" width="9" height="9" rx="1.5" fill="#F25022" />
-              <rect x="11" y="1" width="9" height="9" rx="1.5" fill="#7FBA00" />
-              <rect x="1" y="11" width="9" height="9" rx="1.5" fill="#00A4EF" />
-              <rect x="11" y="11" width="9" height="9" rx="1.5" fill="#FFB900" />
+            <svg width="16" height="16" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0" aria-hidden="true">
+              <rect x="1" y="1" width="9" height="9" fill="#F25022" />
+              <rect x="11" y="1" width="9" height="9" fill="#7FBA00" />
+              <rect x="1" y="11" width="9" height="9" fill="#00A4EF" />
+              <rect x="11" y="11" width="9" height="9" fill="#FFB900" />
             </svg>
-            <span className="font-body text-[14px] font-medium text-white">Sign in with Microsoft</span>
+            <span>Sign in with Microsoft</span>
           </button>
 
           {SHOW_UAT_LOGIN && (
-            <>
-              <div className="flex items-center gap-3 my-6">
-                <div className="flex-1 h-px bg-[#eef1f8]" />
-                <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8a97b8]">
+            <section aria-labelledby="uat-heading" data-uat-section className="mt-5 rounded-ds-panel border border-ds-border bg-[#fafafa] px-4 pb-4 pt-3">
+              <div className="flex items-center justify-between gap-3">
+                <h2 id="uat-heading" className="m-0 text-[13px] font-medium text-ds-text-primary">Test account access</h2>
+                <span className="rounded-ds-badge border border-ds-border-strong bg-ds-background px-1.5 py-0.5 text-[11px] font-medium leading-4 text-ds-text-secondary">
                   UAT testing
                 </span>
-                <div className="flex-1 h-px bg-[#eef1f8]" />
               </div>
+              <p className="m-0 mt-0.5 text-[12px] leading-[1.4] text-ds-text-secondary">
+                For HR UAT only. Production staff should use Microsoft sign-in above.
+              </p>
 
-              <form onSubmit={handleUatSubmit} className="space-y-3">
+              <form onSubmit={handleUatSubmit} className="mt-3 space-y-2.5">
                 <div>
-                  <label htmlFor="uat-email" className="block text-[11px] font-semibold text-[#4a5a82] mb-1.5">
+                  <label htmlFor="uat-email" className="mb-1 block text-[12px] font-medium text-ds-text-primary">
                     Email
                   </label>
                   <input
@@ -141,12 +133,12 @@ export default function LoginPage() {
                     required
                     value={uatEmail}
                     onChange={(e) => setUatEmail(e.target.value)}
-                    className="w-full border border-[#dde5f5] rounded-[10px] px-3 py-2.5 text-[13px] text-[#0f1f3d] outline-none focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/10"
+                    className="block h-9 w-full rounded-ds-control border border-ds-border-control bg-ds-background px-2.5 text-[14px] text-ds-text-primary placeholder:text-ds-text-muted transition-colors duration-100 hover:border-ds-text-secondary focus:border-ds-focus focus:outline-none focus:ring-1 focus:ring-ds-focus"
                     placeholder="leonwull@dbankjm.com"
                   />
                 </div>
                 <div>
-                  <label htmlFor="uat-password" className="block text-[11px] font-semibold text-[#4a5a82] mb-1.5">
+                  <label htmlFor="uat-password" className="mb-1 block text-[12px] font-medium text-ds-text-primary">
                     Password
                   </label>
                   <input
@@ -156,38 +148,33 @@ export default function LoginPage() {
                     required
                     value={uatPassword}
                     onChange={(e) => setUatPassword(e.target.value)}
-                    className="w-full border border-[#dde5f5] rounded-[10px] px-3 py-2.5 text-[13px] text-[#0f1f3d] outline-none focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/10"
+                    className="block h-9 w-full rounded-ds-control border border-ds-border-control bg-ds-background px-2.5 text-[14px] text-ds-text-primary placeholder:text-ds-text-muted transition-colors duration-100 hover:border-ds-text-secondary focus:border-ds-focus focus:outline-none focus:ring-1 focus:ring-ds-focus"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={uatLoading}
-                  className="w-full rounded-[12px] py-[13px] border border-[#dde5f5] bg-[#f8faff] text-[#0f1f3d] text-[13px] font-semibold hover:bg-[#eef2fb] disabled:opacity-50 transition"
+                  className="!mt-3 flex h-9 w-full items-center justify-center rounded-ds-button border border-ds-border-strong bg-ds-background text-[13px] font-medium text-ds-text-primary transition-colors duration-100 hover:bg-ds-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-focus focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {uatLoading ? "Signing in…" : "Sign in with test account"}
                 </button>
-                <p className="text-[10px] text-[#8a97b8] text-center leading-relaxed">
-                  For HR UAT only. Production staff should use Microsoft sign-in above.
-                </p>
               </form>
-            </>
+            </section>
           )}
-
-          {/* Card footer */}
-          <div className="flex justify-between items-center mt-5 pt-[18px] border-t border-[#eef1f8]">
-            <div className="flex items-center gap-2">
-              <svg width="11" height="11" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
-                <rect x="3" y="7" width="10" height="8" rx="2" stroke="#b0bac9" strokeWidth="1.3" />
-                <path d="M5 7V5a3 3 0 016 0v2" stroke="#b0bac9" strokeWidth="1.3" strokeLinecap="round" />
-              </svg>
-              <span className="text-[11px] text-[#b0bac9]">Azure AD (Entra ID)</span>
-            </div>
-            <span className="bg-[#f0faf9] border border-[#0d9488]/25 rounded-full px-3 py-1 text-[11px] font-semibold text-[#0d9488]">
-              FY 2026 – 2027
-            </span>
-          </div>
         </div>
-      </div>
+
+        {/* Card footer metadata */}
+        <footer className="flex items-center justify-between gap-3 border-t border-ds-border px-7 py-3 text-[12px] text-ds-text-secondary">
+          <span className="flex items-center gap-1.5">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0" aria-hidden="true">
+              <rect x="3" y="7" width="10" height="8" rx="2" stroke="currentColor" strokeWidth="1.3" />
+              <path d="M5 7V5a3 3 0 016 0v2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+            </svg>
+            Azure AD (Entra ID)
+          </span>
+          <span className="font-medium tabular-nums text-ds-text-primary">FY 2026 – 2027</span>
+        </footer>
+      </main>
     </div>
   );
 }

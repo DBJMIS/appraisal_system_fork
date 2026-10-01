@@ -70,6 +70,15 @@ export async function POST(
       return NextResponse.json({ error: transErr }, { status: 400 });
     }
 
+    // A revised workplan needs fresh approval from both parties.
+    const { error: clearErr } = await supabase
+      .from("appraisal_approvals")
+      .delete()
+      .eq("appraisal_id", appraisalId);
+    if (clearErr) {
+      console.error("[request-changes] failed to clear approvals", { appraisalId, code: clearErr.code });
+    }
+
     return NextResponse.json({ success: true, status: "DRAFT" });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";

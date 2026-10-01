@@ -55,7 +55,7 @@ function FieldRow({ label, children, isLast }: FieldRowProps) {
 export function IdentityCard({ fullName, email, employeeId, jobTitle }: IdentityCardProps) {
   return (
     <div
-      className="overflow-hidden rounded-[14px] bg-white"
+      className="overflow-hidden rounded-ds-panel bg-white"
       style={{
         boxShadow: "var(--shadow-card)",
         border: "1px solid var(--border-color)",
@@ -68,7 +68,7 @@ export function IdentityCard({ fullName, email, employeeId, jobTitle }: Identity
       >
         <div
           className="flex h-8 w-8 items-center justify-center rounded-[9px]"
-          style={{ backgroundColor: "#eff6ff" }}
+          style={{ backgroundColor: "#f3f3f3" }}
         >
           <span style={{ color: "var(--accent)" }}>
             <BadgeIcon />
@@ -103,7 +103,7 @@ export function IdentityCard({ fullName, email, employeeId, jobTitle }: Identity
           <code
             className="rounded-[5px] px-2 py-0.5 text-[11.5px] font-mono"
             style={{
-              backgroundColor: "#f1f5f9",
+              backgroundColor: "#f3f3f3",
               border: "1px solid var(--border-color)",
             }}
           >

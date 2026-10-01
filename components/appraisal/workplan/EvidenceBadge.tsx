@@ -51,7 +51,7 @@ export function EvidenceBadge({
         <button
           type="button"
           onClick={onManage}
-          className="inline-flex items-center gap-1.5 rounded-[6px] border border-[#dde5f5] bg-[#f8faff] px-2.5 py-1 text-[10px] font-semibold text-[#8a97b8] transition-colors hover:border-[#0d9488] hover:bg-[#f0fdfa] hover:text-[#0d9488]"
+          className="inline-flex items-center gap-1.5 rounded-[6px] border border-ds-border bg-ds-surface px-2.5 py-1 text-[10px] font-semibold text-ds-text-secondary transition-colors hover:border-ds-accent hover:bg-ds-surface hover:text-ds-accent"
         >
           <PaperclipIcon />
           Attach
@@ -62,7 +62,7 @@ export function EvidenceBadge({
       <button
         type="button"
         onClick={onManage}
-        className="inline-flex items-center gap-1.5 rounded-[6px] border border-[#99f6e4] bg-[#f0fdfa] px-2.5 py-1 text-[10px] font-semibold text-[#0d9488] transition-colors hover:bg-[#ecfdf5]"
+        className="inline-flex items-center gap-1.5 rounded-[6px] border border-ds-border-strong bg-ds-surface px-2.5 py-1 text-[10px] font-semibold text-ds-accent transition-colors hover:bg-ds-success-subtle"
       >
         <PaperclipIcon />
         {evidenceCount === 1 ? "1 file" : `${evidenceCount} files`}
@@ -72,7 +72,7 @@ export function EvidenceBadge({
 
   if (evidenceCount === 0) {
     return (
-      <span className="text-[10px] italic text-[#8a97b8]">None</span>
+      <span className="text-[10px] italic text-ds-text-secondary">None</span>
     );
   }
 
@@ -81,7 +81,7 @@ export function EvidenceBadge({
       <button
         type="button"
         onClick={openFileDirect}
-        className="inline-flex items-center gap-1.5 rounded-[6px] border border-[#99f6e4] bg-[#f0fdfa] px-2.5 py-1 text-[10px] font-semibold text-[#0d9488] transition-colors hover:bg-[#ecfdf5]"
+        className="inline-flex items-center gap-1.5 rounded-[6px] border border-ds-border-strong bg-ds-surface px-2.5 py-1 text-[10px] font-semibold text-ds-accent transition-colors hover:bg-ds-success-subtle"
         title="View evidence"
       >
         <EyeIcon />
@@ -94,7 +94,7 @@ export function EvidenceBadge({
     <button
       type="button"
       onClick={onManage}
-      className="inline-flex items-center gap-1.5 rounded-[6px] border border-[#99f6e4] bg-[#f0fdfa] px-2.5 py-1 text-[10px] font-semibold text-[#0d9488] transition-colors hover:bg-[#ecfdf5]"
+      className="inline-flex items-center gap-1.5 rounded-[6px] border border-ds-border-strong bg-ds-surface px-2.5 py-1 text-[10px] font-semibold text-ds-accent transition-colors hover:bg-ds-success-subtle"
     >
       <EyeIcon />
       {evidenceCount} files

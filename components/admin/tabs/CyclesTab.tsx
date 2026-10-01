@@ -14,7 +14,15 @@ import {
   LockIcon,
   thStyle,
   tdStyle,
+  cycleToForm,
+  cycleMidyearStatus,
 } from "../admin-shared";
+
+const MIDYEAR_PILL: Record<"Off" | "On" | "Scored", { background: string; color: string; border: string }> = {
+  Off: { background: "#f3f3f3", color: "#646f79", border: "#e7e7e7" },
+  On: { background: "#eef4fb", color: "#3d5a78", border: "#d0d4d8" },
+  Scored: { background: "#ecfdf5", color: "#2e7d4f", border: "#bbf0d9" },
+};
 
 export function CyclesTab() {
   const {
@@ -31,8 +39,8 @@ export function CyclesTab() {
       title="Appraisal Cycles"
       subtitle="Manage appraisal periods and their status"
       icon={<CalendarIcon />}
-      iconBg="#eff6ff"
-      iconColor="#3b82f6"
+      iconBg="#f3f3f3"
+      iconColor="#0d0e10"
       delay="0.08s"
       rightAction={
         <div style={{ display: "flex", gap: "8px" }}>
@@ -51,13 +59,14 @@ export function CyclesTab() {
             <th style={thStyle}>End</th>
             <th style={thStyle}>Status</th>
             <th style={thStyle}>Phase</th>
+            <th style={thStyle}>Mid-Year</th>
             <th style={{ ...thStyle, width: "260px" }}>Actions</th>
           </tr>
         </thead>
         <tbody>
           {cycles.map((c) => (
-            <tr key={c.id} style={{ transition: "background 0.13s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "#f4f8ff"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
-              <td style={{ ...tdStyle, fontWeight: 600, color: "#0f1f3d" }}>{c.name}</td>
+            <tr key={c.id} style={{ transition: "background 0.13s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "#f3f3f3"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
+              <td style={{ ...tdStyle, fontWeight: 600, color: "#0d0d0d" }}>{c.name}</td>
               <td style={tdStyle}>{c.cycle_type.replace("_", " ")}</td>
               <td style={tdStyle}>{c.fiscal_year}</td>
               <td style={tdStyle}>{c.start_date}</td>
@@ -70,12 +79,12 @@ export function CyclesTab() {
                     alignItems: "center",
                     gap: "5px",
                     padding: "3px 10px",
-                    borderRadius: "20px",
+                    borderRadius: "4px",
                     fontSize: "11.5px",
                     fontWeight: 600,
-                    background: c.phase === "planning" ? "#eff6ff" : c.phase === "assessment" ? "#f0fdf4" : "#f1f5f9",
-                    color: c.phase === "planning" ? "#1d4ed8" : c.phase === "assessment" ? "#166534" : "#64748b",
-                    border: `1px solid ${c.phase === "planning" ? "#bfdbfe" : c.phase === "assessment" ? "#bbf7d0" : "#e2e8f0"}`,
+                    background: c.phase === "planning" ? "#f3f3f3" : c.phase === "assessment" ? "#ecfdf5" : "#f3f3f3",
+                    color: c.phase === "planning" ? "#3d5a78" : c.phase === "assessment" ? "#2e7d4f" : "#646f79",
+                    border: `1px solid ${c.phase === "planning" ? "#d0d4d8" : c.phase === "assessment" ? "#bbf0d9" : "#e7e7e7"}`,
                     textTransform: "capitalize",
                   }}
                 >
@@ -84,7 +93,7 @@ export function CyclesTab() {
                       width: "5px",
                       height: "5px",
                       borderRadius: "50%",
-                      background: c.phase === "planning" ? "#3b82f6" : c.phase === "assessment" ? "#22c55e" : "#94a3b8",
+                      background: c.phase === "planning" ? "#0d0e10" : c.phase === "assessment" ? "#2e7d4f" : "#646f79",
                       display: "inline-block",
                     }}
                   />
@@ -92,8 +101,34 @@ export function CyclesTab() {
                 </span>
               </td>
               <td style={tdStyle}>
+                {(() => {
+                  const midyear = cycleMidyearStatus(c);
+                  const pill = MIDYEAR_PILL[midyear];
+                  return (
+                    <span
+                      data-midyear-status={midyear}
+                      title={midyear !== "Off" && c.midyear_due_date ? `Due ${c.midyear_due_date}` : undefined}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        padding: "3px 10px",
+                        borderRadius: "4px",
+                        fontSize: "11.5px",
+                        fontWeight: 600,
+                        whiteSpace: "nowrap",
+                        background: pill.background,
+                        color: pill.color,
+                        border: `1px solid ${pill.border}`,
+                      }}
+                    >
+                      {midyear}
+                    </span>
+                  );
+                })()}
+              </td>
+              <td style={tdStyle}>
                 <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px" }}>
-                  <IconButton onClick={() => setCycleModal({ open: true, mode: "edit", id: c.id, data: { cycle_type: c.cycle_type, fiscal_year: c.fiscal_year, start_date: c.start_date, end_date: c.end_date } })}><PencilIcon /></IconButton>
+                  <IconButton onClick={() => setCycleModal({ open: true, mode: "edit", id: c.id, data: cycleToForm(c) })}><PencilIcon /></IconButton>
                   {c.status === "draft" && <ActionButton onClick={() => setCycleStatus(c.id, "open")}><PlayIcon /> Open</ActionButton>}
                   {c.status === "open" && c.phase === "planning" && <ActionButton variant="primary" onClick={() => openAssessmentPhase(c.id)}><PlayIcon /> Start Assessment</ActionButton>}
                   {(c.status === "open" || c.status === "draft") && <ActionButton onClick={() => setCycleStatus(c.id, "closed")}><LockIcon /> Close</ActionButton>}

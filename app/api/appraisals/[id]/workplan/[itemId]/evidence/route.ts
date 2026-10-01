@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getCurrentUser } from "@/lib/auth";
+import { hasOversightReadAccess } from "@/lib/appraisal-oversight";
 
 const BUCKET = "workplan-evidence";
 const MAX_SIZE_BYTES = 20 * 1024 * 1024; // 20MB
@@ -58,7 +59,7 @@ export async function GET(_req: NextRequest, context: Ctx) {
 
     if (appErr || !appraisal)
       return NextResponse.json({ error: "Appraisal not found" }, { status: 404 });
-    if (!canAccessAppraisal(user, appraisal))
+    if (!canAccessAppraisal(user, appraisal) && !(await hasOversightReadAccess(user, appraisal)))
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const { data: rows, error } = await supabase
@@ -90,9 +91,13 @@ export async function GET(_req: NextRequest, context: Ctx) {
     for (let i = 0; i < list.length; i++) {
       const row = list[i];
       const out = { ...row, can_delete: listWithUploadedBy[i]?.uploaded_by === user.employee_id } as Record<string, unknown>;
-      if (row.evidence_type === "FILE" && row.storage_path && row.storage_bucket) {
+      if (
+        row.evidence_type === "FILE" &&
+        row.storage_bucket === BUCKET &&
+        row.storage_path?.startsWith(`${appraisalId}/`)
+      ) {
         const { data: signedData } = await supabase.storage
-          .from(row.storage_bucket)
+          .from(BUCKET)
           .createSignedUrl(row.storage_path, 3600);
         if (signedData?.signedUrl) (out as { signed_url?: string }).signed_url = signedData.signedUrl;
       }

@@ -98,7 +98,7 @@ export default async function ProfilePage() {
       {/* Body content */}
       <div
         className="px-6 md:px-8 py-6"
-        style={{ backgroundColor: "#f8faff" }}
+        style={{ backgroundColor: "#f3f3f3" }}
       >
         {/* Row 1: Identity + Division */}
         <div

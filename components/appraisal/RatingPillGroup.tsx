@@ -13,35 +13,35 @@ export type Grade = (typeof GRADES)[number]["value"];
 const gradeStyles: Record<Grade, { selected: string; ring: string }> = {
   A: {
     selected:
-      "bg-emerald-50 border-emerald-500 shadow-[0_0_0_2px_rgba(5,150,105,0.15)]",
-    ring: "text-emerald-600",
+      "bg-ds-success-subtle border-ds-success shadow-[0_0_0_2px_rgba(5,150,105,0.15)]",
+    ring: "text-ds-success",
   },
   B: {
     selected:
-      "bg-blue-50 border-blue-600 shadow-[0_0_0_2px_rgba(37,99,235,0.15)]",
-    ring: "text-blue-600",
+      "bg-ds-info-subtle border-ds-info shadow-[0_0_0_2px_rgba(37,99,235,0.15)]",
+    ring: "text-ds-info",
   },
   C: {
-    selected: "bg-sky-50 border-sky-500 shadow-[0_0_0_2px_rgba(2,132,199,0.15)]",
-    ring: "text-sky-600",
+    selected: "bg-ds-info-subtle border-ds-info shadow-[0_0_0_2px_rgba(2,132,199,0.15)]",
+    ring: "text-ds-info",
   },
   D: {
     selected:
-      "bg-amber-50 border-amber-500 shadow-[0_0_0_2px_rgba(217,119,6,0.15)]",
-    ring: "text-amber-600",
+      "bg-ds-warning-subtle border-ds-warning shadow-[0_0_0_2px_rgba(217,119,6,0.15)]",
+    ring: "text-ds-warning",
   },
   E: {
-    selected: "bg-red-50 border-red-500 shadow-[0_0_0_2px_rgba(220,38,38,0.15)]",
-    ring: "text-red-600",
+    selected: "bg-ds-error-subtle border-ds-error shadow-[0_0_0_2px_rgba(220,38,38,0.15)]",
+    ring: "text-ds-error",
   },
 };
 
 export const gradeChipStyles: Record<Grade, string> = {
-  A: "bg-emerald-50 text-emerald-600",
-  B: "bg-blue-50 text-blue-600",
-  C: "bg-sky-50 text-sky-600",
-  D: "bg-amber-50 text-amber-600",
-  E: "bg-red-50 text-red-600",
+  A: "bg-ds-success-subtle text-ds-success",
+  B: "bg-ds-info-subtle text-ds-info",
+  C: "bg-ds-info-subtle text-ds-info",
+  D: "bg-ds-warning-subtle text-ds-warning",
+  E: "bg-ds-error-subtle text-ds-error",
 };
 
 const VALID_GRADES: Grade[] = ["A", "B", "C", "D", "E"];
@@ -75,15 +75,15 @@ export function VarianceChip({
   const abs = Math.abs(delta);
 
   const colour = isUp
-    ? "text-emerald-600"
+    ? "text-ds-success"
     : abs >= 3
-      ? "text-rose-600"
+      ? "text-ds-error"
       : abs === 2
-        ? "text-amber-600"
-        : "text-orange-500";
+        ? "text-ds-warning"
+        : "text-ds-warning";
 
   return (
-    <span className={cn("text-[10px] font-bold tabular-nums leading-none", colour)}>
+    <span className={cn("text-[10px] font-semibold tabular-nums leading-none", colour)}>
       {isUp ? "↑" : "↓"}
       {abs}
     </span>
@@ -117,7 +117,7 @@ export function RatingPillGroup({
               "transition-all duration-150",
               isSelected
                 ? styles.selected
-                : "bg-white border-[#dde5f5] hover:border-[#3b82f6] hover:bg-[#eef2fb] hover:-translate-y-px hover:shadow-[0_2px_8px_rgba(59,130,246,0.12)]",
+                : "bg-white border-ds-border hover:border-ds-accent hover:bg-ds-surface",
               disabled && "opacity-50 cursor-not-allowed pointer-events-none"
             )}
           >
@@ -131,8 +131,8 @@ export function RatingPillGroup({
             />
             <span
               className={cn(
-                'font-["Sora",sans-serif] text-[13px] font-bold leading-none mb-[3px]',
-                isSelected ? styles.ring : "text-[#0f1f3d]"
+                'font-sans text-[13px] font-semibold leading-none mb-[3px]',
+                isSelected ? styles.ring : "text-ds-text-primary"
               )}
             >
               {grade.value}
@@ -140,7 +140,7 @@ export function RatingPillGroup({
             <span
               className={cn(
                 "text-[9px] font-medium leading-[1.2] whitespace-pre-line",
-                isSelected ? styles.ring : "text-[#8a97b8]"
+                isSelected ? styles.ring : "text-ds-text-secondary"
               )}
             >
               {grade.label}
@@ -153,16 +153,16 @@ export function RatingPillGroup({
 }
 
 const RATING_BAND_COLOR: Record<number, string> = {
-  1: "bg-red-50 text-red-600",
-  2: "bg-red-50 text-red-600",
-  3: "bg-orange-50 text-orange-700",
-  4: "bg-orange-50 text-orange-700",
-  5: "bg-amber-50 text-amber-600",
-  6: "bg-amber-50 text-amber-600",
-  7: "bg-emerald-50 text-emerald-600",
-  8: "bg-emerald-50 text-emerald-600",
-  9: "bg-emerald-50 text-emerald-700",
-  10: "bg-emerald-50 text-emerald-700",
+  1: "bg-ds-error-subtle text-ds-error",
+  2: "bg-ds-error-subtle text-ds-error",
+  3: "bg-ds-warning-subtle text-ds-warning",
+  4: "bg-ds-warning-subtle text-ds-warning",
+  5: "bg-ds-warning-subtle text-ds-warning",
+  6: "bg-ds-warning-subtle text-ds-warning",
+  7: "bg-ds-success-subtle text-ds-success",
+  8: "bg-ds-success-subtle text-ds-success",
+  9: "bg-ds-success-subtle text-ds-success",
+  10: "bg-ds-success-subtle text-ds-success",
 };
 
 interface RatingGradeChipProps {
@@ -175,7 +175,7 @@ export function RatingGradeChip({ value, className }: RatingGradeChipProps) {
     return (
       <span
         className={cn(
-          "inline-flex items-center justify-center w-7 h-7 rounded-[6px] border-[1.5px] border-dashed border-[#dde5f5] text-[#8a97b8] text-base",
+          "inline-flex items-center justify-center w-7 h-7 rounded-[6px] border-[1.5px] border-dashed border-ds-border text-ds-text-secondary text-base",
           className
         )}
       >
@@ -185,11 +185,11 @@ export function RatingGradeChip({ value, className }: RatingGradeChipProps) {
   }
   if (isGrade(value)) {
     const n = parseInt(value, 10);
-    const bandClass = !Number.isNaN(n) && n >= 1 && n <= 10 ? RATING_BAND_COLOR[n] : "bg-[#eff6ff] text-[#1d4ed8]";
+    const bandClass = !Number.isNaN(n) && n >= 1 && n <= 10 ? RATING_BAND_COLOR[n] : "bg-ds-surface text-ds-info";
     return (
       <span
         className={cn(
-          "inline-flex items-center justify-center w-7 h-7 rounded-[6px] font-['Sora',sans-serif] text-[13px] font-bold",
+          "inline-flex items-center justify-center w-7 h-7 rounded-[6px] font-sans text-[13px] font-semibold",
           bandClass,
           className
         )}
@@ -201,7 +201,7 @@ export function RatingGradeChip({ value, className }: RatingGradeChipProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center justify-center w-7 h-7 rounded-[6px] border-[1.5px] border-dashed border-[#dde5f5] text-[#8a97b8] text-base",
+        "inline-flex items-center justify-center w-7 h-7 rounded-[6px] border-[1.5px] border-dashed border-ds-border text-ds-text-secondary text-base",
         className
       )}
     >
@@ -212,19 +212,19 @@ export function RatingGradeChip({ value, className }: RatingGradeChipProps) {
 
 export function RatingLegend() {
   const items = [
-    { range: "1–2", label: "Far below", color: "#dc2626" },
-    { range: "3–4", label: "Below", color: "#9a3412" },
-    { range: "5–6", label: "Meets", color: "#92400e" },
-    { range: "7–8", label: "Exceeds", color: "#166534" },
-    { range: "9–10", label: "Highly exceeds", color: "#065f46" },
+    { range: "1–2", label: "Far below", color: "#b42318" },
+    { range: "3–4", label: "Below", color: "#8a5a00" },
+    { range: "5–6", label: "Meets", color: "#8a5a00" },
+    { range: "7–8", label: "Exceeds", color: "#2e7d4f" },
+    { range: "9–10", label: "Highly exceeds", color: "#2e7d4f" },
   ];
   return (
     <div
-      className="flex flex-wrap items-center gap-4 border-t border-[#dde5f5] bg-[#f8faff] px-5 py-2.5"
-      style={{ fontFamily: "DM Sans, sans-serif" }}
+      className="flex flex-wrap items-center gap-4 border-t border-ds-border bg-ds-surface px-5 py-2.5"
+      style={{ fontFamily: "var(--ds-font-sans)" }}
     >
       {items.map((b) => (
-        <div key={b.range} className="flex items-center gap-1.5 text-[10px]" style={{ color: "#8a97b8" }}>
+        <div key={b.range} className="flex items-center gap-1.5 text-[10px]" style={{ color: "#646f79" }}>
           <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ background: b.color }} />
           <span style={{ color: b.color, fontWeight: 500 }}>{b.range}</span>
           <span>— {b.label}</span>

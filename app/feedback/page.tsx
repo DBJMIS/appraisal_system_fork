@@ -13,6 +13,7 @@ import {
   type FeedbackCycleResultRow,
 } from "@/lib/feedback-cycle-results";
 import { cn } from "@/lib/utils";
+import { avatarAccent } from "@/lib/avatar-accent";
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -20,16 +21,6 @@ function getSupabase() {
   if (!url || !key) throw new Error("Supabase config required");
   return createClient(url, key);
 }
-
-const AVATAR_COLORS = [
-  "#4f46e5",
-  "#f59e0b",
-  "#ef4444",
-  "#10b981",
-  "#3b82f6",
-  "#8b5cf6",
-  "#ec4899",
-];
 
 function getInitials(name: string) {
   return name
@@ -55,16 +46,16 @@ function formatDate(date: string | null) {
 
 function RelationshipPill({ type }: { type: string }) {
   const map: Record<string, string> = {
-    MANAGER: "bg-amber-50 border-amber-200 text-amber-900",
-    DIRECT_REPORT: "bg-pink-50 border-pink-200 text-pink-900",
-    PEER: "bg-teal-50 border-teal-200 text-teal-900",
-    SELF: "bg-blue-50 border-blue-200 text-blue-900",
+    MANAGER: "bg-ds-warning-subtle border-ds-warning-border text-ds-warning",
+    DIRECT_REPORT: "bg-ds-error-subtle border-ds-error-border text-ds-error",
+    PEER: "bg-ds-success-subtle border-ds-success-border text-ds-success",
+    SELF: "bg-ds-info-subtle border-ds-info-border text-ds-info",
   };
   const label = type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-semibold",
+        "inline-flex items-center rounded-ds-badge border px-2.5 py-0.5 text-[10px] font-semibold",
         map[type] ?? map.PEER
       )}
     >
@@ -75,18 +66,18 @@ function RelationshipPill({ type }: { type: string }) {
 
 function TypeBadgeClosed({ type }: { type: string }) {
   const map: Record<string, string> = {
-    ANNUAL: "bg-[#f5f3ff] border-[#ddd6fe] text-[#6d28d9]",
-    MID_YEAR: "bg-[#fffbeb] border-[#fcd34d] text-[#92400e]",
-    PEER: "bg-[#eff6ff] border-[#bfdbfe] text-[#1d4ed8]",
-    DIRECT_REPORT: "bg-[#fdf4ff] border-[#e9d5ff] text-[#6d28d9]",
-    MANAGER: "bg-[#fff7ed] border-[#fed7aa] text-[#9a3412]",
-    SELF: "bg-[#ecfdf5] border-[#6ee7b7] text-[#065f46]",
+    ANNUAL: "bg-ds-info-subtle border-ds-info-border text-ds-info",
+    MID_YEAR: "bg-ds-warning-subtle border-ds-warning-border text-ds-warning",
+    PEER: "bg-ds-surface border-ds-border-strong text-ds-info",
+    DIRECT_REPORT: "bg-ds-info-subtle border-ds-info-border text-ds-info",
+    MANAGER: "bg-ds-warning-subtle border-ds-warning-border text-ds-warning",
+    SELF: "bg-ds-success-subtle border-ds-success-border text-ds-success",
   };
   const label = type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold",
+        "inline-flex items-center rounded-ds-badge border px-2.5 py-1 text-[10px] font-semibold",
         map[type] ?? map.PEER
       )}
     >
@@ -97,7 +88,7 @@ function TypeBadgeClosed({ type }: { type: string }) {
 
 function CycleBadge({ label }: { label: string }) {
   return (
-    <span className="inline-flex items-center rounded-full border border-[#bfdbfe] bg-[#eff6ff] px-2.5 py-1 text-[10px] font-semibold text-[#1d4ed8]">
+    <span className="inline-flex items-center rounded-ds-badge border border-ds-border-strong bg-ds-surface px-2.5 py-1 text-[10px] font-semibold text-ds-info">
       {label}
     </span>
   );
@@ -105,8 +96,8 @@ function CycleBadge({ label }: { label: string }) {
 
 function CompletedStatusBadge() {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-[#6ee7b7] bg-[#ecfdf5] px-2.5 py-1 text-[10px] font-semibold text-[#065f46]">
-      <span className="h-[5px] w-[5px] rounded-full bg-[#059669]" />
+    <span className="inline-flex items-center gap-1.5 rounded-ds-badge border border-ds-success-border bg-ds-success-subtle px-2.5 py-1 text-[10px] font-semibold text-ds-success">
+      <span className="h-[5px] w-[5px] rounded-full bg-ds-mint" />
       Completed
     </span>
   );
@@ -140,23 +131,23 @@ function MyProgressCell({ row }: { row: TaskRow }) {
   const p = taskProgressLabel(row);
   if (p === "Completed") {
     return (
-      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#16a34a]">
-        <span className="h-1.5 w-1.5 rounded-full bg-[#16a34a]" />
+      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-ds-success">
+        <span className="h-1.5 w-1.5 rounded-full bg-ds-mint" />
         Submitted
       </span>
     );
   }
   if (p === "In_Progress") {
     return (
-      <span className="inline-flex items-center gap-1.5 text-xs text-[#2563eb]">
-        <span className="h-1.5 w-1.5 rounded-full bg-[#2563eb]" />
+      <span className="inline-flex items-center gap-1.5 text-xs text-ds-accent">
+        <span className="h-1.5 w-1.5 rounded-full bg-ds-accent" />
         In progress
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-[#94a3b8]">
-      <span className="h-1.5 w-1.5 rounded-full bg-[#cbd5e1]" />
+    <span className="inline-flex items-center gap-1.5 text-xs text-ds-text-secondary">
+      <span className="h-1.5 w-1.5 rounded-full bg-ds-border-strong" />
       Not started
     </span>
   );
@@ -179,18 +170,18 @@ function ScoreVisibleCell({
     const so = scoreOutOf10(w ?? undefined);
     const scorePart = so != null ? `${so.toFixed(1)}/10` : "—";
     return (
-      <span className="text-xs text-[#0f2044]">
+      <span className="text-xs text-ds-text-primary">
         {scorePart} · {drSubmitted}/{drTotal} done
       </span>
     );
   }
   if (t === "MANAGER") {
-    return <span className="text-xs text-[#64748b]">Visible after you submit</span>;
+    return <span className="text-xs text-ds-text-secondary">Visible after you submit</span>;
   }
   if (t === "PEER") {
-    return <span className="text-xs text-[#94a3b8]">—</span>;
+    return <span className="text-xs text-ds-text-secondary">—</span>;
   }
-  return <span className="text-xs text-[#94a3b8]">—</span>;
+  return <span className="text-xs text-ds-text-secondary">—</span>;
 }
 
 function ActionButton({ row }: { row: TaskRow }) {
@@ -199,7 +190,7 @@ function ActionButton({ row }: { row: TaskRow }) {
     return (
       <Link
         href={row.href}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-[#dde5f5] bg-white px-4 py-2 text-[11px] font-semibold text-[#64748b] transition-colors hover:border-[#0f2044] hover:text-[#0f2044]"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-ds-border bg-white px-4 py-2 text-[11px] font-semibold text-ds-text-secondary transition-colors hover:border-ds-text-primary hover:text-ds-text-primary"
       >
         View
       </Link>
@@ -209,7 +200,7 @@ function ActionButton({ row }: { row: TaskRow }) {
     return (
       <Link
         href={row.href}
-        className="inline-flex items-center gap-1.5 rounded-lg border-2 border-[#1D9E75] bg-white px-4 py-2 text-[11px] font-semibold text-[#1D9E75] transition-colors hover:bg-[#ecfdf5]"
+        className="inline-flex items-center gap-1.5 rounded-lg border-2 border-ds-accent bg-white px-4 py-2 text-[11px] font-semibold text-ds-accent transition-colors hover:bg-ds-success-subtle"
       >
         Continue
         <ChevronRight />
@@ -219,7 +210,7 @@ function ActionButton({ row }: { row: TaskRow }) {
   return (
     <Link
       href={row.href}
-      className="inline-flex items-center gap-1.5 rounded-lg bg-[#1D9E75] px-4 py-2 text-[11px] font-semibold text-white transition-colors hover:bg-[#178f6a]"
+      className="inline-flex items-center gap-1.5 rounded-lg bg-ds-accent px-4 py-2 text-[11px] font-semibold text-white transition-colors hover:bg-ds-success"
     >
       Start review
       <ChevronRight />
@@ -250,14 +241,14 @@ function BreakdownCell({
   const scoreLabel = formatScoreOutOf10(entry?.avg ?? null);
   const pct = completion.total > 0 ? (completion.submitted / completion.total) * 100 : 0;
   return (
-    <div className="rounded-xl border border-[#f0f4ff] bg-[#f8faff] p-3">
-      <p className="mb-1 text-[10px] font-medium text-[#94a3b8]">{label}</p>
-      <p className="text-sm font-semibold text-[#0f2044]">{scoreLabel}</p>
-      <p className="mt-0.5 text-[10px] text-[#64748b]">
+    <div className="rounded-ds-panel border border-ds-surface bg-ds-surface p-3">
+      <p className="mb-1 text-[10px] font-medium text-ds-text-secondary">{label}</p>
+      <p className="text-sm font-semibold text-ds-text-primary">{scoreLabel}</p>
+      <p className="mt-0.5 text-[10px] text-ds-text-secondary">
         {completion.submitted}/{completion.total} submitted
       </p>
-      <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-[#e8edf8]">
-        <div className="h-full rounded-full bg-[#1D9E75]" style={{ width: `${pct}%` }} />
+      <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-ds-border">
+        <div className="h-full rounded-full bg-ds-accent" style={{ width: `${pct}%` }} />
       </div>
     </div>
   );
@@ -282,9 +273,9 @@ export default async function FeedbackPage() {
   const user = await getCurrentUser();
   if (!user?.id) {
     return (
-      <div className="w-full bg-[#f0f4ff] px-7 py-6">
-        <div className="rounded-2xl border border-[#dde5f5] bg-white p-5">
-          <p className="text-sm text-[#94a3b8]">Please sign in to view 360 Feedback.</p>
+      <div className="w-full bg-ds-surface px-7 py-6">
+        <div className="rounded-ds-panel border border-ds-border bg-white p-5">
+          <p className="text-sm text-ds-text-secondary">Please sign in to view 360 Feedback.</p>
         </div>
       </div>
     );
@@ -548,16 +539,16 @@ export default async function FeedbackPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#f0f4ff] px-7 py-6">
+    <div className="min-h-screen w-full bg-ds-surface px-7 py-6">
       <div className="mb-8">
-        <h1 className="text-xl font-semibold text-[#0f2044]">My 360 reviews</h1>
-        <p className="mt-1 text-sm text-[#94a3b8]">
+        <h1 className="text-xl font-semibold text-ds-text-primary">My 360 reviews</h1>
+        <p className="mt-1 text-sm text-ds-text-secondary">
           Complete feedback assigned to you and track your own review progress
         </p>
       </div>
 
       {error && (
-        <div className="mb-6 rounded-2xl border border-[#fecaca] bg-[#fef2f2] px-5 py-4 text-sm text-[#b91c1c]">
+        <div className="mb-6 rounded-ds-panel border border-ds-error-border bg-ds-error-subtle px-5 py-4 text-sm text-ds-error">
           {error.message}
         </div>
       )}
@@ -569,17 +560,17 @@ export default async function FeedbackPage() {
         return (
           <div
             key={h.cycle.id}
-            className="mb-8 rounded-2xl border border-[#dde5f5] bg-white p-6 shadow-sm"
+            className="mb-8 rounded-ds-panel border border-ds-border bg-white p-6"
           >
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-[#94a3b8]">Your review</p>
-                <h2 className="mt-1 text-lg font-semibold text-[#0f2044]">{h.cycle.cycle_name}</h2>
-                <p className="mt-1 text-sm text-[#94a3b8]">Due {formatDate(h.cycle.end_date)}</p>
+                <p className="text-xs font-medium uppercase tracking-wide text-ds-text-secondary">Your review</p>
+                <h2 className="mt-1 text-lg font-semibold text-ds-text-primary">{h.cycle.cycle_name}</h2>
+                <p className="mt-1 text-sm text-ds-text-secondary">Due {formatDate(h.cycle.end_date)}</p>
               </div>
               <div className="text-right">
-                <p className="text-xs text-[#94a3b8]">Overall (submitted items)</p>
-                <p className="text-xl font-semibold text-[#0f2044]">{overallOutOf10(h.overallAvg)}</p>
+                <p className="text-xs text-ds-text-secondary">Overall (submitted items)</p>
+                <p className="text-xl font-semibold text-ds-text-primary">{overallOutOf10(h.overallAvg)}</p>
               </div>
             </div>
 
@@ -609,20 +600,20 @@ export default async function FeedbackPage() {
             <div className="mt-6 flex flex-wrap gap-3">
               <Link
                 href={h.selfHref}
-                className="rounded-lg bg-[#1D9E75] px-4 py-2 text-sm font-medium text-white hover:bg-[#178f6a]"
+                className="rounded-lg bg-ds-accent px-4 py-2 text-sm font-medium text-white hover:bg-ds-success"
               >
                 View self-assessment
               </Link>
               {canViewFull ? (
                 <Link
                   href={`/feedback/cycles/${h.cycle.id}/report`}
-                  className="rounded-lg border border-[#dde5f5] bg-white px-4 py-2 text-sm font-medium text-[#0f2044] hover:border-[#0f2044]"
+                  className="rounded-lg border border-ds-border bg-white px-4 py-2 text-sm font-medium text-ds-text-primary hover:border-ds-text-primary"
                 >
                   View full results
                 </Link>
               ) : (
                 <span
-                  className="cursor-not-allowed rounded-lg border border-[#e8edf8] bg-[#f8faff] px-4 py-2 text-sm font-medium text-[#94a3b8]"
+                  className="cursor-not-allowed rounded-lg border border-ds-border bg-ds-surface px-4 py-2 text-sm font-medium text-ds-text-secondary"
                   title="Available when at least half of reviewers have submitted"
                 >
                   View full results
@@ -648,24 +639,24 @@ export default async function FeedbackPage() {
           <div key={`tasks-${cycle.id}`} className="mb-8">
             <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-semibold text-[#0f2044]">Reviews I need to complete</span>
-                <span className="rounded-full border border-[#dde5f5] bg-white px-2 py-0.5 text-xs text-[#64748b]">
+                <span className="text-sm font-semibold text-ds-text-primary">Reviews I need to complete</span>
+                <span className="rounded-ds-badge border border-ds-border bg-white px-2 py-0.5 text-xs text-ds-text-secondary">
                   {pendingCount} pending
                 </span>
               </div>
-              <span className="text-xs text-[#94a3b8]">
+              <span className="text-xs text-ds-text-secondary">
                 {cycle.cycle_name} · Due {formatDate(cycle.end_date)}
               </span>
             </div>
 
-            <div className="overflow-hidden rounded-2xl border border-[#dde5f5] bg-white shadow-sm">
+            <div className="overflow-hidden rounded-ds-panel border border-ds-border bg-white">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="bg-[#f8faff]">
+                  <tr className="bg-ds-surface">
                     {["Employee", "Relationship", "Score visible", "My progress", "Action"].map((col) => (
                       <th
                         key={col}
-                        className="border-b border-[#f0f4ff] px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wide text-[#94a3b8]"
+                        className="border-b border-ds-surface px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wide text-ds-text-secondary"
                       >
                         {col}
                       </th>
@@ -689,17 +680,17 @@ export default async function FeedbackPage() {
                     return (
                       <tr
                         key={row.id}
-                        className="border-b border-[#f0f4ff] transition-colors hover:bg-[#fafbff]"
+                        className="border-b border-ds-surface transition-colors hover:bg-ds-surface"
                       >
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2.5">
                             <div
-                              className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-semibold text-white"
-                              style={{ background: AVATAR_COLORS[idx % AVATAR_COLORS.length] }}
+                              className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-semibold"
+                              style={avatarAccent(row.participantName).style}
                             >
                               {getInitials(row.participantName)}
                             </div>
-                            <p className="text-[12px] font-semibold text-[#0f2044]">{row.participantName}</p>
+                            <p className="text-[12px] font-semibold text-ds-text-primary">{row.participantName}</p>
                           </div>
                         </td>
                         <td className="px-4 py-3">
@@ -724,15 +715,15 @@ export default async function FeedbackPage() {
                   })}
                 </tbody>
               </table>
-              <div className="flex gap-5 border-t border-[#f0f4ff] bg-[#f8faff] px-4 py-2.5 text-xs text-[#94a3b8]">
+              <div className="flex gap-5 border-t border-ds-surface bg-ds-surface px-4 py-2.5 text-xs text-ds-text-secondary">
                 <span>
-                  Assigned: <strong className="text-[#0f2044]">{total}</strong>
+                  Assigned: <strong className="text-ds-text-primary">{total}</strong>
                 </span>
                 <span>
-                  Completed: <strong className="text-[#16a34a]">{completed}</strong>
+                  Completed: <strong className="text-ds-success">{completed}</strong>
                 </span>
                 <span>
-                  Remaining: <strong className="text-[#d97706]">{total - completed}</strong>
+                  Remaining: <strong className="text-ds-warning">{total - completed}</strong>
                 </span>
               </div>
             </div>
@@ -744,7 +735,7 @@ export default async function FeedbackPage() {
         activeCycles.length > 0 &&
         allTaskRows.filter((r) => r.reviewType !== "SELF").length === 0 &&
         heroBlocks.length === 0 && (
-          <div className="mb-8 rounded-2xl border border-[#dde5f5] bg-white p-8 text-center text-sm text-[#94a3b8]">
+          <div className="mb-8 rounded-ds-panel border border-ds-border bg-white p-8 text-center text-sm text-ds-text-secondary">
             No active review tasks in your current cycles.
           </div>
         )}
@@ -752,8 +743,8 @@ export default async function FeedbackPage() {
       {/* Section 3 — Team (only when current user manages someone in the cycle as above) */}
       {teamMemberIds.length > 0 && (
           <div className="mb-8">
-            <h3 className="text-sm font-semibold text-[#0f2044]">Your team&apos;s reviews</h3>
-            <p className="mb-3 mt-1 text-xs text-[#94a3b8]">
+            <h3 className="text-sm font-semibold text-ds-text-primary">Your team&apos;s reviews</h3>
+            <p className="mb-3 mt-1 text-xs text-ds-text-secondary">
               People you manage — their 360 progress
             </p>
             {[...teamByCycle.entries()].map(([cycleId, teamRows]) => {
@@ -762,16 +753,16 @@ export default async function FeedbackPage() {
               return (
                 <div key={cycleId} className="mb-6 last:mb-0">
                   {activeCycles.length > 1 && cycle && (
-                    <p className="mb-2 text-xs text-[#94a3b8]">{cycle.cycle_name}</p>
+                    <p className="mb-2 text-xs text-ds-text-secondary">{cycle.cycle_name}</p>
                   )}
-                  <div className="overflow-hidden rounded-2xl border border-[#dde5f5] bg-white shadow-sm">
+                  <div className="overflow-hidden rounded-ds-panel border border-ds-border bg-white">
                     <table className="w-full border-collapse">
                       <thead>
-                        <tr className="bg-[#f8faff]">
+                        <tr className="bg-ds-surface">
                           {["Employee", "Score so far", "Reviewer progress", "Reviewers", "Status", "Risk"].map((h) => (
                             <th
                               key={h}
-                              className="border-b border-[#f0f4ff] px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wide text-[#94a3b8]"
+                              className="border-b border-ds-surface px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wide text-ds-text-secondary"
                             >
                               {h}
                             </th>
@@ -787,41 +778,41 @@ export default async function FeedbackPage() {
                           return (
                             <tr
                               key={tr.employeeId}
-                              className="border-b border-[#f0f4ff] transition-colors hover:bg-[#fafbff]"
+                              className="border-b border-ds-surface transition-colors hover:bg-ds-surface"
                             >
                               <td className="px-4 py-3">
                                 <div className="flex items-center gap-2.5">
                                   <div
-                                    className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-semibold text-white"
-                                    style={{ background: AVATAR_COLORS[idx % AVATAR_COLORS.length] }}
+                                    className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-semibold"
+                                    style={avatarAccent(tr.name).style}
                                   >
                                     {getInitials(tr.name)}
                                   </div>
-                                  <p className="text-[12px] font-semibold text-[#0f2044]">{tr.name}</p>
+                                  <p className="text-[12px] font-semibold text-ds-text-primary">{tr.name}</p>
                                 </div>
                               </td>
-                              <td className="px-4 py-3 text-xs font-medium text-[#0f2044]">{scoreLabel}</td>
+                              <td className="px-4 py-3 text-xs font-medium text-ds-text-primary">{scoreLabel}</td>
                               <td className="px-4 py-3">
                                 <div className="flex max-w-[140px] items-center gap-2">
-                                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#e8edf8]">
+                                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-ds-border">
                                     <div
-                                      className="h-full rounded-full bg-[#1D9E75]"
+                                      className="h-full rounded-full bg-ds-accent"
                                       style={{ width: `${pct}%` }}
                                     />
                                   </div>
                                 </div>
                               </td>
-                              <td className="px-4 py-3 text-xs text-[#64748b]">
+                              <td className="px-4 py-3 text-xs text-ds-text-secondary">
                                 {tr.submitted}/{tr.total}
                               </td>
                               <td className="px-4 py-3">
                                 <span
                                   className={cn(
-                                    "rounded-full border px-2 py-0.5 text-[10px] font-semibold",
+                                    "rounded-ds-badge border px-2 py-0.5 text-[10px] font-semibold",
                                     tr.status === "Completed" &&
-                                      "border-emerald-200 bg-emerald-50 text-emerald-800",
-                                    tr.status === "In_progress" && "border-blue-200 bg-blue-50 text-blue-800",
-                                    tr.status === "Pending" && "border-amber-200 bg-amber-50 text-amber-800"
+                                      "border-ds-success-border bg-ds-success-subtle text-ds-success",
+                                    tr.status === "In_progress" && "border-ds-info-border bg-ds-info-subtle text-ds-info",
+                                    tr.status === "Pending" && "border-ds-warning-border bg-ds-warning-subtle text-ds-warning"
                                   )}
                                 >
                                   {tr.status === "In_progress"
@@ -833,11 +824,11 @@ export default async function FeedbackPage() {
                               </td>
                               <td className="px-4 py-3">
                                 {tr.riskKind === "low_response" ? (
-                                  <span className="text-xs text-[#f59e0b]">⚠ Low response</span>
+                                  <span className="text-xs text-ds-warning">⚠ Low response</span>
                                 ) : tr.riskKind === "done" ? (
-                                  <span className="text-xs font-medium text-[#16a34a]">Done</span>
+                                  <span className="text-xs font-medium text-ds-success">Done</span>
                                 ) : (
-                                  <span className="text-xs text-[#64748b]">On track</span>
+                                  <span className="text-xs text-ds-text-secondary">On track</span>
                                 )}
                               </td>
                             </tr>
@@ -854,16 +845,16 @@ export default async function FeedbackPage() {
 
       {/* Completed cycles */}
       <div className="mb-8">
-        <h3 className="mb-3 text-sm font-semibold text-[#0f2044]">Completed cycles</h3>
-        <p className="mb-3 text-xs text-[#94a3b8]">Your closed feedback reports</p>
-        <div className="overflow-hidden rounded-2xl border border-[#dde5f5] bg-white shadow-sm">
+        <h3 className="mb-3 text-sm font-semibold text-ds-text-primary">Completed cycles</h3>
+        <p className="mb-3 text-xs text-ds-text-secondary">Your closed feedback reports</p>
+        <div className="overflow-hidden rounded-ds-panel border border-ds-border bg-white">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="bg-[#f8faff]">
+              <tr className="bg-ds-surface">
                 {["Cycle", "Period", "Type", "Closed", "Status", ""].map((h) => (
                   <th
                     key={h}
-                    className="border-b border-[#f0f4ff] px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wide text-[#94a3b8]"
+                    className="border-b border-ds-surface px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wide text-ds-text-secondary"
                   >
                     {h}
                   </th>
@@ -873,7 +864,7 @@ export default async function FeedbackPage() {
             <tbody>
               {closedCycles.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center text-sm text-[#94a3b8]">
+                  <td colSpan={6} className="px-4 py-10 text-center text-sm text-ds-text-secondary">
                     No completed cycles yet — reports will appear here once cycles close
                   </td>
                 </tr>
@@ -881,10 +872,10 @@ export default async function FeedbackPage() {
                 closedCycles.map((cycle) => (
                   <tr
                     key={cycle.id}
-                    className="border-b border-[#f0f4ff] transition-colors hover:bg-[#fafbff]"
+                    className="border-b border-ds-surface transition-colors hover:bg-ds-surface"
                   >
                     <td className="px-4 py-3">
-                      <p className="text-[12px] font-semibold text-[#0f2044]">{cycle.name}</p>
+                      <p className="text-[12px] font-semibold text-ds-text-primary">{cycle.name}</p>
                     </td>
                     <td className="px-4 py-3">
                       <CycleBadge label={cycle.cycleLabel} />
@@ -893,7 +884,7 @@ export default async function FeedbackPage() {
                       <TypeBadgeClosed type={cycle.type} />
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-[12px] text-[#64748b]">{formatDate(cycle.closedDate)}</span>
+                      <span className="text-[12px] text-ds-text-secondary">{formatDate(cycle.closedDate)}</span>
                     </td>
                     <td className="px-4 py-3">
                       <CompletedStatusBadge />
@@ -901,7 +892,7 @@ export default async function FeedbackPage() {
                     <td className="px-4 py-3 text-right">
                       <Link
                         href={`/feedback/cycles/${cycle.id}/report`}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-[#dde5f5] px-3 py-1.5 text-[11px] font-semibold text-[#64748b] transition-colors hover:border-[#0f2044] hover:text-[#0f2044]"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-ds-border px-3 py-1.5 text-[11px] font-semibold text-ds-text-secondary transition-colors hover:border-ds-text-primary hover:text-ds-text-primary"
                       >
                         View report
                         <ChevronRight />
@@ -916,7 +907,7 @@ export default async function FeedbackPage() {
       </div>
 
       {draftCycles.length > 0 && (
-        <p className="text-sm text-[#94a3b8]">
+        <p className="text-sm text-ds-text-secondary">
           {draftCycles.length} draft cycle(s) will appear here once activated by HR.
         </p>
       )}

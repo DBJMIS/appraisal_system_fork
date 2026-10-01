@@ -1,18 +1,25 @@
 import { NextResponse } from "next/server";
-
-const ACHIEVEIT_API_KEY = "65409926-0809-41aa-ab3b-cbb625a9ba78";
+import { requireHrOrAdmin } from "@/lib/route-guards";
 
 /**
  * Proxies GET to AchieveIt exports/plans (no planId) to list plans the API key can access.
  * AchieveIt may or may not support this; response is passed through as-is.
  */
 export async function GET() {
+  const guard = await requireHrOrAdmin();
+  if (!guard.ok) return guard.response;
+
+  const apiKey = process.env.ACHIEVEIT_API_KEY;
+  if (!apiKey) {
+    return NextResponse.json({ error: "AchieveIt is not configured" }, { status: 503 });
+  }
+
   const url = "https://api.achieveit.com/exports/plans";
   try {
     const res = await fetch(url, {
       method: "GET",
       headers: {
-        Authorization: `API-KEY ${ACHIEVEIT_API_KEY}`,
+        Authorization: `API-KEY ${apiKey}`,
         "Content-Type": "application/json",
       },
     });
@@ -27,7 +34,7 @@ export async function GET() {
       });
     }
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Request failed";
-    return NextResponse.json({ error: message }, { status: 502 });
+    console.error("[api/achieveit/plans]", err);
+    return NextResponse.json({ error: "Request failed" }, { status: 502 });
   }
 }

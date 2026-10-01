@@ -15,11 +15,11 @@ async function loadUnreadCount(): Promise<number> {
   }
 }
 
-function typeIcon(type: string): { bg: string; color: string; label: string } {
-  if (type.startsWith("appraisal.")) return { bg: "#e1f5ee", color: "#1D9E75", label: "A" };
-  if (type.startsWith("feedback.")) return { bg: "#e6f1fb", color: "#185FA5", label: "360" };
-  if (type.startsWith("checkin.")) return { bg: "#faeeda", color: "#854F0B", label: "CI" };
-  return { bg: "#f1f5fd", color: "#64748b", label: "!" };
+function typeIcon(type: string): { label: string } {
+  if (type.startsWith("appraisal.")) return { label: "A" };
+  if (type.startsWith("feedback.")) return { label: "360" };
+  if (type.startsWith("checkin.")) return { label: "CI" };
+  return { label: "!" };
 }
 
 const BellIcon = () => (
@@ -83,30 +83,27 @@ export function NotificationBell({ className }: { className?: string }) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className={cn(
-          "relative flex h-[34px] w-[34px] items-center justify-center rounded-lg border text-text-secondary transition-colors hover:bg-surface hover:text-text-primary"
-        )}
-        style={{ borderColor: "var(--border-color)" }}
+        className="relative flex h-8 w-8 items-center justify-center rounded-ds-button text-ds-text-secondary transition-colors duration-100 hover:bg-ds-surface-hover hover:text-ds-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-focus"
         aria-label="Notifications"
         title="Notifications"
       >
         <BellIcon />
         {count > 0 && (
-          <span className="absolute right-0.5 top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#ef4444] px-1 text-[10px] font-bold text-white">
+          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-ds-button bg-ds-error px-1 text-[10px] font-semibold text-white">
             {count > 99 ? "99+" : count}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-[70] mt-2 w-80 overflow-hidden rounded-2xl border border-[#e8edf8] bg-white shadow-lg">
-          <div className="flex items-center justify-between border-b border-[#f0f4ff] px-4 py-3">
-            <span className="text-sm font-semibold text-[#0f2044]">
+        <div className="absolute right-0 top-full z-[70] mt-2 w-80 overflow-hidden rounded-ds-popover border border-ds-border bg-ds-background shadow-ds-popover">
+          <div className="flex items-center justify-between border-b border-ds-border px-4 py-2.5">
+            <span className="text-[13px] font-semibold text-ds-text-primary">
               Notifications{" "}
-              {count > 0 && <span className="text-[#1D9E75]">({count})</span>}
+              {count > 0 && <span className="font-normal text-ds-text-secondary">({count})</span>}
             </span>
             {count > 0 && (
-              <button type="button" onClick={markAllRead} className="text-xs text-[#1D9E75] hover:underline">
+              <button type="button" onClick={markAllRead} className="text-xs font-medium text-ds-text-primary underline-offset-2 hover:underline">
                 Mark all read
               </button>
             )}
@@ -114,40 +111,40 @@ export function NotificationBell({ className }: { className?: string }) {
 
           <div className="max-h-96 overflow-y-auto">
             {loading ? (
-              <div className="space-y-3 p-4">
+              <div className="space-y-3 p-4" aria-busy="true">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="animate-pulse">
-                    <div className="mb-1.5 h-3 w-[75%] rounded bg-[#f0f4ff]" />
-                    <div className="h-2.5 w-full rounded bg-[#f0f4ff]" />
+                  <div key={i} className="animate-pulse motion-reduce:animate-none">
+                    <div className="mb-1.5 h-3 w-[75%] rounded bg-ds-surface" />
+                    <div className="h-2.5 w-full rounded bg-ds-surface" />
                   </div>
                 ))}
               </div>
             ) : notifications.length === 0 ? (
               <div className="py-10 text-center">
-                <p className="text-sm text-[#94a3b8]">No notifications yet</p>
+                <p className="text-[13px] text-ds-text-secondary">No notifications yet</p>
               </div>
             ) : (
               notifications.map((n) => {
-                const icon = typeIcon(n.type as NotificationType | string);
+                const typeLabel = typeIcon(n.type as NotificationType | string).label;
                 return (
                   <div
                     key={n.id}
                     className={cn(
-                      "flex gap-3 border-b border-[#f8faff] px-4 py-3 transition-colors hover:bg-[#f8faff]",
-                      !n.read_at && "bg-[#f0fdf9]"
+                      "flex gap-3 border-b border-ds-border px-4 py-3 transition-colors duration-100 last:border-b-0 hover:bg-ds-surface-hover",
+                      !n.read_at && "bg-ds-surface"
                     )}
                   >
-                    <div
-                      className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-[10px] font-bold"
-                      style={{ backgroundColor: icon.bg, color: icon.color }}
-                    >
-                      {icon.label}
+                    <div className="mt-0.5 flex h-6 min-w-6 flex-shrink-0 items-center justify-center rounded-ds-badge border border-ds-border-strong px-1 text-[10px] font-semibold text-ds-text-secondary">
+                      {typeLabel}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium leading-snug text-[#0f2044]">{n.title}</p>
-                      <p className="mt-0.5 line-clamp-2 text-xs text-[#64748b]">{n.body}</p>
+                      <p className={cn("text-xs leading-snug text-ds-text-primary", n.read_at ? "font-medium" : "font-semibold")}>
+                        {!n.read_at && <span className="sr-only">Unread: </span>}
+                        {n.title}
+                      </p>
+                      <p className="mt-0.5 line-clamp-2 text-xs text-ds-text-secondary">{n.body}</p>
                       <div className="mt-1.5 flex items-center justify-between">
-                        <span className="text-[10px] text-[#94a3b8]">
+                        <span className="text-[11px] text-ds-text-secondary">
                           {new Date(n.created_at).toLocaleString(undefined, {
                             month: "short",
                             day: "numeric",
@@ -155,7 +152,7 @@ export function NotificationBell({ className }: { className?: string }) {
                             minute: "2-digit",
                           })}
                         </span>
-                        <div className="flex gap-2">
+                        <div className="flex gap-3">
                           {n.link && (
                             <Link
                               href={n.link}
@@ -163,7 +160,7 @@ export function NotificationBell({ className }: { className?: string }) {
                                 void markRead(n.id);
                                 setOpen(false);
                               }}
-                              className="text-[10px] text-[#1D9E75] hover:underline"
+                              className="text-[11px] font-medium text-ds-text-primary underline-offset-2 hover:underline"
                             >
                               View
                             </Link>
@@ -172,7 +169,7 @@ export function NotificationBell({ className }: { className?: string }) {
                             <button
                               type="button"
                               onClick={() => void markRead(n.id)}
-                              className="text-[10px] text-[#94a3b8] hover:text-[#64748b]"
+                              className="text-[11px] text-ds-text-secondary hover:text-ds-text-primary"
                             >
                               Dismiss
                             </button>

@@ -11,19 +11,19 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const ROLE_COLORS: Record<string, string> = {
-  self: "#378ADD",
-  manager: "#1D9E75",
-  peer: "#BA7517",
-  direct_report: "#7F77DD",
+  self: "#3d5a78",
+  manager: "#0d0e10",
+  peer: "#8a5a00",
+  direct_report: "#3d5a78",
 };
 
 const GAP_CONFIG: Record<
   CompetencyGap["gap_label"],
   { color: string; bg: string; dot: string }
 > = {
-  Aligned: { color: "#0F6E56", bg: "#E1F5EE", dot: "#1D9E75" },
-  "Slight Gap": { color: "#854F0B", bg: "#FAEEDA", dot: "#BA7517" },
-  "Significant Gap": { color: "#791F1F", bg: "#FCEBEB", dot: "#E24B4A" },
+  Aligned: { color: "#2b2d31", bg: "#f3f3f3", dot: "#34d399" },
+  "Slight Gap": { color: "#8a5a00", bg: "#fffbeb", dot: "#fbbf24" },
+  "Significant Gap": { color: "#b42318", bg: "#fef2f2", dot: "#f87171" },
 };
 
 function externalOthersAverage(g: CompetencyGap): number | null {
@@ -110,7 +110,7 @@ function GapAnalysisCardShell({
       style={{
         background: "var(--color-background-primary)",
         border: "0.5px solid var(--color-border-tertiary)",
-        borderRadius: 14,
+        borderRadius: 8,
         overflow: "hidden",
       }}
     >
@@ -130,7 +130,7 @@ function GapAnalysisCardShell({
               fontSize: 14,
               fontWeight: 600,
               color: "var(--color-text-primary)",
-              fontFamily: "'Sora', sans-serif",
+              fontFamily: "var(--ds-font-sans)",
             }}
           >
             Feedback gap analysis
@@ -176,8 +176,8 @@ export function GapAnalysisCard({ gaps }: { gaps: CompetencyGap[] }) {
               marginLeft: 12,
               padding: "4px 10px",
               borderRadius: 20,
-              color: "#791F1F",
-              background: "#FCEBEB",
+              color: "#b42318",
+              background: "#fef2f2",
             }}
           >
             {significantCount} significant gap{significantCount > 1 ? "s" : ""}
@@ -206,8 +206,8 @@ export function GapAnalysisCard({ gaps }: { gaps: CompetencyGap[] }) {
                   gap: 10,
                   padding: "10px 12px",
                   borderRadius: 8,
-                  background: "#FCEBEB",
-                  border: "0.5px solid #F7C1C1",
+                  background: "#fef2f2",
+                  border: "0.5px solid #fbd5d5",
                 }}
               >
                 <div
@@ -215,16 +215,16 @@ export function GapAnalysisCard({ gaps }: { gaps: CompetencyGap[] }) {
                     width: 6,
                     height: 6,
                     borderRadius: "50%",
-                    background: "#E24B4A",
+                    background: "#b42318",
                     marginTop: 4,
                     flexShrink: 0,
                   }}
                 />
                 <div>
-                  <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: "#791F1F" }}>
+                  <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: "#b42318" }}>
                     Possible blind spot — {g.competency}
                   </p>
-                  <p style={{ margin: "2px 0 0", fontSize: 11, color: "#A32D2D" }}>
+                  <p style={{ margin: "2px 0 0", fontSize: 11, color: "#b42318" }}>
                     You rated yourself {g.self?.toFixed(1)} but others averaged{" "}
                     {extAvg != null ? extAvg.toFixed(1) : "—"} — consider seeking feedback in this area
                   </p>
@@ -241,8 +241,8 @@ export function GapAnalysisCard({ gaps }: { gaps: CompetencyGap[] }) {
                 gap: 10,
                 padding: "10px 12px",
                 borderRadius: 8,
-                background: "#E1F5EE",
-                border: "0.5px solid #9FE1CB",
+                background: "#f3f3f3",
+                border: "0.5px solid #bbf0d9",
               }}
             >
               <div
@@ -250,16 +250,16 @@ export function GapAnalysisCard({ gaps }: { gaps: CompetencyGap[] }) {
                   width: 6,
                   height: 6,
                   borderRadius: "50%",
-                  background: "#1D9E75",
+                  background: "#0d0e10",
                   marginTop: 4,
                   flexShrink: 0,
                 }}
               />
               <div>
-                <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: "#085041" }}>
+                <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: "#2e7d4f" }}>
                   Hidden strength — {g.competency}
                 </p>
-                <p style={{ margin: "2px 0 0", fontSize: 11, color: "#0F6E56" }}>
+                <p style={{ margin: "2px 0 0", fontSize: 11, color: "#2b2d31" }}>
                   Others rate you higher than you rate yourself — you may be underselling this strength
                 </p>
               </div>

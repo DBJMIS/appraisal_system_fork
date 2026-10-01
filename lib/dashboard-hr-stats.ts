@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { resolveDivisionNames } from "@/lib/dynamics-divisions";
+import { loadOfficialScoreTotals } from "@/lib/official-scores";
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -169,16 +170,8 @@ export async function fetchHrDashboardStats(): Promise<HrDashboardStats> {
     .eq("status", "Active");
 
   const appraisalIds = apps.map((a) => a.id);
-  let scores: number[] = [];
-  if (appraisalIds.length > 0) {
-    const { data: scoreRows } = await supabase
-      .from("appraisal_section_scores")
-      .select("appraisal_id, total_score")
-      .in("appraisal_id", appraisalIds);
-    scores = (scoreRows ?? [])
-      .map((r) => (r.total_score != null ? Number(r.total_score) : NaN))
-      .filter((n) => !Number.isNaN(n));
-  }
+  const scoreByAppraisal = await loadOfficialScoreTotals(supabase, appraisalIds);
+  const scores: number[] = [...scoreByAppraisal.values()];
 
   const meanScore = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
   const stdDeviation = stdDev(scores);
@@ -209,17 +202,6 @@ export async function fetchHrDashboardStats(): Promise<HrDashboardStats> {
     b.barColor = bucketColor(b.min);
     if (b.count > meanBuckets + 2 * stdBuckets && bucketCounts.some((c) => c > 0)) {
       b.anomaly = true;
-    }
-  }
-
-  const scoreByAppraisal = new Map<string, number>();
-  if (appraisalIds.length > 0) {
-    const { data: scr } = await supabase
-      .from("appraisal_section_scores")
-      .select("appraisal_id, total_score")
-      .in("appraisal_id", appraisalIds);
-    for (const r of scr ?? []) {
-      if (r.total_score != null) scoreByAppraisal.set(r.appraisal_id, Number(r.total_score));
     }
   }
 

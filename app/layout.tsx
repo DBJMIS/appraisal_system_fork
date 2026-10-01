@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import { Suspense } from "react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ConditionalShell } from "@/components/layout/conditional-shell";
 import { ClientSessionWrapper } from "@/components/providers/client-session-wrapper";
 import "@/app/globals.css";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 
 export const metadata: Metadata = {
   title: "Employee Performance Appraisal Portal",
@@ -19,7 +22,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={inter.variable}>
       <body>
         <ClientSessionWrapper>
           <TooltipProvider>

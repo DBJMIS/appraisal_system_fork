@@ -94,7 +94,7 @@ export function SummaryTab({
   }, [displayResult, onSummaryResult]);
 
   return loading ? (
-    <p className="text-slate-500 py-4">Loading summary…</p>
+    <p className="py-4 text-[13px] text-ds-text-secondary">Loading summary…</p>
   ) : (
     <SummaryTabContent
       employee={employee}

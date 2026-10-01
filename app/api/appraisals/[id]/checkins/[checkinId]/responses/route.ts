@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getCurrentUser } from "@/lib/auth";
 import { resolveManagerAccessForAppraisal } from "@/lib/appraisal-manager-access";
+import { isFormalReviewMode } from "@/lib/midyear-config";
+import { MIDYEAR_APPRAISAL_STATUS, MIDYEAR_LOCKED_MESSAGE } from "@/lib/midyear-lifecycle";
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -39,7 +41,7 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
 
     const { data: appraisal, error: appErr } = await supabase
       .from("appraisals")
-      .select("id, employee_id, manager_employee_id, division_id")
+      .select("id, employee_id, manager_employee_id, division_id, status")
       .eq("id", appraisalId)
       .single();
 
@@ -60,7 +62,7 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
 
     const { data: checkIn, error: ciErr } = await supabase
       .from("check_ins")
-      .select("id, status")
+      .select("*")
       .eq("id", checkinId)
       .eq("appraisal_id", appraisalId)
       .single();
@@ -71,6 +73,18 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
 
     if ((checkIn.status as string) !== "OPEN") {
       return NextResponse.json({ error: "Only draft (OPEN) check-ins can have responses updated via this endpoint" }, { status: 400 });
+    }
+
+    if (isFormalReviewMode((checkIn as { review_mode?: string | null }).review_mode)) {
+      if ((appraisal as { status?: string }).status !== MIDYEAR_APPRAISAL_STATUS) {
+        return NextResponse.json({ error: MIDYEAR_LOCKED_MESSAGE }, { status: 409 });
+      }
+      if (appraisal.employee_id !== user.employee_id) {
+        return NextResponse.json({ error: "Only the employee can enter the employee portion of the Mid-Year Review." }, { status: 403 });
+      }
+    } else if (appraisal.employee_id !== user.employee_id && !user.roles?.some((r) => r === "hr" || r === "admin")) {
+      // Same rule as EMPLOYEE_SAVE_DRAFT: these are the employee's fields.
+      return NextResponse.json({ error: "Only the employee or HR can update check-in responses." }, { status: 403 });
     }
 
     const now = new Date().toISOString();

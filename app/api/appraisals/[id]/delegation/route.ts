@@ -72,9 +72,6 @@ export async function POST(
 ) {
   try {
     const raw = await req.json().catch(() => ({}));
-    console.log("[delegation POST] raw body:", raw);
-    console.log("[delegation POST] delegated_to:", (raw as { delegated_to?: unknown }).delegated_to);
-    console.log("[delegation POST] delegated_to_name:", (raw as { delegated_to_name?: unknown }).delegated_to_name);
 
     const user = await getCurrentUser();
     if (!user?.id || !user.employee_id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

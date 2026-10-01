@@ -136,6 +136,32 @@ export async function getAgreementStatus(agreementId: string): Promise<Record<st
   return data;
 }
 
+export type AdobeAgreementLifecycle =
+  | "SIGNED"
+  | "OUT_FOR_SIGNATURE"
+  | "CANCELLED"
+  | "DECLINED"
+  | "EXPIRED"
+  | "OTHER";
+
+/** Same status mapping as the manual reconcile in check-adobe-status. */
+export function adobeAgreementLifecycle(adobe: Record<string, unknown>): AdobeAgreementLifecycle {
+  const nested = adobe.agreement as Record<string, unknown> | undefined;
+  const raw = adobe.status ?? adobe.agreementStatus ?? adobe.state ?? nested?.status ?? nested?.state;
+  const key = String(raw ?? "").trim().toUpperCase().replace(/-/g, "_");
+  if (key === "SIGNED" || key === "COMPLETED" || key === "APPROVED" || key.includes("SIGNED")) return "SIGNED";
+  if (key === "OUT_FOR_SIGNATURE" || key.includes("SIGNATURE")) return "OUT_FOR_SIGNATURE";
+  if (key.includes("CANCEL")) return "CANCELLED";
+  if (key === "DECLINED" || key === "REJECTED" || key.includes("DECLIN")) return "DECLINED";
+  if (key.includes("EXPIR")) return "EXPIRED";
+  return "OTHER";
+}
+
+/** Webhook payloads are unauthenticated, so state changes are confirmed against Adobe first. */
+export async function fetchAgreementLifecycle(agreementId: string): Promise<AdobeAgreementLifecycle> {
+  return adobeAgreementLifecycle(await getAgreementStatus(agreementId));
+}
+
 /** Send a reminder to the next signer(s). */
 export async function sendReminder(agreementId: string): Promise<void> {
   const res = await fetch(`${BASE}/agreements/${agreementId}/reminders`, {

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { avatarAccent } from "@/lib/avatar-accent";
 
 interface ParticipantForModal {
   participant_employee_id: string;
@@ -107,12 +108,12 @@ export function AssignReviewerModal({
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-[16px] border border-[#dde5f5] w-[520px] shadow-[0_8px_32px_rgba(15,31,61,0.16)] overflow-hidden"
+        className="bg-white rounded-ds-panel border border-ds-border w-[520px] shadow-ds-dialog overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-[#dde5f5] bg-[#f8faff]">
-          <div className="w-8 h-8 rounded-[10px] bg-[#eff6ff] border border-[#bfdbfe] flex items-center justify-center flex-shrink-0">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2">
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-ds-border bg-ds-surface">
+          <div className="w-8 h-8 rounded-ds-panel bg-ds-surface border border-ds-border-strong flex items-center justify-center flex-shrink-0">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0d0e10" strokeWidth="2">
               <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
               <circle cx="9" cy="7" r="4" />
               <line x1="19" y1="8" x2="19" y2="14" />
@@ -120,13 +121,13 @@ export function AssignReviewerModal({
             </svg>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-bold text-[#0f1f3d]">Assign reviewer</p>
-            <p className="text-[11px] text-[#8a97b8] truncate">{cycleLabel}</p>
+            <p className="text-[13px] font-semibold text-ds-text-primary">Assign reviewer</p>
+            <p className="text-[11px] text-ds-text-secondary truncate">{cycleLabel}</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="text-[#8a97b8] hover:text-[#0f1f3d] transition-colors text-[18px] leading-none"
+            className="text-ds-text-secondary hover:text-ds-text-primary transition-colors text-[18px] leading-none"
           >
             &#215;
           </button>
@@ -134,25 +135,25 @@ export function AssignReviewerModal({
 
         <div className="px-5 py-5 space-y-4">
           <div>
-            <label className="text-[10px] font-bold uppercase tracking-[.07em] text-[#8a97b8] block mb-1.5">
+            <label className="text-[10px] font-semibold uppercase tracking-[.07em] text-ds-text-secondary block mb-1.5">
               Participant
             </label>
-            <div className="flex items-center gap-3 px-3 py-2.5 rounded-[8px] bg-[#f8faff] border border-[#dde5f5]">
-              <div className="w-7 h-7 rounded-full bg-[#4f46e5] flex items-center justify-center text-[10px] font-semibold text-white flex-shrink-0">
+            <div className="flex items-center gap-3 px-3 py-2.5 rounded-[8px] bg-ds-surface border border-ds-border">
+              <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold flex-shrink-0" style={avatarAccent(participant.participant_name || participant.participant_employee_id).style}>
                 {getInitials(participant.participant_name, participant.participant_employee_id)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[12px] font-semibold text-[#0f1f3d] truncate">{participant.participant_name}</p>
-                <p className="text-[10px] text-[#8a97b8] truncate">{participant.participant_department_name ?? "—"}</p>
+                <p className="text-[12px] font-semibold text-ds-text-primary truncate">{participant.participant_name}</p>
+                <p className="text-[10px] text-ds-text-secondary truncate">{participant.participant_department_name ?? "—"}</p>
               </div>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8a97b8" strokeWidth="2" className="flex-shrink-0">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#646f79" strokeWidth="2" className="flex-shrink-0">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               </svg>
             </div>
           </div>
 
           <div>
-            <label className="text-[10px] font-bold uppercase tracking-[.07em] text-[#8a97b8] block mb-1.5">
+            <label className="text-[10px] font-semibold uppercase tracking-[.07em] text-ds-text-secondary block mb-1.5">
               Review type
             </label>
             <div className="flex gap-2 flex-wrap">
@@ -162,10 +163,10 @@ export function AssignReviewerModal({
                   type="button"
                   onClick={() => setReviewType(t.value)}
                   className={cn(
-                    "px-4 py-1.5 rounded-full border text-[11px] font-semibold transition-all",
+                    "px-4 py-1.5 rounded-ds-button border text-[11px] font-semibold transition-all",
                     reviewType === t.value
-                      ? "bg-[#0f1f3d] text-white border-[#0f1f3d]"
-                      : "bg-white text-[#4a5a82] border-[#dde5f5] hover:border-[#0f1f3d]"
+                      ? "bg-ds-text-primary text-white border-ds-text-primary"
+                      : "bg-white text-ds-text-secondary border-ds-border hover:border-ds-text-primary"
                   )}
                 >
                   {t.label}
@@ -175,14 +176,14 @@ export function AssignReviewerModal({
           </div>
 
           <div>
-            <label className="text-[10px] font-bold uppercase tracking-[.07em] text-[#8a97b8] block mb-1.5">
+            <label className="text-[10px] font-semibold uppercase tracking-[.07em] text-ds-text-secondary block mb-1.5">
               Reviewer
             </label>
             <select
               value={reviewerEmployeeId}
               onChange={(e) => setReviewerEmployeeId(e.target.value)}
               disabled={loading}
-              className="w-full border border-[#dde5f5] rounded-[8px] px-3 py-2.5 text-[12px] text-[#0f1f3d] outline-none bg-white focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/10 disabled:opacity-70"
+              className="w-full border border-ds-border rounded-[8px] px-3 py-2.5 text-[12px] text-ds-text-primary outline-none bg-white focus:border-ds-accent focus:ring-2 focus:ring-[#0d0e10]/10 disabled:opacity-70"
             >
               <option value="">
                 {loading ? "Loading…" : "Select reviewer…"}
@@ -197,11 +198,11 @@ export function AssignReviewerModal({
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-[#dde5f5]">
+        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-ds-border">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-[8px] border border-[#dde5f5] text-[12px] font-semibold text-[#4a5a82] hover:border-[#0f1f3d] hover:text-[#0f1f3d] transition-colors"
+            className="px-4 py-2 rounded-[8px] border border-ds-border text-[12px] font-semibold text-ds-text-secondary hover:border-ds-text-primary hover:text-ds-text-primary transition-colors"
           >
             Cancel
           </button>
@@ -212,8 +213,8 @@ export function AssignReviewerModal({
             className={cn(
               "px-4 py-2 rounded-[8px] text-[12px] font-semibold transition-colors",
               !reviewerEmployeeId.trim() || saving
-                ? "bg-[#eef2fb] text-[#8a97b8] cursor-not-allowed"
-                : "bg-[#0d9488] text-white hover:bg-[#0f766e]"
+                ? "bg-ds-surface text-ds-text-secondary cursor-not-allowed"
+                : "bg-ds-accent text-white hover:bg-ds-accent-hover"
             )}
           >
             {saving ? "Adding…" : "Add reviewer"}

@@ -114,42 +114,42 @@ const thStyle: React.CSSProperties = {
   padding: "10px 16px",
   textAlign: "left",
   fontSize: "10.5px",
-  fontWeight: 700,
+  fontWeight: 600,
   letterSpacing: "0.07em",
   textTransform: "uppercase",
-  color: "#8a97b8",
-  background: "#f8faff",
-  borderBottom: "1px solid #dde5f5",
+  color: "#646f79",
+  background: "#f3f3f3",
+  borderBottom: "1px solid #e7e7e7",
 };
 
 const tdStyle: React.CSSProperties = {
   padding: "12px 16px",
   fontSize: "13.5px",
-  borderBottom: "1px solid #dde5f5",
+  borderBottom: "1px solid #e7e7e7",
 };
 
 const textareaStyle: React.CSSProperties = {
   width: "100%",
   padding: "10px 12px",
-  borderRadius: "8px",
-  border: "1px solid #dde5f5",
+  borderRadius: "6px",
+  border: "1px solid #8b949e",
   fontSize: "13px",
-  color: "#0f1f3d",
+  color: "#0d0d0d",
   background: "white",
   resize: "vertical",
   minHeight: "100px",
   outline: "none",
-  fontFamily: "DM Sans, sans-serif",
+  fontFamily: "var(--ds-font-sans)",
   transition: "border-color 0.15s, box-shadow 0.15s",
   lineHeight: 1.5,
 };
 
 const inputStyle: React.CSSProperties = {
   padding: "8px 12px",
-  borderRadius: "8px",
-  border: "1px solid #dde5f5",
+  borderRadius: "6px",
+  border: "1px solid #8b949e",
   fontSize: "13px",
-  color: "#0f1f3d",
+  color: "#0d0d0d",
   background: "white",
   outline: "none",
   transition: "border-color 0.15s, box-shadow 0.15s",
@@ -317,18 +317,18 @@ export function SummarySection({
   };
 
   if (loading) {
-    return <p style={{ color: "#8a97b8", padding: "16px 0" }}>Loading summary…</p>;
+    return <p style={{ color: "#646f79", padding: "16px 0" }}>Loading summary…</p>;
   }
 
   const CardWrapper = ({ children, title, subtitle, icon, iconBg, iconColor }: { children: React.ReactNode; title: string; subtitle: string; icon: React.ReactNode; iconBg: string; iconColor: string }) => (
-    <div style={{ background: "white", borderRadius: "14px", border: "1px solid #dde5f5", boxShadow: "0 2px 12px rgba(15,31,61,0.07), 0 0 1px rgba(15,31,61,0.1)", overflow: "hidden", marginBottom: "20px" }}>
-      <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #dde5f5", display: "flex", alignItems: "center", gap: "10px" }}>
+    <div style={{ background: "white", borderRadius: "8px", border: "1px solid #e7e7e7", boxShadow: "none", overflow: "hidden", marginBottom: "20px" }}>
+      <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #e7e7e7", display: "flex", alignItems: "center", gap: "10px" }}>
         <div style={{ width: "32px", height: "32px", borderRadius: "9px", background: iconBg, display: "flex", alignItems: "center", justifyContent: "center", color: iconColor }}>
           {icon}
         </div>
         <div>
-          <div style={{ fontFamily: "Sora, sans-serif", fontSize: "15px", fontWeight: 600, color: "#0f1f3d", letterSpacing: "-0.01em" }}>{title}</div>
-          <div style={{ fontSize: "12px", color: "#8a97b8", marginTop: "1px" }}>{subtitle}</div>
+          <div style={{ fontFamily: "var(--ds-font-sans)", fontSize: "15px", fontWeight: 600, color: "#0d0d0d", letterSpacing: "-0.01em" }}>{title}</div>
+          <div style={{ fontSize: "12px", color: "#646f79", marginTop: "1px" }}>{subtitle}</div>
         </div>
       </div>
       <div style={{ padding: "20px 24px" }}>{children}</div>
@@ -350,10 +350,10 @@ export function SummarySection({
               padding: "9px 18px",
               borderRadius: "8px",
               background: "white",
-              border: "1px solid #dde5f5",
+              border: "1px solid #e7e7e7",
               fontSize: "13px",
               fontWeight: 500,
-              color: calculating ? "#94a3b8" : "#4a5a82",
+              color: calculating ? "#646f79" : "#646f79",
               cursor: calculating ? "not-allowed" : "pointer",
               transition: "all 0.15s",
             }}
@@ -369,13 +369,13 @@ export function SummarySection({
               gap: "7px",
               padding: "9px 20px",
               borderRadius: "8px",
-              background: !saving ? "linear-gradient(135deg, #3b82f6, #1d4ed8)" : "#e2e8f0",
+              background: !saving ? "#0d0e10" : "#e7e7e7",
               border: "none",
               fontSize: "13px",
               fontWeight: 600,
-              color: !saving ? "white" : "#94a3b8",
+              color: !saving ? "white" : "#646f79",
               cursor: !saving ? "pointer" : "not-allowed",
-              boxShadow: !saving ? "0 2px 8px rgba(59,130,246,0.35)" : "none",
+              boxShadow: !saving ? "none" : "none",
               transition: "all 0.16s",
             }}
           >
@@ -386,26 +386,26 @@ export function SummarySection({
 
       {/* Alerts */}
       {error && (
-        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", padding: "14px 16px", borderRadius: "10px", background: "#fef2f2", border: "1px solid #fecaca", marginBottom: "20px" }}>
-          <span style={{ color: "#dc2626", marginTop: "2px" }}><AlertIcon /></span>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", padding: "14px 16px", borderRadius: "8px", background: "#fef2f2", border: "1px solid #fbd5d5", marginBottom: "20px" }}>
+          <span style={{ color: "#b42318", marginTop: "2px" }}><AlertIcon /></span>
           <div>
-            <div style={{ fontWeight: 600, fontSize: "13px", color: "#991b1b" }}>Error</div>
-            <div style={{ fontSize: "13px", color: "#b91c1c" }}>{error}</div>
+            <div style={{ fontWeight: 600, fontSize: "13px", color: "#b42318" }}>Error</div>
+            <div style={{ fontSize: "13px", color: "#b42318" }}>{error}</div>
           </div>
         </div>
       )}
 
       {saveSuccess && (
-        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", padding: "14px 16px", borderRadius: "10px", background: "#f0fdf4", border: "1px solid #bbf7d0", marginBottom: "20px" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", padding: "14px 16px", borderRadius: "8px", background: "#ecfdf5", border: "1px solid #bbf0d9", marginBottom: "20px" }}>
           <div>
-            <div style={{ fontWeight: 600, fontSize: "13px", color: "#166534" }}>Success</div>
-            <div style={{ fontSize: "13px", color: "#15803d" }}>Summary saved successfully.</div>
+            <div style={{ fontWeight: 600, fontSize: "13px", color: "#2e7d4f" }}>Success</div>
+            <div style={{ fontSize: "13px", color: "#2e7d4f" }}>Summary saved successfully.</div>
           </div>
         </div>
       )}
 
       {/* Overall Performance Score */}
-      <CardWrapper title="Overall Performance Score" subtitle="Aggregate scores from all assessment sections" icon={<ChartIcon />} iconBg="#eff6ff" iconColor="#3b82f6">
+      <CardWrapper title="Overall Performance Score" subtitle="Aggregate scores from all assessment sections" icon={<ChartIcon />} iconBg="#f3f3f3" iconColor="#0d0e10">
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
@@ -418,9 +418,9 @@ export function SummarySection({
               <td style={tdStyle}>Core Competencies</td>
               <td style={{ ...tdStyle, textAlign: "right" }}>
                 {scores?.competency_score != null ? (
-                  <span style={{ fontFamily: "Sora, sans-serif", fontWeight: 600, color: "#0f1f3d" }}>{scores.competency_score.toFixed(1)}</span>
+                  <span style={{ fontFamily: "var(--ds-font-sans)", fontWeight: 600, color: "#0d0d0d" }}>{scores.competency_score.toFixed(1)}</span>
                 ) : (
-                  <span style={{ color: "#8a97b8" }}>—</span>
+                  <span style={{ color: "#646f79" }}>—</span>
                 )}
               </td>
             </tr>
@@ -428,9 +428,9 @@ export function SummarySection({
               <td style={tdStyle}>Technical Competencies</td>
               <td style={{ ...tdStyle, textAlign: "right" }}>
                 {scores?.technical_score != null ? (
-                  <span style={{ fontFamily: "Sora, sans-serif", fontWeight: 600, color: "#0f1f3d" }}>{scores.technical_score.toFixed(1)}</span>
+                  <span style={{ fontFamily: "var(--ds-font-sans)", fontWeight: 600, color: "#0d0d0d" }}>{scores.technical_score.toFixed(1)}</span>
                 ) : (
-                  <span style={{ color: "#8a97b8" }}>—</span>
+                  <span style={{ color: "#646f79" }}>—</span>
                 )}
               </td>
             </tr>
@@ -438,9 +438,9 @@ export function SummarySection({
               <td style={tdStyle}>Productivity</td>
               <td style={{ ...tdStyle, textAlign: "right" }}>
                 {scores?.productivity_score != null ? (
-                  <span style={{ fontFamily: "Sora, sans-serif", fontWeight: 600, color: "#0f1f3d" }}>{scores.productivity_score.toFixed(1)}</span>
+                  <span style={{ fontFamily: "var(--ds-font-sans)", fontWeight: 600, color: "#0d0d0d" }}>{scores.productivity_score.toFixed(1)}</span>
                 ) : (
-                  <span style={{ color: "#8a97b8" }}>—</span>
+                  <span style={{ color: "#646f79" }}>—</span>
                 )}
               </td>
             </tr>
@@ -449,9 +449,9 @@ export function SummarySection({
                 <td style={tdStyle}>Leadership</td>
                 <td style={{ ...tdStyle, textAlign: "right" }}>
                   {scores?.leadership_score != null ? (
-                    <span style={{ fontFamily: "Sora, sans-serif", fontWeight: 600, color: "#0f1f3d" }}>{scores.leadership_score.toFixed(1)}</span>
+                    <span style={{ fontFamily: "var(--ds-font-sans)", fontWeight: 600, color: "#0d0d0d" }}>{scores.leadership_score.toFixed(1)}</span>
                   ) : (
-                    <span style={{ color: "#8a97b8" }}>—</span>
+                    <span style={{ color: "#646f79" }}>—</span>
                   )}
                 </td>
               </tr>
@@ -460,42 +460,42 @@ export function SummarySection({
               <td style={tdStyle}>Workplan</td>
               <td style={{ ...tdStyle, textAlign: "right" }}>
                 {scores?.workplan_score != null ? (
-                  <span style={{ fontFamily: "Sora, sans-serif", fontWeight: 600, color: "#0f1f3d" }}>{scores.workplan_score.toFixed(1)}</span>
+                  <span style={{ fontFamily: "var(--ds-font-sans)", fontWeight: 600, color: "#0d0d0d" }}>{scores.workplan_score.toFixed(1)}</span>
                 ) : (
-                  <span style={{ color: "#8a97b8" }}>—</span>
+                  <span style={{ color: "#646f79" }}>—</span>
                 )}
               </td>
             </tr>
-            <tr style={{ background: "#f8faff", borderTop: "2px solid #dde5f5" }}>
-              <td style={{ ...tdStyle, fontWeight: 700, color: "#0f1f3d", border: "none" }}>Total Score</td>
+            <tr style={{ background: "#f3f3f3", borderTop: "2px solid #e7e7e7" }}>
+              <td style={{ ...tdStyle, fontWeight: 600, color: "#0d0d0d", border: "none" }}>Total Score</td>
               <td style={{ ...tdStyle, textAlign: "right", border: "none" }}>
                 {scores?.total_score != null ? (
-                  <span style={{ fontFamily: "Sora, sans-serif", fontSize: "16px", fontWeight: 700, color: "#166534" }}>{scores.total_score.toFixed(1)}</span>
+                  <span style={{ fontFamily: "var(--ds-font-sans)", fontSize: "16px", fontWeight: 600, color: "#2e7d4f" }}>{scores.total_score.toFixed(1)}</span>
                 ) : (
-                  <span style={{ color: "#8a97b8" }}>—</span>
+                  <span style={{ color: "#646f79" }}>—</span>
                 )}
               </td>
             </tr>
-            <tr style={{ background: "#f8faff" }}>
-              <td style={{ ...tdStyle, fontWeight: 700, color: "#0f1f3d", border: "none" }}>Final Rating</td>
+            <tr style={{ background: "#f3f3f3" }}>
+              <td style={{ ...tdStyle, fontWeight: 600, color: "#0d0d0d", border: "none" }}>Final Rating</td>
               <td style={{ ...tdStyle, textAlign: "right", border: "none" }}>
                 {scores?.final_rating ? (
                   <span style={{
                     display: "inline-flex",
                     alignItems: "center",
                     padding: "4px 12px",
-                    borderRadius: "20px",
-                    background: "#f0fdf4",
-                    border: "1px solid #bbf7d0",
-                    color: "#166534",
-                    fontFamily: "Sora, sans-serif",
+                    borderRadius: "4px",
+                    background: "#ecfdf5",
+                    border: "1px solid #bbf0d9",
+                    color: "#2e7d4f",
+                    fontFamily: "var(--ds-font-sans)",
                     fontSize: "13px",
-                    fontWeight: 700,
+                    fontWeight: 600,
                   }}>
                     {scores.final_rating}
                   </span>
                 ) : (
-                  <span style={{ color: "#8a97b8" }}>—</span>
+                  <span style={{ color: "#646f79" }}>—</span>
                 )}
               </td>
             </tr>
@@ -504,7 +504,7 @@ export function SummarySection({
       </CardWrapper>
 
       {/* Key Accomplishments */}
-      <CardWrapper title="Key Accomplishments" subtitle="Notable achievements during the appraisal period" icon={<TrophyIcon />} iconBg="#fef9c3" iconColor="#d97706">
+      <CardWrapper title="Key Accomplishments" subtitle="Notable achievements during the appraisal period" icon={<TrophyIcon />} iconBg="#fffbeb" iconColor="#8a5a00">
         {canEdit ? (
           <textarea
             style={textareaStyle}
@@ -516,18 +516,18 @@ export function SummarySection({
               }))
             }
             placeholder="List key accomplishments..."
-            onFocus={(e) => { e.target.style.borderColor = "#3b82f6"; e.target.style.boxShadow = "0 0 0 3px rgba(59,130,246,0.1)"; }}
-            onBlur={(e) => { e.target.style.borderColor = "#dde5f5"; e.target.style.boxShadow = "none"; }}
+            onFocus={(e) => { e.target.style.borderColor = "#0d0e10"; e.target.style.boxShadow = "0 0 0 1px var(--ds-focus)"; }}
+            onBlur={(e) => { e.target.style.borderColor = "#8b949e"; e.target.style.boxShadow = "none"; }}
           />
         ) : (
-          <p style={{ fontSize: "13px", color: "#0f1f3d", whiteSpace: "pre-wrap", lineHeight: 1.6 }}>
+          <p style={{ fontSize: "13px", color: "#0d0d0d", whiteSpace: "pre-wrap", lineHeight: 1.6 }}>
             {summaryData.key_accomplishments || "No accomplishments recorded."}
           </p>
         )}
       </CardWrapper>
 
       {/* Transfer Request */}
-      <CardWrapper title="Transfer Request" subtitle="Inter-departmental or intra-divisional transfer request" icon={<ArrowRightIcon />} iconBg="#f3e8ff" iconColor="#7c3aed">
+      <CardWrapper title="Transfer Request" subtitle="Inter-departmental or intra-divisional transfer request" icon={<ArrowRightIcon />} iconBg="#f1f4f7" iconColor="#3d5a78">
         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: summaryData.transfer_requested ? "16px" : 0 }}>
           <Checkbox
             id="transfer-requested"
@@ -541,11 +541,11 @@ export function SummarySection({
             }
             disabled={!canEdit}
           />
-          <Label htmlFor="transfer-requested" style={{ fontSize: "13px", color: "#0f1f3d" }}>Request transfer</Label>
+          <Label htmlFor="transfer-requested" style={{ fontSize: "13px", color: "#0d0d0d" }}>Request transfer</Label>
         </div>
         {summaryData.transfer_requested && (
           <div>
-            <label style={{ display: "block", fontSize: "11.5px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#8a97b8", marginBottom: "6px" }}>
+            <label style={{ display: "block", fontSize: "11.5px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#646f79", marginBottom: "6px" }}>
               Reason for transfer request
             </label>
             {canEdit ? (
@@ -559,18 +559,18 @@ export function SummarySection({
                   }))
                 }
                 placeholder="Explain the reason..."
-                onFocus={(e) => { e.target.style.borderColor = "#3b82f6"; e.target.style.boxShadow = "0 0 0 3px rgba(59,130,246,0.1)"; }}
-                onBlur={(e) => { e.target.style.borderColor = "#dde5f5"; e.target.style.boxShadow = "none"; }}
+                onFocus={(e) => { e.target.style.borderColor = "#0d0e10"; e.target.style.boxShadow = "0 0 0 1px var(--ds-focus)"; }}
+                onBlur={(e) => { e.target.style.borderColor = "#8b949e"; e.target.style.boxShadow = "none"; }}
               />
             ) : (
-              <p style={{ fontSize: "13px", color: "#0f1f3d" }}>{summaryData.transfer_reason || "—"}</p>
+              <p style={{ fontSize: "13px", color: "#0d0d0d" }}>{summaryData.transfer_reason || "—"}</p>
             )}
           </div>
         )}
       </CardWrapper>
 
       {/* Confirmation Status */}
-      <CardWrapper title="Confirmation Status" subtitle="For probationary staff - confirmation due date and plan of action" icon={<CheckIcon />} iconBg="#f0fdfa" iconColor="#0d9488">
+      <CardWrapper title="Confirmation Status" subtitle="For probationary staff - confirmation due date and plan of action" icon={<CheckIcon />} iconBg="#f3f3f3" iconColor="#0d0e10">
         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: summaryData.is_probationary ? "16px" : 0 }}>
           <Checkbox
             id="is-probationary"
@@ -584,12 +584,12 @@ export function SummarySection({
             }
             disabled={!canEdit}
           />
-          <Label htmlFor="is-probationary" style={{ fontSize: "13px", color: "#0f1f3d" }}>Probationary staff</Label>
+          <Label htmlFor="is-probationary" style={{ fontSize: "13px", color: "#0d0d0d" }}>Probationary staff</Label>
         </div>
         {summaryData.is_probationary && (
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             <div>
-              <label style={{ display: "block", fontSize: "11.5px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#8a97b8", marginBottom: "6px" }}>
+              <label style={{ display: "block", fontSize: "11.5px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#646f79", marginBottom: "6px" }}>
                 Confirmation due date
               </label>
               {canEdit ? (
@@ -603,15 +603,15 @@ export function SummarySection({
                       confirmation_due_date: e.target.value || null,
                     }))
                   }
-                  onFocus={(e) => { e.target.style.borderColor = "#3b82f6"; e.target.style.boxShadow = "0 0 0 3px rgba(59,130,246,0.1)"; }}
-                  onBlur={(e) => { e.target.style.borderColor = "#dde5f5"; e.target.style.boxShadow = "none"; }}
+                  onFocus={(e) => { e.target.style.borderColor = "#0d0e10"; e.target.style.boxShadow = "0 0 0 1px var(--ds-focus)"; }}
+                  onBlur={(e) => { e.target.style.borderColor = "#8b949e"; e.target.style.boxShadow = "none"; }}
                 />
               ) : (
-                <p style={{ fontSize: "13px", color: "#0f1f3d" }}>{summaryData.confirmation_due_date || "—"}</p>
+                <p style={{ fontSize: "13px", color: "#0d0d0d" }}>{summaryData.confirmation_due_date || "—"}</p>
               )}
             </div>
             <div>
-              <label style={{ display: "block", fontSize: "11.5px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#8a97b8", marginBottom: "6px" }}>
+              <label style={{ display: "block", fontSize: "11.5px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#646f79", marginBottom: "6px" }}>
                 Plan of action if not confirmed
               </label>
               {canEdit ? (
@@ -625,11 +625,11 @@ export function SummarySection({
                     }))
                   }
                   placeholder="Describe the plan..."
-                  onFocus={(e) => { e.target.style.borderColor = "#3b82f6"; e.target.style.boxShadow = "0 0 0 3px rgba(59,130,246,0.1)"; }}
-                  onBlur={(e) => { e.target.style.borderColor = "#dde5f5"; e.target.style.boxShadow = "none"; }}
+                  onFocus={(e) => { e.target.style.borderColor = "#0d0e10"; e.target.style.boxShadow = "0 0 0 1px var(--ds-focus)"; }}
+                  onBlur={(e) => { e.target.style.borderColor = "#8b949e"; e.target.style.boxShadow = "none"; }}
                 />
               ) : (
-                <p style={{ fontSize: "13px", color: "#0f1f3d" }}>{summaryData.confirmation_plan_of_action || "—"}</p>
+                <p style={{ fontSize: "13px", color: "#0d0d0d" }}>{summaryData.confirmation_plan_of_action || "—"}</p>
               )}
             </div>
           </div>
@@ -637,7 +637,7 @@ export function SummarySection({
       </CardWrapper>
 
       {/* Signatures */}
-      <CardWrapper title="Signatures" subtitle="Sign-off status for this appraisal" icon={<PenIcon />} iconBg="#fff1f2" iconColor="#e11d48">
+      <CardWrapper title="Signatures" subtitle="Sign-off status for this appraisal" icon={<PenIcon />} iconBg="#fef2f2" iconColor="#b42318">
         <div>
           {["employee_acknowledgement", "manager_signoff", "reviewing_manager_signoff", "hr_finalization"].map(
             (role, index) => {
@@ -650,12 +650,12 @@ export function SummarySection({
                     alignItems: "center",
                     justifyContent: "space-between",
                     padding: "12px 0",
-                    borderBottom: index < 3 ? "1px solid #dde5f5" : "none",
+                    borderBottom: index < 3 ? "1px solid #e7e7e7" : "none",
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <span style={{ color: "#8a97b8" }}><PenIcon /></span>
-                    <span style={{ fontSize: "13.5px", fontWeight: 500, color: "#0f1f3d" }}>{signoffLabels[role] ?? role}</span>
+                    <span style={{ color: "#646f79" }}><PenIcon /></span>
+                    <span style={{ fontSize: "13.5px", fontWeight: 500, color: "#0d0d0d" }}>{signoffLabels[role] ?? role}</span>
                   </div>
                   {signoff ? (
                     <span style={{
@@ -663,14 +663,14 @@ export function SummarySection({
                       alignItems: "center",
                       gap: "6px",
                       padding: "4px 12px",
-                      borderRadius: "20px",
-                      background: "#f0fdf4",
-                      border: "1px solid #bbf7d0",
-                      color: "#166534",
+                      borderRadius: "4px",
+                      background: "#ecfdf5",
+                      border: "1px solid #bbf0d9",
+                      color: "#2e7d4f",
                       fontSize: "12px",
                       fontWeight: 600,
                     }}>
-                      <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#22c55e" }} />
+                      <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#2e7d4f" }} />
                       Signed {new Date(signoff.signed_at).toLocaleDateString()}
                     </span>
                   ) : (
@@ -679,14 +679,14 @@ export function SummarySection({
                       alignItems: "center",
                       gap: "6px",
                       padding: "4px 12px",
-                      borderRadius: "20px",
-                      background: "#f8faff",
-                      border: "1px solid #dde5f5",
-                      color: "#8a97b8",
+                      borderRadius: "4px",
+                      background: "#f3f3f3",
+                      border: "1px solid #e7e7e7",
+                      color: "#646f79",
                       fontSize: "12px",
                       fontWeight: 600,
                     }}>
-                      <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#94a3b8" }} />
+                      <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#646f79" }} />
                       Pending
                     </span>
                   )}

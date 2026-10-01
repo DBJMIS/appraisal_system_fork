@@ -16,8 +16,10 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith("/favicon") ||
     pathname.includes(".");
   const isReportingTest = pathname === "/reporting-test";
+  // Vercel Cron has no session; the route itself requires CRON_SECRET (or an HR/Admin session for manual POST).
+  const isScheduledJobRoute = pathname === "/api/cron/appraisal-reminders";
 
-  if (isAuthRoute || isWebhookRoute || isPublic || isReportingTest) {
+  if (isAuthRoute || isWebhookRoute || isPublic || isReportingTest || isScheduledJobRoute) {
     return NextResponse.next();
   }
 

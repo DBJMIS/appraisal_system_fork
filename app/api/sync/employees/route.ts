@@ -3,6 +3,7 @@ import type { AxiosResponse } from "axios";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { createDataverseApiClient } from "@/lib/dynamics-sync";
+import type { EmployeeSyncDetails, SyncDetailPerson } from "@/lib/employee-sync-details";
 
 type DynamicsEmployeeRow = {
   xrm1_employeeid?: string | null;
@@ -119,7 +120,14 @@ export async function POST(req: NextRequest) {
 
     const { data: existingBefore } = await supabase
       .from("employees")
-      .select("employee_id, is_active");
+      .select("employee_id, is_active, full_name");
+
+    const preSyncNames = new Map<string, string | null>(
+      (existingBefore ?? []).map((e) => {
+        const r = e as { employee_id?: string; full_name?: string | null };
+        return [String(r.employee_id ?? ""), r.full_name ?? null];
+      })
+    );
 
     const existingActiveIds = new Set(
       (existingBefore ?? [])
@@ -151,6 +159,7 @@ export async function POST(req: NextRequest) {
 
     console.log(`[sync] after @dbankjm.com filter: ${rows.length} employees`);
 
+    const skipped: EmployeeSyncDetails["skipped"] = [];
     const emailSeen = new Map<string, EmployeeUpsertRow>();
     for (const row of rows) {
       const emailKey = sanitizeEmail(row.email);
@@ -160,6 +169,7 @@ export async function POST(req: NextRequest) {
         emailSeen.set(emailKey, row);
         continue;
       }
+      skipped.push({ employee_id: row.employee_id, full_name: row.full_name, reason: "duplicate_email" });
       console.warn(
         `[sync] duplicate email skipped: ${row.email} — keeping ${existing.employee_id}, skipping ${row.employee_id}`
       );
@@ -170,12 +180,19 @@ export async function POST(req: NextRequest) {
     );
 
     const syncedEmployeeIds = new Set<string>();
+    const syncedNames = new Map<string, string | null>();
+    const addedPeople: SyncDetailPerson[] = [];
+    const rekeyedFromIds = new Set<string>();
 
     if (deduplicatedRows.length > 0) {
       for (const row of deduplicatedRows) {
         const { error } = await supabase.from("employees").upsert(row, { onConflict: "employee_id" });
         if (!error) {
           syncedEmployeeIds.add(row.employee_id);
+          syncedNames.set(row.employee_id, row.full_name);
+          if (!existingAllIds.has(row.employee_id)) {
+            addedPeople.push({ employee_id: row.employee_id, full_name: row.full_name });
+          }
           continue;
         }
 
@@ -211,7 +228,16 @@ export async function POST(req: NextRequest) {
             })
             .ilike("email", row.email ?? "");
           if (updateErr) throw new Error(updateErr.message);
-          syncedEmployeeIds.add(canRekeyEmployeeId ? row.employee_id : existingEmployeeId);
+          const syncedId = canRekeyEmployeeId ? row.employee_id : existingEmployeeId;
+          syncedEmployeeIds.add(syncedId);
+          syncedNames.set(syncedId, row.full_name);
+          const rekeyed = canRekeyEmployeeId && existingEmployeeId !== row.employee_id;
+          if (rekeyed) rekeyedFromIds.add(existingEmployeeId);
+          skipped.push({
+            employee_id: row.employee_id,
+            full_name: row.full_name,
+            reason: rekeyed ? "rekeyed" : "email_conflict",
+          });
           continue;
         }
 
@@ -220,6 +246,9 @@ export async function POST(req: NextRequest) {
     }
 
     const fetchedIds = syncedEmployeeIds;
+    if (fetchedIds.size === 0 && existingActiveIds.size > 0) {
+      throw new Error("Dynamics returned no employees to sync. No employees were deactivated.");
+    }
     const toDeactivate = Array.from(existingActiveIds).filter((id) => !fetchedIds.has(id));
     if (toDeactivate.length > 0) {
       const { error: deactivateErr } = await supabase
@@ -253,20 +282,40 @@ export async function POST(req: NextRequest) {
     const employeesAdded = deduplicatedRows.filter((r) => !existingAllIds.has(r.employee_id)).length;
     const duration = Date.now() - startTime;
 
+    const dynamicsNames = new Map(deduplicatedRows.map((r) => [r.employee_id, r.full_name]));
+    const details: EmployeeSyncDetails = {
+      added: addedPeople,
+      reactivated: Array.from(syncedEmployeeIds)
+        .filter((id) => !!id && existingAllIds.has(id) && !existingActiveIds.has(id))
+        .map((id) => ({ employee_id: id, full_name: syncedNames.get(id) ?? preSyncNames.get(id) ?? null })),
+      // A re-keyed employee's old id appears in toDeactivate but the row itself was kept active under its new id.
+      deactivated: toDeactivate
+        .filter((id) => !rekeyedFromIds.has(id))
+        .map((id) => ({ employee_id: id, full_name: preSyncNames.get(id) ?? null, reason: "not_in_active_dynamics_sync" })),
+      no_appraisal: newEmployeeIds.map((id) => ({ employee_id: id, full_name: dynamicsNames.get(id) ?? null })),
+      skipped,
+    };
+
     if (logId) {
+      const completion = {
+        status: "completed",
+        completed_at: new Date().toISOString(),
+        employees_synced: deduplicatedRows.length,
+        employees_added: employeesAdded,
+        employees_deactivated: toDeactivate.length,
+        new_employee_ids: newEmployeeIds,
+        duration_ms: duration,
+      };
       try {
-        await supabase
+        const { error: logErr } = await supabase
           .from("employee_sync_log")
-          .update({
-            status: "completed",
-            completed_at: new Date().toISOString(),
-            employees_synced: deduplicatedRows.length,
-            employees_added: employeesAdded,
-            employees_deactivated: toDeactivate.length,
-            new_employee_ids: newEmployeeIds,
-            duration_ms: duration,
-          })
+          .update({ ...completion, details })
           .eq("id", logId);
+        if (logErr) {
+          // details column not yet migrated: still record the completed aggregate row.
+          console.warn("[sync] could not store sync details:", logErr.code ?? "", logErr.message ?? "");
+          await supabase.from("employee_sync_log").update(completion).eq("id", logId);
+        }
       } catch {
         // No-op: sync itself already succeeded.
       }

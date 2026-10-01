@@ -10,7 +10,7 @@ export default async function PerformanceHistoryPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="text-ds-page-title text-ds-text-primary">
           Performance History
         </h1>
         <p className="text-muted-foreground">
@@ -19,8 +19,8 @@ export default async function PerformanceHistoryPage() {
       </div>
       <PerformanceHistoryView items={items} />
       {!employeeId && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30 p-4">
-          <p className="text-sm text-amber-800 dark:text-amber-200">
+        <div className="rounded-lg border border-ds-warning-border bg-ds-warning-subtle dark:border-amber-900 dark:bg-amber-950/30 p-4">
+          <p className="text-sm text-ds-warning dark:text-amber-200">
             Your profile is not linked to an employee record. Connect your
             account to see your performance history here.
           </p>

@@ -86,7 +86,7 @@ export function HRActionsTab({ appraisalId, status, isHR, isManager = false }: H
 
   if (!canViewAndEdit) {
     return (
-      <div className="flex items-center justify-center py-20 text-[#8a97b8] text-sm">
+      <div className="flex items-center justify-center py-20 text-ds-text-secondary text-sm">
         HR recommendations are available during Manager Review or HR Review phase.
       </div>
     );
@@ -114,7 +114,7 @@ export function HRActionsTab({ appraisalId, status, isHR, isManager = false }: H
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20 text-[#8a97b8] text-sm">
+      <div className="flex items-center justify-center py-20 text-ds-text-secondary text-sm">
         Loading...
       </div>
     );
@@ -131,32 +131,32 @@ export function HRActionsTab({ appraisalId, status, isHR, isManager = false }: H
   return (
     <div className="flex flex-col gap-6">
       {saveSuccess && (
-        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", padding: "14px 16px", borderRadius: "10px", background: "#f0fdf4", border: "1px solid #bbf7d0" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", padding: "14px 16px", borderRadius: "8px", background: "#ecfdf5", border: "1px solid #bbf0d9" }}>
           <div>
-            <div style={{ fontWeight: 600, fontSize: "13px", color: "#166534" }}>Success</div>
-            <div style={{ fontSize: "13px", color: "#15803d" }}>HR recommendations saved successfully.</div>
+            <div style={{ fontWeight: 600, fontSize: "13px", color: "#2e7d4f" }}>Success</div>
+            <div style={{ fontSize: "13px", color: "#2e7d4f" }}>HR recommendations saved successfully.</div>
           </div>
         </div>
       )}
       <div
         style={{
           background: "white",
-          borderRadius: "14px",
-          border: "1px solid #dde5f5",
-          boxShadow: "0 2px 12px rgba(15,31,61,0.07), 0 0 1px rgba(15,31,61,0.1)",
+          borderRadius: "8px",
+          border: "1px solid #e7e7e7",
+          boxShadow: "none",
           overflow: "hidden",
         }}
       >
-        <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #dde5f5", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
+        <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #e7e7e7", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <div style={{ width: "32px", height: "32px", borderRadius: "9px", background: "#ccfbf1", display: "flex", alignItems: "center", justifyContent: "center", color: "#0d9488" }}>
+            <div style={{ width: "32px", height: "32px", borderRadius: "9px", background: "#f3f3f3", display: "flex", alignItems: "center", justifyContent: "center", color: "#0d0e10" }}>
               <ClipboardCheck className="w-4 h-4" />
             </div>
             <div>
-              <div style={{ fontFamily: "Sora, sans-serif", fontSize: "15px", fontWeight: 600, color: "#0f1f3d", letterSpacing: "-0.01em" }}>
+              <div style={{ fontFamily: "var(--ds-font-sans)", fontSize: "15px", fontWeight: 600, color: "#0d0d0d", letterSpacing: "-0.01em" }}>
                 HR Recommendations
               </div>
-              <div style={{ fontSize: "12px", color: "#8a97b8", marginTop: "1px" }}>
+              <div style={{ fontSize: "12px", color: "#646f79", marginTop: "1px" }}>
                 For HR and manager use during Manager Review or HR Review.
               </div>
             </div>
@@ -171,11 +171,11 @@ export function HRActionsTab({ appraisalId, status, isHR, isManager = false }: H
               gap: "7px",
               padding: "9px 20px",
               borderRadius: "8px",
-              background: !saving && canViewAndEdit ? "linear-gradient(135deg, #0d9488, #047857)" : "#e2e8f0",
+              background: !saving && canViewAndEdit ? "#0d0e10" : "#e7e7e7",
               border: "none",
               fontSize: "13px",
               fontWeight: 600,
-              color: !saving && canViewAndEdit ? "white" : "#94a3b8",
+              color: !saving && canViewAndEdit ? "white" : "#646f79",
               cursor: !saving && canViewAndEdit ? "pointer" : "not-allowed",
               boxShadow: !saving && canViewAndEdit ? "0 2px 8px rgba(13,148,136,0.35)" : "none",
               transition: "all 0.16s",
@@ -190,15 +190,15 @@ export function HRActionsTab({ appraisalId, status, isHR, isManager = false }: H
               {REC_KEYS_LEFT.map(({ key, label }) => (
                 <label
                   key={key}
-                  className="flex items-center gap-2.5 py-2.5 px-3 rounded-[8px] cursor-pointer hover:bg-[#f0fdfa] transition-colors group"
+                  className="flex items-center gap-2.5 py-2.5 px-3 rounded-[8px] cursor-pointer hover:bg-ds-surface transition-colors group"
                 >
                   <input
                     type="checkbox"
                     checked={recs[key] ?? false}
                     onChange={(e) => setRecs((prev) => ({ ...prev, [key]: e.target.checked }))}
-                    className="w-4 h-4 rounded border-[#dde5f5] accent-[#0d9488]"
+                    className="w-4 h-4 rounded border-ds-border accent-ds-accent"
                   />
-                  <span className="text-[13px] font-medium text-[#0f1f3d]">{label}</span>
+                  <span className="text-[13px] font-medium text-ds-text-primary">{label}</span>
                 </label>
               ))}
             </div>
@@ -206,15 +206,15 @@ export function HRActionsTab({ appraisalId, status, isHR, isManager = false }: H
               {REC_KEYS_RIGHT.map(({ key, label }) => (
                 <label
                   key={key}
-                  className="flex items-center gap-2.5 py-2.5 px-3 rounded-[8px] cursor-pointer hover:bg-[#f0fdfa] transition-colors group"
+                  className="flex items-center gap-2.5 py-2.5 px-3 rounded-[8px] cursor-pointer hover:bg-ds-surface transition-colors group"
                 >
                   <input
                     type="checkbox"
                     checked={recs[key] ?? false}
                     onChange={(e) => setRecs((prev) => ({ ...prev, [key]: e.target.checked }))}
-                    className="w-4 h-4 rounded border-[#dde5f5] accent-[#0d9488]"
+                    className="w-4 h-4 rounded border-ds-border accent-ds-accent"
                   />
-                  <span className="text-[13px] font-medium text-[#0f1f3d]">{label}</span>
+                  <span className="text-[13px] font-medium text-ds-text-primary">{label}</span>
                 </label>
               ))}
             </div>
@@ -223,7 +223,7 @@ export function HRActionsTab({ appraisalId, status, isHR, isManager = false }: H
             value={otherNotes}
             onChange={(e) => setOtherNotes(e.target.value)}
             placeholder="Additional notes or recommendations..."
-            className="w-full border border-[#dde5f5] rounded-[8px] p-3 text-[13px] text-[#0f1f3d] resize-none min-h-[80px] focus:outline-none focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/10"
+            className="w-full border border-ds-border rounded-[8px] p-3 text-[13px] text-ds-text-primary resize-none min-h-[80px] focus:outline-none focus:border-ds-accent focus:ring-2 focus:ring-[#0d0e10]/10"
             style={{ marginTop: "16px" }}
           />
         </div>

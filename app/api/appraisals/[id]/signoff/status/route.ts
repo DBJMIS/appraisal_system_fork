@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { buildSummaryInput } from "@/lib/appraisal-summary-input";
 import { calcSummary, GRADE_BANDS } from "@/lib/summary-calc";
 import { resolveDepartmentHeadSystemUserId } from "@/lib/hrmis-approval-auth";
+import { allowAppraisalTestBypass } from "@/lib/appraisal-test-bypass";
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -88,7 +89,7 @@ export async function GET(
       hrOfficer: { full_name: hod?.full_name ?? "—", email: hod?.email ?? null },
     };
 
-    const testOnlyEmployeeSigner = process.env.ALLOW_APPRAISAL_TEST_BYPASS === "true";
+    const testOnlyEmployeeSigner = allowAppraisalTestBypass();
     const managerActsAsFinalApprover =
       appraisal.manager_employee_id === hodEmployeeId || !!managerUser;
     const managerIsInChain = !testOnlyEmployeeSigner && !managerActsAsFinalApprover;

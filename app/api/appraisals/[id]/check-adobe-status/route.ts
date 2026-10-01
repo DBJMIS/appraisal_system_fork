@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth-options";
 import { getCurrentUser } from "@/lib/auth";
 import { downloadSignedPDF, getAgreementStatus } from "@/lib/adobe-sign";
 import { resolveDepartmentHeadSystemUserId } from "@/lib/hrmis-approval-auth";
+import { allowAppraisalTestBypass } from "@/lib/appraisal-test-bypass";
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -206,7 +207,7 @@ export async function POST(
 
     const managerActsAsFinalApprover =
       appraisal.manager_employee_id === hodEmployeeId || !!managerUser;
-    const testOnlyEmployeeSigner = process.env.ALLOW_APPRAISAL_TEST_BYPASS === "true";
+    const testOnlyEmployeeSigner = allowAppraisalTestBypass();
     const managerIsInChain = !testOnlyEmployeeSigner && !managerActsAsFinalApprover;
 
     const now = new Date().toISOString();
@@ -299,7 +300,7 @@ export async function POST(
         })
         .eq("id", agreementRow.id);
 
-      await supabase.from("appraisals").update({ status: "MANAGER_REVIEW" }).eq("id", appraisalId);
+      await supabase.from("appraisals").update({ status: "MANAGER_REVIEW" }).eq("id", appraisalId).eq("status", "PENDING_SIGNOFF");
     } else if (adobeStatus === "DECLINED" || adobeStatus === "REJECTED" || adobeStatus.includes("DECLIN")) {
       const reason =
         (adobe.message as string | undefined) ??
@@ -315,7 +316,7 @@ export async function POST(
         })
         .eq("id", agreementRow.id);
 
-      await supabase.from("appraisals").update({ status: "MANAGER_REVIEW" }).eq("id", appraisalId);
+      await supabase.from("appraisals").update({ status: "MANAGER_REVIEW" }).eq("id", appraisalId).eq("status", "PENDING_SIGNOFF");
     } else if (adobeStatus === "EXPIRED" || adobeStatus.includes("EXPIR")) {
       await supabase
         .from("appraisal_agreements")
@@ -325,7 +326,7 @@ export async function POST(
         })
         .eq("id", agreementRow.id);
 
-      await supabase.from("appraisals").update({ status: "MANAGER_REVIEW" }).eq("id", appraisalId);
+      await supabase.from("appraisals").update({ status: "MANAGER_REVIEW" }).eq("id", appraisalId).eq("status", "PENDING_SIGNOFF");
     }
 
     const { data: updated, error: readErr } = await supabase

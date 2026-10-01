@@ -103,7 +103,7 @@ export default function OperationalPlanCycleDetailPage({
   if (loading && !cycle) {
     return (
       <div className="w-full px-[28px] py-6">
-        <p className="text-[13px] text-[#8a97b8]">Loading…</p>
+        <p className="text-[13px] text-ds-text-secondary">Loading…</p>
       </div>
     );
   }
@@ -111,10 +111,10 @@ export default function OperationalPlanCycleDetailPage({
   if (error || !cycle) {
     return (
       <div className="w-full px-[28px] py-6">
-        <p className="text-[13px] text-red-600">{error ?? "Cycle not found"}</p>
+        <p className="text-[13px] text-ds-error">{error ?? "Cycle not found"}</p>
         <Link
           href="/hr/operational-plan"
-          className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#8a97b8] transition-colors hover:text-[#0f1f3d]"
+          className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-semibold text-ds-text-secondary transition-colors hover:text-ds-text-primary"
         >
           <ChevronLeft className="h-3.5 w-3.5" />
           Back to Operational Plan
@@ -129,29 +129,29 @@ export default function OperationalPlanCycleDetailPage({
         <div>
           <Link
             href="/admin/operational-plan"
-            className="mb-3 inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#8a97b8] transition-colors hover:text-[#0f1f3d]"
+            className="mb-3 inline-flex items-center gap-1.5 text-[11px] font-semibold text-ds-text-secondary transition-colors hover:text-ds-text-primary"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
             Back to Operational Plan
           </Link>
-          <p className="mb-1 text-[10px] font-bold uppercase tracking-[.1em] text-[#8a97b8]">
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-[.1em] text-ds-text-secondary">
             HR Administration · Operational Plan
           </p>
-          <h1 className="font-['Sora'] text-[20px] font-extrabold text-[#0f1f3d]">{cycle.label}</h1>
-          <p className="mt-1 text-[13px] text-[#8a97b8]">
+          <h1 className="font-sans text-[20px] font-semibold text-ds-text-primary">{cycle.label}</h1>
+          <p className="mt-1 text-[13px] text-ds-text-secondary">
             {cycle.cycle_year} · Uploaded {formatDate(cycle.created_at)} by {cycle.uploaded_by_name}
           </p>
         </div>
         {cycle.is_active ? (
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-[#6ee7b7] bg-[#ecfdf5] px-3 py-1.5 text-[11px] font-bold text-[#065f46]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#059669] animate-pulse" />
+          <span className="inline-flex items-center gap-1.5 rounded-ds-badge border border-ds-success-border bg-ds-success-subtle px-3 py-1.5 text-[11px] font-semibold text-ds-success">
+            <span className="h-1.5 w-1.5 rounded-full bg-ds-mint animate-pulse" />
             Active Cycle
           </span>
         ) : (
           <button
             type="button"
             onClick={handleSetActive}
-            className="inline-flex items-center gap-2 rounded-[8px] border-[1.5px] border-[#dde5f5] bg-white px-4 py-2 text-[12px] font-semibold text-[#4a5a82] transition-all hover:border-[#0f1f3d] hover:text-[#0f1f3d]"
+            className="inline-flex items-center gap-2 rounded-[8px] border-[1.5px] border-ds-border bg-white px-4 py-2 text-[12px] font-semibold text-ds-text-secondary transition-all hover:border-ds-text-primary hover:text-ds-text-primary"
           >
             Set as active cycle
           </button>
@@ -163,35 +163,35 @@ export default function OperationalPlanCycleDetailPage({
           {
             label: "Corporate Objectives",
             value: cycle.corporate_count,
-            color: "#3b82f6",
-            bg: "#eff6ff",
-            border: "#bfdbfe",
-            icon: <Building2 className="h-4 w-4" style={{ color: "#3b82f6" }} />,
+            color: "#0d0e10",
+            bg: "#f3f3f3",
+            border: "#d0d4d8",
+            icon: <Building2 className="h-4 w-4" style={{ color: "#0d0e10" }} />,
           },
           {
             label: "Divisional Objectives",
             value: cycle.divisional_count,
-            color: "#0d9488",
-            bg: "#f0fdfa",
-            border: "#99f6e4",
-            icon: <Layers className="h-4 w-4" style={{ color: "#0d9488" }} />,
+            color: "#0d0e10",
+            bg: "#f3f3f3",
+            border: "#d0d4d8",
+            icon: <Layers className="h-4 w-4" style={{ color: "#0d0e10" }} />,
           },
         ].map((kpi) => (
           <div
             key={kpi.label}
-            className="flex items-center gap-4 rounded-[14px] border border-[#dde5f5] bg-white p-5 shadow-[0_2px_12px_rgba(15,31,61,0.07)]"
+            className="flex items-center gap-4 rounded-ds-panel border border-ds-border bg-white p-5"
           >
             <div
-              className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[10px]"
+              className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-ds-panel"
               style={{ background: kpi.bg, border: `1px solid ${kpi.border}` }}
             >
               {kpi.icon}
             </div>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[.07em] text-[#8a97b8]">
+              <p className="text-[10px] font-semibold uppercase tracking-[.07em] text-ds-text-secondary">
                 {kpi.label}
               </p>
-              <p className="font-['Sora'] text-[26px] font-extrabold" style={{ color: kpi.color }}>
+              <p className="font-sans text-[26px] font-semibold" style={{ color: kpi.color }}>
                 {kpi.value}
               </p>
             </div>
@@ -199,22 +199,22 @@ export default function OperationalPlanCycleDetailPage({
         ))}
       </div>
 
-      <div className="overflow-hidden rounded-[14px] border border-[#dde5f5] bg-white shadow-[0_2px_12px_rgba(15,31,61,0.07)]">
-        <div className="flex flex-wrap items-center gap-3 border-b border-[#dde5f5] bg-[#f8faff] px-5 py-4">
-          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] border border-[#bfdbfe] bg-[#eff6ff]">
-            <Target className="h-4 w-4 text-[#3b82f6]" />
+      <div className="overflow-hidden rounded-ds-panel border border-ds-border bg-white">
+        <div className="flex flex-wrap items-center gap-3 border-b border-ds-border bg-ds-surface px-5 py-4">
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-ds-panel border border-ds-border-strong bg-ds-surface">
+            <Target className="h-4 w-4 text-ds-accent" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-['Sora'] text-[13px] font-bold text-[#0f1f3d]">Objectives</p>
-            <p className="text-[11px] text-[#8a97b8]">All objectives imported from this plan</p>
+            <p className="font-sans text-[13px] font-semibold text-ds-text-primary">Objectives</p>
+            <p className="text-[11px] text-ds-text-secondary">All objectives imported from this plan</p>
           </div>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#8a97b8]" />
+            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ds-text-secondary" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search objectives..."
-              className="w-[220px] rounded-[8px] border-[1.5px] border-[#dde5f5] bg-white py-2 pl-8 pr-3 text-[12px] text-[#0f1f3d] outline-none transition-colors focus:border-[#3b82f6]"
+              className="w-[220px] rounded-[8px] border-[1.5px] border-ds-border bg-white py-2 pl-8 pr-3 text-[12px] text-ds-text-primary outline-none transition-colors focus:border-ds-accent"
             />
           </div>
           <div className="flex gap-1.5">
@@ -224,10 +224,10 @@ export default function OperationalPlanCycleDetailPage({
                 type="button"
                 onClick={() => setFilter(f)}
                 className={cn(
-                  "rounded-full border-[1.5px] px-3 py-1.5 text-[11px] font-semibold transition-all",
+                  "rounded-ds-button border-[1.5px] px-3 py-1.5 text-[11px] font-semibold transition-all",
                   filter === f
-                    ? "border-[#0f1f3d] bg-[#0f1f3d] text-white"
-                    : "border-[#dde5f5] bg-white text-[#8a97b8] hover:border-[#0f1f3d] hover:text-[#0f1f3d]"
+                    ? "border-ds-text-primary bg-ds-text-primary text-white"
+                    : "border-ds-border bg-white text-ds-text-secondary hover:border-ds-text-primary hover:text-ds-text-primary"
                 )}
               >
                 {f}
@@ -238,17 +238,17 @@ export default function OperationalPlanCycleDetailPage({
 
         <table className="w-full border-collapse">
           <thead>
-            <tr className="bg-[#eef2fb]">
-              <th className="w-[10%] px-5 py-2.5 text-left text-[10px] font-bold uppercase tracking-[.07em] text-[#8a97b8]">
+            <tr className="bg-ds-surface">
+              <th className="w-[10%] px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[.07em] text-ds-text-secondary">
                 Type
               </th>
-              <th className="px-5 py-2.5 text-left text-[10px] font-bold uppercase tracking-[.07em] text-[#8a97b8]">
+              <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[.07em] text-ds-text-secondary">
                 Objective
               </th>
-              <th className="w-[20%] px-5 py-2.5 text-left text-[10px] font-bold uppercase tracking-[.07em] text-[#8a97b8]">
+              <th className="w-[20%] px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[.07em] text-ds-text-secondary">
                 Division
               </th>
-              <th className="w-[12%] px-5 py-2.5 text-left text-[10px] font-bold uppercase tracking-[.07em] text-[#8a97b8]">
+              <th className="w-[12%] px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[.07em] text-ds-text-secondary">
                 External ID
               </th>
             </tr>
@@ -257,29 +257,29 @@ export default function OperationalPlanCycleDetailPage({
             {filtered.map((obj) => (
               <tr
                 key={obj.id}
-                className="border-t border-[#dde5f5] transition-colors hover:bg-[#f8faff]"
+                className="border-t border-ds-border transition-colors hover:bg-ds-surface"
               >
                 <td className="px-5 py-3">
                   {obj.type === "CORPORATE" ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-[#bfdbfe] bg-[#eff6ff] px-2.5 py-1 text-[10px] font-bold text-[#1d4ed8]">
+                    <span className="inline-flex items-center gap-1.5 rounded-ds-badge border border-ds-border-strong bg-ds-surface px-2.5 py-1 text-[10px] font-semibold text-ds-info">
                       <Building2 className="h-2.5 w-2.5" />
                       Corporate
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-[#99f6e4] bg-[#f0fdfa] px-2.5 py-1 text-[10px] font-bold text-[#0f766e]">
+                    <span className="inline-flex items-center gap-1.5 rounded-ds-badge border border-ds-border-strong bg-ds-surface px-2.5 py-1 text-[10px] font-semibold text-ds-accent-hover">
                       <Layers className="h-2.5 w-2.5" />
                       Divisional
                     </span>
                   )}
                 </td>
                 <td className="px-5 py-3">
-                  <p className="text-[13px] font-semibold text-[#0f1f3d]">{obj.title}</p>
+                  <p className="text-[13px] font-semibold text-ds-text-primary">{obj.title}</p>
                 </td>
                 <td className="px-5 py-3">
-                  <p className="text-[12px] text-[#4a5a82]">{obj.division ?? "—"}</p>
+                  <p className="text-[12px] text-ds-text-secondary">{obj.division ?? "—"}</p>
                 </td>
                 <td className="px-5 py-3">
-                  <span className="rounded-[6px] border border-[#dde5f5] bg-[#f8faff] px-2 py-0.5 font-mono text-[11px] text-[#8a97b8]">
+                  <span className="rounded-[6px] border border-ds-border bg-ds-surface px-2 py-0.5 font-mono text-[11px] text-ds-text-secondary">
                     {obj.external_id}
                   </span>
                 </td>
@@ -288,8 +288,8 @@ export default function OperationalPlanCycleDetailPage({
           </tbody>
         </table>
 
-        <div className="border-t border-[#dde5f5] bg-[#f8faff] px-5 py-3">
-          <p className="text-[11px] text-[#8a97b8]">
+        <div className="border-t border-ds-border bg-ds-surface px-5 py-3">
+          <p className="text-[11px] text-ds-text-secondary">
             Showing {filtered.length} of {objectives.length} objectives
           </p>
         </div>

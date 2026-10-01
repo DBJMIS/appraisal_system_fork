@@ -27,12 +27,12 @@ export default async function CreateMissingAppraisalsPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
-      <h1 className="text-[22px] font-bold text-[#0f1f3d]">Create Missing Appraisals</h1>
-      <p className="text-[13px] text-[#8a97b8]">
+      <h1 className="text-ds-page-title text-ds-text-primary">Create Missing Appraisals</h1>
+      <p className="text-[13px] text-ds-text-secondary">
         Creates annual draft appraisals for employees flagged by the latest sync run.
       </p>
       <CreateMissingClient employeeIds={employeeIds} />
-      <Link href="/admin/appraisals" className="inline-block text-[13px] text-[#3b82f6]">
+      <Link href="/admin/appraisals" className="inline-block text-[13px] text-ds-accent">
         ← Back to all appraisals
       </Link>
     </div>

@@ -98,23 +98,23 @@ export default async function AdminAppraisalsPage({
 
       {newWithoutAppraisal.length > 0 && (
         <div
-          className="mb-4 flex items-center justify-between rounded-[10px] border px-4 py-3"
+          className="mb-4 flex items-center justify-between rounded-ds-panel border px-4 py-3"
           style={{
-            borderColor: "#fcd34d",
+            borderColor: "#fbe3a1",
             background: "#fffbeb",
           }}
         >
           <div className="flex items-center gap-2.5">
-            <svg className="h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2">
+            <svg className="h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="#8a5a00" strokeWidth="2">
               <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
               <line x1="12" y1="9" x2="12" y2="13" />
               <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
             <div>
-              <p className="text-[12.5px] font-semibold" style={{ color: "#92400e" }}>
+              <p className="text-[12.5px] font-semibold" style={{ color: "#8a5a00" }}>
                 {newWithoutAppraisal.length} employee{newWithoutAppraisal.length > 1 ? "s" : ""} added since cycle started without an appraisal
               </p>
-              <p className="mt-0.5 text-[11px]" style={{ color: "#a16207" }}>
+              <p className="mt-0.5 text-[11px]" style={{ color: "#8a5a00" }}>
                 These employees are in Dynamics but have no appraisal record for {activeCycle?.name ?? "the active cycle"}
               </p>
             </div>
@@ -122,7 +122,7 @@ export default async function AdminAppraisalsPage({
           <Link
             href="/admin/appraisals/create-missing"
             className="flex-shrink-0 rounded-[7px] px-4 py-1.5 text-[12px] font-semibold text-white"
-            style={{ background: "#d97706" }}
+            style={{ background: "#8a5a00" }}
           >
             Create appraisals →
           </Link>
@@ -147,7 +147,7 @@ export default async function AdminAppraisalsPage({
       <div className="animate-fade-up-delay-2">
         {items.length === 0 ? (
           <div
-            className="rounded-[14px] bg-white"
+            className="rounded-ds-panel bg-white"
             style={{
               boxShadow: "var(--shadow-card)",
               border: "1px solid var(--border-color)",
@@ -161,7 +161,7 @@ export default async function AdminAppraisalsPage({
           </div>
         ) : (
           <div
-            className="overflow-hidden rounded-[14px] bg-white"
+            className="overflow-hidden rounded-ds-panel bg-white"
             style={{
               boxShadow: "var(--shadow-card)",
               border: "1px solid var(--border-color)",
@@ -170,19 +170,19 @@ export default async function AdminAppraisalsPage({
             <table className="w-full">
               <thead style={{ backgroundColor: "var(--surface)" }}>
                 <tr style={{ borderBottom: "1px solid var(--border-color)" }}>
-                  <th className="px-5 py-3 text-left text-[10.5px] font-bold uppercase tracking-wider text-text-muted">
+                  <th className="px-5 py-3 text-left text-[10.5px] font-semibold uppercase tracking-wider text-text-muted">
                     Employee
                   </th>
-                  <th className="px-5 py-3 text-left text-[10.5px] font-bold uppercase tracking-wider text-text-muted">
+                  <th className="px-5 py-3 text-left text-[10.5px] font-semibold uppercase tracking-wider text-text-muted">
                     Cycle
                   </th>
-                  <th className="px-5 py-3 text-left text-[10.5px] font-bold uppercase tracking-wider text-text-muted">
+                  <th className="px-5 py-3 text-left text-[10.5px] font-semibold uppercase tracking-wider text-text-muted">
                     Type
                   </th>
-                  <th className="px-5 py-3 text-left text-[10.5px] font-bold uppercase tracking-wider text-text-muted">
+                  <th className="px-5 py-3 text-left text-[10.5px] font-semibold uppercase tracking-wider text-text-muted">
                     Status
                   </th>
-                  <th className="px-5 py-3 text-right text-[10.5px] font-bold uppercase tracking-wider text-text-muted">
+                  <th className="px-5 py-3 text-right text-[10.5px] font-semibold uppercase tracking-wider text-text-muted">
                     Action
                   </th>
                 </tr>
@@ -191,7 +191,7 @@ export default async function AdminAppraisalsPage({
                 {items.map((row, idx) => (
                   <tr
                     key={row.appraisalId}
-                    className="group cursor-pointer transition-colors hover:bg-[#f4f8ff]"
+                    className="group cursor-pointer transition-colors hover:bg-ds-surface"
                     style={{
                       borderBottom: idx < items.length - 1 ? "1px solid var(--border-color)" : undefined,
                     }}

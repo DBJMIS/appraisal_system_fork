@@ -60,8 +60,9 @@ export async function DELETE(_req: NextRequest, context: Ctx) {
     if (uploadedBy !== user.employee_id)
       return NextResponse.json({ error: "Only the person who added this evidence can delete it" }, { status: 403 });
 
-    if (row.storage_path && row.storage_bucket) {
-      await supabase.storage.from(row.storage_bucket as string).remove([row.storage_path as string]);
+    const storagePath = row.storage_path as string | null;
+    if (row.storage_bucket === BUCKET && storagePath?.startsWith(`${appraisalId}/`)) {
+      await supabase.storage.from(BUCKET).remove([storagePath]);
     }
 
     const { error: delErr } = await supabase

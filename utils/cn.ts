@@ -1,5 +1,8 @@
 import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { extendTailwindMerge } from "tailwind-merge";
+import { dsTwMergeExtension } from "@/lib/design-tokens";
+
+const twMerge = extendTailwindMerge(dsTwMergeExtension);
 
 /**
  * Merge Tailwind CSS classes with clsx and tailwind-merge.

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { requireHrOrAdmin } from "@/lib/route-guards";
 import { createClient } from "@supabase/supabase-js";
 import { sendFeedbackReviewRequest } from "@/lib/feedback-email";
 
@@ -35,10 +35,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getCurrentUser();
-    if (!user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const guard = await requireHrOrAdmin();
+    if (!guard.ok) return guard.response;
 
     const { id: cycleId } = await params;
     if (!cycleId) {

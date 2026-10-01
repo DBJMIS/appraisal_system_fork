@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { WorkplanSection } from "./WorkplanSection";
+import { allowAppraisalTestBypassClient } from "@/lib/appraisal-test-bypass";
 import { EvidenceBuilder } from "./EvidenceBuilder";
 import { CoreCompetenciesSection } from "./CoreCompetenciesSection";
 import { TechnicalCompetenciesSection } from "./TechnicalCompetenciesSection";
@@ -14,10 +15,15 @@ import { SignoffsTab } from "./SignoffsTab";
 import { HRActionsTab } from "./HRActionsTab";
 import { AuditTrailTab } from "./AuditTrailTab";
 import { CheckInTab } from "./checkins/CheckInTab";
+import { ScoreSnapshotsPanel } from "./ScoreSnapshotsPanel";
+import { isFormalReviewMode } from "@/lib/midyear-config";
 import { DelegationTab } from "./DelegationTab";
+import { SubmitForApprovalAction } from "./SubmitForApprovalAction";
+import { useDraftSubmitReadiness } from "@/hooks/useDraftSubmitReadiness";
 import { canEditField, type WorkflowRole } from "@/lib/appraisal-workflow";
 import type { SummaryResult } from "@/lib/summary-calc";
 import type { AppraisalStatus } from "@/types/appraisal";
+import { statusToneClasses } from "@/lib/appraisal-status-display";
 import {
   Dialog,
   DialogContent,
@@ -81,54 +87,15 @@ interface AppraisalTabsProps {
   approvals?: { role: string }[];
   signoffs?: { role: string; stage: string; signed_at?: string; comment?: string }[];
   hrRecommendationsSaved?: boolean;
+  /** The cycle has Mid-Year Review enabled; only changes the Check-ins tab label. */
+  midyearEnabled?: boolean;
+  /** Read-only oversight by a manager higher in the reporting line: content only, no actions. */
+  readOnly?: boolean;
 }
 
 type TabValue = "workplan" | "checkins" | "core" | "technical" | "productivity" | "leadership" | "summary" | "signoffs" | "hractions" | "delegation" | "audit";
 
-const ClipboardIcon = () => (
-  <svg style={{ width: 15, height: 15 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-    <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
-  </svg>
-);
-
-const AwardIcon = () => (
-  <svg style={{ width: 15, height: 15 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <circle cx="12" cy="8" r="6" />
-    <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
-  </svg>
-);
-
-const WrenchIcon = () => (
-  <svg style={{ width: 15, height: 15 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
-  </svg>
-);
-
-const TrendingUpIcon = () => (
-  <svg style={{ width: 15, height: 15 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-    <polyline points="17 6 23 6 23 12" />
-  </svg>
-);
-
-const UsersIcon = () => (
-  <svg style={{ width: 15, height: 15 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-    <circle cx="9" cy="7" r="4" />
-    <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-  </svg>
-);
-
-const FileTextIcon = () => (
-  <svg style={{ width: 15, height: 15 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-    <polyline points="14 2 14 8 20 8" />
-    <line x1="16" y1="13" x2="8" y2="13" />
-    <line x1="16" y1="17" x2="8" y2="17" />
-  </svg>
-);
+const START_FINAL_REVIEW_HELP = "Begin your year-end self-assessment and final appraisal review.";
 
 const SendIcon = () => (
   <svg style={{ width: 15, height: 15 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -137,43 +104,9 @@ const SendIcon = () => (
   </svg>
 );
 
-const PenLineIcon = () => (
-  <svg style={{ width: 15, height: 15 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M12 19l7-7 3 3-7 7-3-3z" />
-    <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
-    <path d="M2 2l7.586 7.586" />
-    <path d="M11 11l2 2" />
-  </svg>
-);
-
-const HRActionsIcon = () => (
-  <svg style={{ width: 15, height: 15 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-    <polyline points="14 2 14 8 20 8" />
-    <path d="M16 13H8" />
-    <path d="M16 17H8" />
-    <path d="M10 9H8" />
-  </svg>
-);
-
-const HistoryIcon = () => (
-  <svg style={{ width: 15, height: 15 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-    <path d="M3 3v5h5" />
-  </svg>
-);
-
-const CheckInIcon = () => (
-  <svg style={{ width: 15, height: 15 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M9 11l3 3L22 4" />
-    <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
-  </svg>
-);
-
 interface Tab {
   id: TabValue;
   label: string;
-  icon: React.ReactNode;
 }
 
 function ApprovalSignoffPanel({
@@ -213,27 +146,13 @@ function ApprovalSignoffPanel({
   secondaryActionEnabled?: boolean;
   onSecondaryAction?: () => void | Promise<void>;
 }) {
-  const buttonStyle = {
-    padding: "9px 20px",
-    borderRadius: "8px",
-    border: "none",
-    fontSize: "13px",
-    fontWeight: 600,
-    cursor: "pointer" as const,
-  };
-  const primaryBtnStyle = {
-    ...buttonStyle,
-    background: "linear-gradient(135deg, #059669, #047857)",
-    color: "white",
-    boxShadow: "0 2px 8px rgba(5,150,105,0.35)",
-  };
-  const secondaryBtnStyle = {
-    ...buttonStyle,
-    background: "linear-gradient(135deg, #059669, #047857)",
-    color: "white",
-    boxShadow: "0 2px 8px rgba(5,150,105,0.35)",
-  };
-  const disabledBtnStyle = { ...buttonStyle, background: "#e2e8f0", color: "#94a3b8", cursor: "not-allowed" as const };
+  // Same primary CTA treatment as SubmitForApprovalAction.
+  const primaryBtnClass = (enabled: boolean) =>
+    `inline-flex h-9 shrink-0 items-center rounded-ds-button border px-4 text-[13px] font-medium transition-colors duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-focus focus-visible:ring-offset-2 ${
+      enabled
+        ? "cursor-pointer border-ds-accent bg-ds-accent text-ds-on-primary hover:border-ds-accent-hover hover:bg-ds-accent-hover"
+        : "cursor-not-allowed border-ds-border bg-ds-surface text-ds-text-secondary"
+    }`;
 
   const renderActionButtons = () => {
     if (bypassMode && primaryActionLabel != null && secondaryActionLabel != null && onPrimaryAction && onSecondaryAction) {
@@ -243,7 +162,7 @@ function ApprovalSignoffPanel({
             type="button"
             onClick={() => onPrimaryAction()}
             disabled={!primaryActionEnabled}
-            style={primaryActionEnabled ? primaryBtnStyle : disabledBtnStyle}
+            className={primaryBtnClass(!!primaryActionEnabled)}
           >
             {primaryActionLabel}
           </button>
@@ -251,7 +170,7 @@ function ApprovalSignoffPanel({
             type="button"
             onClick={() => onSecondaryAction()}
             disabled={!secondaryActionEnabled}
-            style={secondaryActionEnabled ? secondaryBtnStyle : disabledBtnStyle}
+            className={primaryBtnClass(!!secondaryActionEnabled)}
           >
             {secondaryActionLabel}
           </button>
@@ -260,7 +179,7 @@ function ApprovalSignoffPanel({
     }
     if (showActionButton) {
       return (
-        <button type="button" onClick={() => onAction()} style={primaryBtnStyle}>
+        <button type="button" onClick={() => onAction()} className={primaryBtnClass(true)}>
           {actionButtonLabel}
         </button>
       );
@@ -270,66 +189,38 @@ function ApprovalSignoffPanel({
 
   return (
     <div
-      style={{
-        background: "linear-gradient(135deg, #fffbeb, #fef3c7)",
-        border: "1px solid #fde68a",
-        borderRadius: "12px",
-        padding: "20px 24px",
-        marginBottom: "20px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: "16px",
-        flexWrap: "wrap",
-      }}
+      data-approval-panel={variant}
+      className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-ds-panel border border-ds-border bg-ds-background px-4 py-3"
     >
-      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-        <div>
-          <div style={{ fontFamily: "Sora", fontSize: "15px", fontWeight: 600, color: "#92400e" }}>
-            {statusLabel}
-          </div>
-          <div style={{ fontSize: "12.5px", color: "#b45309", marginTop: "3px" }}>{subLabel}</div>
-        </div>
+      <div className="min-w-0">
+        <div className="text-[13px] font-semibold leading-[1.4] text-ds-text-primary">{statusLabel}</div>
+        <div className="mt-0.5 text-xs leading-[1.45] text-ds-text-secondary">{subLabel}</div>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-        {badges.map((b) => (
-          <span
-            key={b.label}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "6px 14px",
-              borderRadius: "20px",
-              background: b.done ? "#f0fdf4" : "#fff1f2",
-              border: `1px solid ${b.done ? "#bbf7d0" : "#fecdd3"}`,
-              fontSize: "12px",
-              fontWeight: 600,
-              color: b.done ? "#166534" : "#9f1239",
-            }}
-          >
-            {b.done ? "✓" : "○"} {b.label}
-          </span>
-        ))}
-        {renderActionButtons()}
-        {variant === "approval" && onRequestChanges && (
-          <button
-            type="button"
-            onClick={() => onRequestChanges()}
-            style={{
-              padding: "9px 18px",
-              borderRadius: "8px",
-              background: "#fff1f2",
-              border: "1px solid #fecdd3",
-              fontSize: "13px",
-              fontWeight: 600,
-              color: "#e11d48",
-              cursor: "pointer",
-            }}
-          >
-            {requestChangesLabel}
-          </button>
-        )}
+      <div data-approval-actions className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div data-approval-status-group className="flex items-center gap-2">
+          {badges.map((b) => {
+            const tone = b.done ? "success" : "warning";
+            return (
+              <span
+                key={b.label}
+                data-approval-badge={b.label}
+                data-tone={tone}
+                title={`${b.label} ${b.done ? "approved" : "pending"}`}
+                className={`inline-flex items-center gap-1 whitespace-nowrap rounded-ds-badge border px-[5px] py-0.5 text-xs font-medium leading-4 ${statusToneClasses[tone].badge}`}
+              >
+                <span aria-hidden="true">{b.done ? "✓" : "○"}</span> {b.label}
+              </span>
+            );
+          })}
+        </div>
+        <div data-approval-button-group className="flex flex-wrap items-center gap-2">
+          {renderActionButtons()}
+          {variant === "approval" && onRequestChanges && (
+            <Button type="button" variant="outline" size="sm" className="shrink-0 text-[13px]" onClick={() => onRequestChanges()}>
+              {requestChangesLabel}
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -350,6 +241,8 @@ export function AppraisalTabs({
   approvals = [],
   signoffs = [],
   hrRecommendationsSaved = false,
+  midyearEnabled = false,
+  readOnly = false,
 }: AppraisalTabsProps) {
   const [activeTab, setActiveTab] = useState<TabValue>("workplan");
   const [summaryRefreshKey, setSummaryRefreshKey] = useState(0);
@@ -425,7 +318,6 @@ export function AppraisalTabs({
   }, [activeTab, unsavedModalAction, unsavedModalPayload, router, markClean]);
   const [submitSelfAssessmentSubmitting, setSubmitSelfAssessmentSubmitting] = useState(false);
   const [selfAssessmentCanSubmit, setSelfAssessmentCanSubmit] = useState<boolean | null>(null);
-  const [canSubmitForApproval, setCanSubmitForApproval] = useState<boolean | null>(null);
   const [submitForApprovalSubmitting, setSubmitForApprovalSubmitting] = useState(false);
   const [requestChangesModalOpen, setRequestChangesModalOpen] = useState(false);
   const [requestChangesReason, setRequestChangesReason] = useState("");
@@ -442,7 +334,7 @@ export function AppraisalTabs({
   const isEmployee = currentUserEmployeeId === appraisal.employee_id;
   const isAppraisalManager = isManager;
   const showLeadership = showLeadershipProp ?? appraisal.is_management;
-  const testBypass = process.env.NEXT_PUBLIC_ALLOW_APPRAISAL_TEST_BYPASS === "true";
+  const testBypass = !readOnly && allowAppraisalTestBypassClient();
 
   // Troubleshooting: employee / Self Assessment editability
   console.log("[AppraisalTabs] employee check", {
@@ -501,32 +393,11 @@ export function AppraisalTabs({
 
   // When DRAFT and employee/manager, fetch full completion so Submit for Approval requires all sections
   const showSubmitForApproval = status === "DRAFT" && (isEmployee || isAppraisalManager);
-  useEffect(() => {
-    if (!showSubmitForApproval || !appraisal.id) {
-      setCanSubmitForApproval(null);
-      return;
-    }
-    let cancelled = false;
-    const fetchCanSubmit = () => {
-      fetch(`/api/appraisals/${appraisal.id}/completion?showLeadership=${showLeadership ? "true" : "false"}`, { cache: "no-store" })
-        .then((res) => res.ok ? res.json() : null)
-        .then((data) => {
-          if (!cancelled && data && typeof data.canSubmit === "boolean") {
-            setCanSubmitForApproval(data.canSubmit);
-          } else {
-            setCanSubmitForApproval(false);
-          }
-        })
-        .catch(() => { if (!cancelled) setCanSubmitForApproval(false); });
-    };
-    fetchCanSubmit();
-    const onInvalidate = () => fetchCanSubmit();
-    window.addEventListener("appraisal-completion-invalidate", onInvalidate);
-    return () => {
-      cancelled = true;
-      window.removeEventListener("appraisal-completion-invalidate", onInvalidate);
-    };
-  }, [showSubmitForApproval, appraisal.id, showLeadership]);
+  const { canSubmit: canSubmitForApproval, blockers: submitForApprovalBlockers } = useDraftSubmitReadiness(
+    appraisal.id,
+    showSubmitForApproval,
+    showLeadership
+  );
 
   // When manager can submit review, fetch completion so Recall/Submit bar can enable/disable the Submit button
   const showManagerReviewActions = status === "MANAGER_REVIEW" && (isAppraisalManager || testBypass);
@@ -558,35 +429,59 @@ export function AppraisalTabs({
     };
   }, [showManagerReviewActions, appraisal.id, showLeadership]);
 
+  const [hasFormalMidyearHistory, setHasFormalMidyearHistory] = useState(false);
   useEffect(() => {
-    if (!isInProgress && activeTab === "checkins") {
+    if (isInProgress || !appraisal.id) {
+      setHasFormalMidyearHistory(false);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/appraisals/${appraisal.id}/checkins`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { checkIns?: { review_mode?: string | null }[] } | null) => {
+        if (cancelled) return;
+        const list = Array.isArray(data?.checkIns) ? data!.checkIns : [];
+        setHasFormalMidyearHistory(list.some((c) => isFormalReviewMode(c.review_mode)));
+      })
+      .catch(() => { if (!cancelled) setHasFormalMidyearHistory(false); });
+    return () => { cancelled = true; };
+  }, [isInProgress, appraisal.id]);
+
+  useEffect(() => {
+    if (!isInProgress && !hasFormalMidyearHistory && activeTab === "checkins") {
       setActiveTab("workplan");
     }
-  }, [isInProgress, activeTab]);
+  }, [isInProgress, hasFormalMidyearHistory, activeTab]);
 
   const canEditSelfRatings =
-    (status === "SELF_ASSESSMENT" && isEmployee) ||
-    canEditField("self_rating", status, userRole) ||
-    canEditField("self_comments", status, userRole);
-  const canEditManagerRatings = canEditField("manager_rating", status, userRole) || canEditField("manager_comments", status, userRole);
+    !readOnly &&
+    ((status === "SELF_ASSESSMENT" && isEmployee) ||
+      canEditField("self_rating", status, userRole) ||
+      canEditField("self_comments", status, userRole));
+  const canEditManagerRatings =
+    !readOnly && (canEditField("manager_rating", status, userRole) || canEditField("manager_comments", status, userRole));
   const effectiveCanEditManagerRatings = canEditManagerRatings || (testBypass && status === "MANAGER_REVIEW");
+  const canEditWeights = !readOnly && status === "DRAFT";
+  const canEditTechnicalSetup = !readOnly && status === "DRAFT" && (isEmployee || isAppraisalManager || isHR);
 
+  const checkInsLabel = midyearEnabled ? "Reviews & Check-ins" : "Check-ins";
   const tabs: Tab[] = isInProgress
     ? [
-        { id: "workplan", label: "Workplan", icon: <ClipboardIcon /> },
-        { id: "checkins", label: "Check-ins", icon: <CheckInIcon /> },
+        { id: "workplan", label: "Workplan" },
+        { id: "checkins", label: checkInsLabel },
       ]
     : [
-        { id: "workplan", label: "Workplan", icon: <ClipboardIcon /> },
-        { id: "core", label: "Core Competencies", icon: <AwardIcon /> },
-        { id: "technical", label: "Technical", icon: <WrenchIcon /> },
-        { id: "productivity", label: "Productivity", icon: <TrendingUpIcon /> },
-        ...(showLeadership ? [{ id: "leadership" as const, label: "Leadership", icon: <UsersIcon /> }] : []),
-        ...((isHR || isAppraisalManager) && ["MANAGER_REVIEW", "PENDING_SIGNOFF", "HR_REVIEW", "COMPLETE"].includes(status) ? [{ id: "hractions" as const, label: "HR Actions", icon: <HRActionsIcon /> }] : []),
-        { id: "summary", label: "Summary", icon: <FileTextIcon /> },
-        ...(((status === "MANAGER_REVIEW" && (isAppraisalManager || isHR)) || status === "PENDING_SIGNOFF" || status === "HR_REVIEW" || status === "COMPLETE") ? [{ id: "signoffs" as const, label: "Sign-offs", icon: <PenLineIcon /> }] : []),
-        ...(isPrimaryManager ? [{ id: "delegation" as const, label: "Delegation", icon: <UsersIcon /> }] : []),
-        { id: "audit", label: "Audit trail", icon: <HistoryIcon /> },
+        { id: "workplan", label: "Workplan" },
+        ...(hasFormalMidyearHistory ? [{ id: "checkins" as const, label: checkInsLabel }] : []),
+        { id: "core", label: "Core Competencies" },
+        { id: "technical", label: "Technical" },
+        { id: "productivity", label: "Productivity" },
+        ...(showLeadership ? [{ id: "leadership" as const, label: "Leadership" }] : []),
+        ...((isHR || isAppraisalManager) && ["MANAGER_REVIEW", "PENDING_SIGNOFF", "HR_REVIEW", "COMPLETE"].includes(status) ? [{ id: "hractions" as const, label: "HR Actions" }] : []),
+        { id: "summary", label: "Summary" },
+        ...(!readOnly && ((status === "MANAGER_REVIEW" && (isAppraisalManager || isHR)) || status === "PENDING_SIGNOFF" || status === "HR_REVIEW" || status === "COMPLETE") ? [{ id: "signoffs" as const, label: "Sign-offs" }] : []),
+        ...(isPrimaryManager ? [{ id: "delegation" as const, label: "Delegation" }] : []),
+        ...(readOnly ? [] : [{ id: "audit" as const, label: "Audit trail" }]),
       ];
 
   const renderContent = () => {
@@ -594,7 +489,7 @@ export function AppraisalTabs({
       case "workplan":
         return (
           <>
-            {status === "SELF_ASSESSMENT" && appraisal.cycleStartDate && appraisal.cycleEndDate && (
+            {!readOnly && status === "SELF_ASSESSMENT" && appraisal.cycleStartDate && appraisal.cycleEndDate && (
               <EvidenceBuilder
                 appraisalId={appraisal.id}
                 employeeId={appraisal.employee_id}
@@ -603,8 +498,8 @@ export function AppraisalTabs({
                 status={appraisal.status}
               />
             )}
-            {isInProgress && (
-              <p className="text-[12px] text-[#8a97b8] mb-4">Reference only — objectives are locked. Use Check-ins to track progress, then Start self-assessment when ready.</p>
+            {isInProgress && !readOnly && (
+              <p className="text-[12px] text-ds-text-secondary mb-4">Reference only — objectives are locked. Use Check-ins to track progress, then Start Final Review when ready.</p>
             )}
             <WorkplanSection
               appraisalId={appraisal.id}
@@ -613,6 +508,7 @@ export function AppraisalTabs({
               isEmployee={isEmployee}
               isManager={isAppraisalManager}
               isHR={isHR}
+              oversight={readOnly}
               onDirtyChange={(dirty) => (dirty ? markDirty("workplan") : markClean("workplan"))}
               registerSave={(fn) => { saveCurrentTabRef.current = fn; }}
             />
@@ -622,9 +518,10 @@ export function AppraisalTabs({
         return (
           <CoreCompetenciesSection
             appraisalId={appraisal.id}
+            appraisalStatus={status}
             canEditSelfRatings={canEditSelfRatings}
             canEditManagerRatings={effectiveCanEditManagerRatings}
-            canEditWeights={status === "DRAFT"}
+            canEditWeights={canEditWeights}
             onDirtyChange={(dirty) => (dirty ? markDirty("core") : markClean("core"))}
             registerSave={(fn) => { saveCurrentTabRef.current = fn; }}
           />
@@ -633,8 +530,9 @@ export function AppraisalTabs({
         return (
           <TechnicalCompetenciesSection
             appraisalId={appraisal.id}
-            canEditSetup={status === "DRAFT" && (isEmployee || isAppraisalManager || isHR)}
-            canDeleteCompetencies={status === "DRAFT" && (isEmployee || isAppraisalManager || isHR)}
+            appraisalStatus={status}
+            canEditSetup={canEditTechnicalSetup}
+            canDeleteCompetencies={canEditTechnicalSetup}
             canEditSelfRatings={canEditSelfRatings}
             canEditManagerRatings={effectiveCanEditManagerRatings}
             onDirtyChange={(dirty) => (dirty ? markDirty("technical") : markClean("technical"))}
@@ -644,9 +542,10 @@ export function AppraisalTabs({
         return (
           <ProductivitySection
             appraisalId={appraisal.id}
+            appraisalStatus={status}
             canEditSelfRatings={canEditSelfRatings}
             canEditManagerRatings={effectiveCanEditManagerRatings}
-            canEditWeights={status === "DRAFT"}
+            canEditWeights={canEditWeights}
             onDirtyChange={(dirty) => (dirty ? markDirty("productivity") : markClean("productivity"))}
             registerSave={(fn) => { saveCurrentTabRef.current = fn; }}
           />
@@ -655,15 +554,18 @@ export function AppraisalTabs({
         return showLeadership ? (
           <LeadershipSection
             appraisalId={appraisal.id}
+            appraisalStatus={status}
             canEditSelfRatings={canEditSelfRatings}
             canEditManagerRatings={effectiveCanEditManagerRatings}
-            canEditWeights={status === "DRAFT"}
+            canEditWeights={canEditWeights}
             onDirtyChange={(dirty) => (dirty ? markDirty("leadership") : markClean("leadership"))}
             registerSave={(fn) => { saveCurrentTabRef.current = fn; }}
           />
         ) : null;
       case "summary":
         return (
+          <>
+          <ScoreSnapshotsPanel appraisalId={appraisal.id} refreshKey={summaryRefreshKey} />
           <SummaryTab
             appraisalId={appraisal.id}
             appraisal={appraisal}
@@ -675,6 +577,7 @@ export function AppraisalTabs({
             onSummaryResult={handleSummaryResult}
             refreshKey={summaryRefreshKey}
           />
+          </>
         );
       case "signoffs":
         return (
@@ -710,6 +613,7 @@ export function AppraisalTabs({
             isHR={isHR}
             isEmployee={isEmployee}
             testBypass={testBypass}
+            readOnly={readOnly || !isInProgress}
           />
         );
       default:
@@ -738,11 +642,11 @@ export function AppraisalTabs({
     <div>
       {isDelegated && (
         <div
-          className="mb-4 w-full rounded-[10px] px-4 py-3 text-[13px]"
+          className="mb-4 w-full rounded-ds-panel px-4 py-3 text-[13px]"
           style={{
-            background: "#e6f4f1",
-            borderLeft: "3px solid #0F8A6E",
-            color: "#0F8A6E",
+            background: "#f3f3f3",
+            borderLeft: "2px solid var(--ds-lavender)",
+            color: "#2b2d31",
           }}
         >
           You are managing this appraisal as a delegate for {delegatedByName ?? appraisal.managerName ?? "the manager"}. You have full access to review and action this appraisal.
@@ -774,7 +678,7 @@ export function AppraisalTabs({
             else alert(data.error || "Failed to approve");
           }}
           requestChangesLabel="Request Changes"
-          onRequestChanges={() => setRequestChangesModalOpen(true)}
+          onRequestChanges={readOnly ? undefined : () => setRequestChangesModalOpen(true)}
           bypassMode={testBypass}
           primaryActionLabel={testBypass ? "Approve as Employee" : undefined}
           primaryActionEnabled={testBypass ? !approvedEmployee : undefined}
@@ -885,9 +789,9 @@ export function AppraisalTabs({
       {status === "HR_REVIEW" && isHR && (
         <div
           style={{
-            background: "linear-gradient(135deg, #f0fdfa, #ccfbf1)",
-            border: "1px solid #99f6e4",
-            borderRadius: "12px",
+            background: "#f3f3f3",
+            border: "1px solid #d0d4d8",
+            borderRadius: "8px",
             padding: "16px 24px",
             marginBottom: "20px",
             display: "flex",
@@ -895,7 +799,7 @@ export function AppraisalTabs({
             justifyContent: "space-between",
           }}
         >
-          <div style={{ fontSize: "14px", fontWeight: 600, color: "#0f766e" }}>
+          <div style={{ fontSize: "14px", fontWeight: 600, color: "#2b2d31" }}>
             HR Review — Review the appraisal and close when complete.
           </div>
           <button
@@ -909,7 +813,7 @@ export function AppraisalTabs({
             style={{
               padding: "9px 20px",
               borderRadius: "8px",
-              background: "linear-gradient(135deg, #0d9488, #0f766e)",
+              background: "#0d0e10",
               border: "none",
               fontSize: "13px",
               fontWeight: 600,
@@ -925,17 +829,17 @@ export function AppraisalTabs({
       {/* Adobe Sign strip (PENDING_SIGNOFF): three signers + status */}
       {isPendingSignoff && agreement && agreement.status !== "SIGNED" && (
         <div
-          className="flex items-center gap-3 px-5 py-3 bg-[#fffbeb] border border-[#fcd34d] rounded-[10px] mb-4"
+          className="flex items-center gap-3 px-5 py-3 bg-ds-warning-subtle border border-ds-warning-border rounded-ds-panel mb-4"
         >
-          <svg width={16} height={16} viewBox="0 0 24 24" fill="currentColor" style={{ color: "#d97706" }} aria-hidden>
+          <svg width={16} height={16} viewBox="0 0 24 24" fill="currentColor" style={{ color: "#8a5a00" }} aria-hidden>
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h2v-6h-2v6zm0-8h2V7h-2v2z" />
           </svg>
-          <p className="text-[12px] font-semibold text-[#92400e]">Sign-off sent via Adobe Sign</p>
-          <p className="text-[11px] text-[#d97706]">· Check the Sign-offs tab for status</p>
+          <p className="text-[12px] font-semibold text-ds-warning">Sign-off sent via Adobe Sign</p>
+          <p className="text-[11px] text-ds-warning">· Check the Sign-offs tab for status</p>
           <div className="flex items-center gap-1.5 ml-auto">
             {[signedEmployee, signedManager, signedHR].map((signed, i) => (
               <div key={i} className="flex items-center gap-1.5" title={["Employee", "Manager", "HR"][i] + (signed ? " — signed" : " — pending")}>
-                <span className={`w-2 h-2 rounded-full ${signed ? "bg-[#059669]" : "bg-[#dde5f5]"}`} aria-hidden />
+                <span className={`w-2 h-2 rounded-full ${signed ? "bg-ds-success" : "bg-ds-border"}`} aria-hidden />
               </div>
             ))}
           </div>
@@ -944,97 +848,76 @@ export function AppraisalTabs({
       {(status === "PENDING_SIGNOFF" || status === "HR_REVIEW" || status === "COMPLETE") &&
         agreement?.status === "SIGNED" && (
           <div
-            className="flex items-center gap-3 px-5 py-3 bg-[#ecfdf5] border border-[#6ee7b7] rounded-[10px]"
+            className="flex items-center gap-3 px-5 py-3 bg-ds-success-subtle border border-ds-success-border rounded-ds-panel"
             style={{ marginBottom: 12 }}
           >
             <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
               <polyline points="20 6 9 17 4 12" />
             </svg>
-            <span className="text-[12px] font-semibold text-[#065f46]">Sign-off complete · All signatures collected</span>
+            <span className="text-[12px] font-semibold text-ds-success">Sign-off complete · All signatures collected</span>
           </div>
         )}
 
-      {/* Tab bar — full width, aligned with stepper */}
-      <div className="w-full flex items-center gap-0.5 mb-6 overflow-x-auto overflow-y-hidden bg-white border-b border-[#dde5f5]">
+      {/* Tab bar — flat text tabs, active tab underlined */}
+      <div className="mb-4 flex w-full items-center gap-4 shadow-[inset_0_-1px_0_var(--ds-border)]">
+        <div className="flex min-w-0 flex-1 items-center gap-5 overflow-x-auto overflow-y-hidden" role="tablist">
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => handleTabChange(tab.id)}
+                className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 py-2.5 text-[13px] font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ds-focus ${
+                  isActive ? "border-ds-accent text-ds-text-primary" : "border-transparent text-ds-text-secondary hover:text-ds-text-primary"
+                }`}
+              >
+                {tab.id === "summary" && (
+                  <span
+                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${summaryTotalPoints > 0 ? "bg-ds-success" : "bg-ds-text-muted"}`}
+                    aria-hidden
+                  />
+                )}
+                {tab.id === "signoffs" && (
+                  <span
+                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                      status !== "PENDING_SIGNOFF" && status !== "HR_REVIEW" && status !== "COMPLETE"
+                        ? "bg-ds-text-muted"
+                        : allSignoffsComplete
+                          ? "bg-ds-success"
+                          : "bg-ds-warning"
+                    }`}
+                    aria-hidden
+                  />
+                )}
+                {tab.id === "hractions" && (
+                  <span
+                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${hrRecommendationsSaved ? "bg-ds-success" : "bg-ds-warning"}`}
+                    aria-hidden
+                  />
+                )}
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
         {hasAnyUnsaved && (
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#fffbeb] border border-[#fcd34d] ml-2 shrink-0">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#d97706]" />
-            <span className="text-[10px] font-semibold text-[#92400e]">Unsaved changes</span>
+          <div className="flex shrink-0 items-center gap-1.5 rounded-ds-badge border border-ds-warning-border bg-ds-warning-subtle px-1.5 py-0.5" role="status">
+            <span className="h-1.5 w-1.5 rounded-full bg-ds-amber" aria-hidden />
+            <span className="text-xs font-medium text-ds-warning">Unsaved changes</span>
           </div>
         )}
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => handleTabChange(tab.id)}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "7px",
-              padding: "14px 16px",
-              fontSize: "13px",
-              fontWeight: activeTab === tab.id ? 600 : 400,
-              color: activeTab === tab.id ? "#3b82f6" : "#8a97b8",
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              borderBottom: activeTab === tab.id ? "2px solid #3b82f6" : "2px solid transparent",
-              marginBottom: "-1px",
-              transition: "all 0.15s",
-              whiteSpace: "nowrap",
-            }}
-            onMouseEnter={(e) => {
-              if (activeTab !== tab.id) {
-                e.currentTarget.style.color = "#4a5a82";
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (activeTab !== tab.id) {
-                e.currentTarget.style.color = "#8a97b8";
-              }
-            }}
-          >
-            {tab.icon}
-            {tab.id === "summary" && (
-              <span
-                className="w-2 h-2 rounded-full shrink-0"
-                style={{ backgroundColor: summaryTotalPoints > 0 ? "rgb(16 185 129)" : "rgb(156 163 175)" }}
-                aria-hidden
-              />
-            )}
-            {tab.id === "signoffs" && (
-              <span
-                className="w-2 h-2 rounded-full shrink-0"
-                style={{
-                  backgroundColor:
-                    status !== "PENDING_SIGNOFF" && status !== "HR_REVIEW" && status !== "COMPLETE"
-                      ? "rgb(156 163 175)"
-                      : allSignoffsComplete
-                        ? "rgb(16 185 129)"
-                        : "rgb(245 158 11)",
-                }}
-                aria-hidden
-              />
-            )}
-            {tab.id === "hractions" && (
-              <span
-                className="w-2 h-2 rounded-full shrink-0"
-                style={{
-                  backgroundColor: hrRecommendationsSaved ? "rgb(16 185 129)" : "rgb(245 158 11)",
-                }}
-                aria-hidden
-              />
-            )}
-            {tab.label}
-          </button>
-        ))}
       </div>
 
       {/* Submit for Approval — below tabs, visible on all tabs when DRAFT (employee or manager) */}
       {showSubmitForApproval && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "10px", marginBottom: "16px", flexWrap: "wrap" }}>
-          <button
-            type="button"
-            onClick={async () => {
+        <SubmitForApprovalAction
+          canSubmit={canSubmitForApproval}
+          blockers={submitForApprovalBlockers}
+          submitting={submitForApprovalSubmitting}
+          onSubmit={async () => {
               setSubmitForApprovalSubmitting(true);
               try {
                 const res = await fetch(`/api/appraisals/${appraisal.id}/submit-for-approval`, { method: "POST" });
@@ -1054,33 +937,17 @@ export function AppraisalTabs({
                 setSubmitForApprovalSubmitting(false);
               }
             }}
-            disabled={submitForApprovalSubmitting || !canSubmitForApproval}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "7px",
-              padding: "9px 20px",
-              borderRadius: "8px",
-              background: !submitForApprovalSubmitting && canSubmitForApproval === true ? "linear-gradient(135deg, #059669, #047857)" : "#e2e8f0",
-              border: "none",
-              fontSize: "13px",
-              fontWeight: 600,
-              color: !submitForApprovalSubmitting && canSubmitForApproval === true ? "white" : "#94a3b8",
-              cursor: !submitForApprovalSubmitting && canSubmitForApproval === true ? "pointer" : "not-allowed",
-              boxShadow: !submitForApprovalSubmitting && canSubmitForApproval === true ? "0 2px 8px rgba(5,150,105,0.35)" : "none",
-              transition: "all 0.16s",
-            }}
-          >
-            <SendIcon /> {submitForApprovalSubmitting ? "Submitting…" : "Submit for Approval"}
-          </button>
-        </div>
+        />
       )}
 
-      {/* Start self-assessment — visible when in IN_PROGRESS (employee only) */}
+      {/* Start Final Review — visible when in IN_PROGRESS (employee only); moves the appraisal to SELF_ASSESSMENT */}
       {isInProgress && isEmployee && (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "10px", marginBottom: "16px", flexWrap: "wrap" }}>
           <button
             type="button"
+            data-start-final-review
+            title={START_FINAL_REVIEW_HELP}
+            aria-describedby="start-final-review-help"
             onClick={async () => {
               try {
                 const res = await fetch(`/api/appraisals/${appraisal.id}/start-self-assessment`, { method: "POST" });
@@ -1097,18 +964,21 @@ export function AppraisalTabs({
               gap: "7px",
               padding: "9px 20px",
               borderRadius: "8px",
-              background: "linear-gradient(135deg, #059669, #047857)",
+              background: "#0d0e10",
               border: "none",
               fontSize: "13px",
               fontWeight: 600,
               color: "white",
               cursor: "pointer",
-              boxShadow: "0 2px 8px rgba(5,150,105,0.35)",
+              boxShadow: "none",
               transition: "all 0.16s",
             }}
           >
-            <SendIcon /> Start self-assessment
+            <SendIcon /> Start Final Review
           </button>
+          <span id="start-final-review-help" className="sr-only">
+            {START_FINAL_REVIEW_HELP}
+          </span>
         </div>
       )}
 
@@ -1137,11 +1007,11 @@ export function AppraisalTabs({
               gap: "7px",
               padding: "9px 20px",
               borderRadius: "8px",
-              background: !submitSelfAssessmentSubmitting && selfAssessmentCanSubmit === true ? "linear-gradient(135deg, #059669, #047857)" : "#e2e8f0",
+              background: !submitSelfAssessmentSubmitting && selfAssessmentCanSubmit === true ? "#0d0e10" : "#e7e7e7",
               border: "none",
               fontSize: "13px",
               fontWeight: 600,
-              color: !submitSelfAssessmentSubmitting && selfAssessmentCanSubmit === true ? "white" : "#94a3b8",
+              color: !submitSelfAssessmentSubmitting && selfAssessmentCanSubmit === true ? "white" : "#646f79",
               cursor: !submitSelfAssessmentSubmitting && selfAssessmentCanSubmit === true ? "pointer" : "not-allowed",
             }}
           >
@@ -1150,8 +1020,8 @@ export function AppraisalTabs({
         </div>
       )}
 
-      {/* Recall Submission + Proceed to Sign-off (or portal slot for Generate PDF when on Sign-offs tab) */}
-      {status === "MANAGER_REVIEW" && (isEmployee || isAppraisalManager || testBypass) && (
+      {/* Recall Submission + Proceed to Sign-off (the Sign-offs tab carries its own Generate PDF action) */}
+      {status === "MANAGER_REVIEW" && (isEmployee || ((isAppraisalManager || testBypass) && activeTab !== "signoffs")) && (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "10px", marginBottom: "16px", flexWrap: "wrap" }}>
           {(status === "MANAGER_REVIEW" || status === "SUBMITTED") && isEmployee && (
             <button
@@ -1161,17 +1031,14 @@ export function AppraisalTabs({
               style={{
                 display: "inline-flex", alignItems: "center", gap: "7px",
                 padding: "9px 18px", borderRadius: "8px",
-                background: "#fff1f2", border: "1px solid #fecdd3",
-                fontSize: "13px", fontWeight: 600, color: "#e11d48", cursor: "pointer",
+                background: "#fef2f2", border: "1px solid #fbd5d5",
+                fontSize: "13px", fontWeight: 600, color: "#b42318", cursor: "pointer",
               }}
             >
               Recall Submission
             </button>
           )}
-          {status === "MANAGER_REVIEW" && (isAppraisalManager || testBypass) && (
-            activeTab === "signoffs" ? (
-              <div id="manager-review-actions" style={{ display: "inline-flex", alignItems: "center" }} />
-            ) : (
+          {status === "MANAGER_REVIEW" && (isAppraisalManager || testBypass) && activeTab !== "signoffs" && (
               <button
                 type="button"
                 onClick={() => handleTabChange("signoffs")}
@@ -1179,15 +1046,14 @@ export function AppraisalTabs({
                 style={{
                   display: "inline-flex", alignItems: "center", gap: "7px",
                   padding: "9px 20px", borderRadius: "8px",
-                  background: managerReviewCanSubmit === true ? "linear-gradient(135deg, #059669, #047857)" : "#e2e8f0",
+                  background: managerReviewCanSubmit === true ? "#0d0e10" : "#e7e7e7",
                   border: "none", fontSize: "13px", fontWeight: 600,
-                  color: managerReviewCanSubmit === true ? "white" : "#94a3b8",
+                  color: managerReviewCanSubmit === true ? "white" : "#646f79",
                   cursor: managerReviewCanSubmit === true ? "pointer" : "not-allowed",
                 }}
               >
                 <SendIcon /> Proceed to Sign-off →
               </button>
-            )
           )}
         </div>
       )}
@@ -1204,10 +1070,10 @@ export function AppraisalTabs({
       {/* Recall Submission confirmation modal — portaled so overlay covers full screen */}
       {managerReviewRecallModalOpen && typeof document !== "undefined" && createPortal(
         <div style={{ position: "fixed", inset: 0, width: "100vw", height: "100vh", background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000 }}>
-          <div style={{ background: "white", borderRadius: "14px", width: "100%", maxWidth: "400px", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)" }}>
-            <div style={{ padding: "20px 24px", borderBottom: "1px solid #dde5f5" }}>
-              <h3 style={{ fontFamily: "Sora, sans-serif", fontSize: "18px", fontWeight: 600, color: "#0f1f3d", margin: 0 }}>Recall submission?</h3>
-              <p style={{ fontSize: "13px", color: "#8a97b8", marginTop: "8px", marginBottom: 0 }}>You can edit and resubmit.</p>
+          <div style={{ background: "white", borderRadius: "8px", width: "100%", maxWidth: "400px", boxShadow: "var(--ds-shadow-dialog)" }}>
+            <div style={{ padding: "20px 24px", borderBottom: "1px solid #e7e7e7" }}>
+              <h3 style={{ fontFamily: "var(--ds-font-sans)", fontSize: "18px", fontWeight: 600, color: "#0d0d0d", margin: 0 }}>Recall submission?</h3>
+              <p style={{ fontSize: "13px", color: "#646f79", marginTop: "8px", marginBottom: 0 }}>You can edit and resubmit.</p>
             </div>
             <div style={{ padding: "16px 24px", display: "flex", justifyContent: "flex-end", gap: "10px" }}>
               <button
@@ -1217,10 +1083,10 @@ export function AppraisalTabs({
                   padding: "9px 20px",
                   borderRadius: "8px",
                   background: "white",
-                  border: "1px solid #dde5f5",
+                  border: "1px solid #e7e7e7",
                   fontSize: "13px",
                   fontWeight: 500,
-                  color: "#4a5a82",
+                  color: "#646f79",
                   cursor: "pointer",
                 }}
               >
@@ -1244,7 +1110,7 @@ export function AppraisalTabs({
                 style={{
                   padding: "9px 20px",
                   borderRadius: "8px",
-                  background: "#2563eb",
+                  background: "#0d0e10",
                   border: "none",
                   fontSize: "13px",
                   fontWeight: 600,

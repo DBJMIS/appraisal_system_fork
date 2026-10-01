@@ -54,7 +54,7 @@ export function DivisionCard({
 }: DivisionCardProps) {
   return (
     <div
-      className="overflow-hidden rounded-[14px] bg-white"
+      className="overflow-hidden rounded-ds-panel bg-white"
       style={{
         boxShadow: "var(--shadow-card)",
         border: "1px solid var(--border-color)",
@@ -67,7 +67,7 @@ export function DivisionCard({
       >
         <div
           className="flex h-8 w-8 items-center justify-center rounded-[9px]"
-          style={{ backgroundColor: "#f0fdfa" }}
+          style={{ backgroundColor: "#f3f3f3" }}
         >
           <span style={{ color: "var(--teal)" }}>
             <BuildingIcon />

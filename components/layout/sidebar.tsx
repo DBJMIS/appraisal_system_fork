@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/utils/cn";
 import { useAuth } from "@/hooks/use-auth";
+import { avatarAccent } from "@/lib/avatar-accent";
 
 interface NavItem {
   href: string;
@@ -12,7 +14,17 @@ interface NavItem {
   icon: React.ReactNode;
   exactMatch?: boolean;
   section?: "main" | "hr" | "admin";
+  accent?: NavAccent;
 }
+
+type NavAccent = "coral" | "mint" | "lavender" | "amber";
+
+const NAV_ACCENT: Record<NavAccent, { icon: string; marker: string }> = {
+  coral: { icon: "text-ds-coral", marker: "bg-ds-coral" },
+  mint: { icon: "text-ds-mint", marker: "bg-ds-mint" },
+  lavender: { icon: "text-ds-lavender", marker: "bg-ds-lavender" },
+  amber: { icon: "text-ds-amber", marker: "bg-ds-amber" },
+};
 
 const GridIcon = () => (
   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -122,38 +134,43 @@ const OperationalPlanIcon = () => (
 
 const navItems: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: <GridIcon />, section: "main" },
-  { href: "/appraisals", label: "My Appraisals", icon: <DocumentIcon />, section: "main" },
-  { href: "/feedback", label: "360 Feedback", icon: <Feedback360Icon />, section: "main" },
-  { href: "/development", label: "Development Profile", icon: <BoltIcon />, section: "main", exactMatch: true },
+  { href: "/appraisals", label: "My Appraisals", icon: <DocumentIcon />, section: "main", accent: "coral" },
+  { href: "/feedback", label: "360 Feedback", icon: <Feedback360Icon />, section: "main", accent: "lavender" },
+  { href: "/development", label: "Development Profile", icon: <BoltIcon />, section: "main", exactMatch: true, accent: "mint" },
   {
     href: "/admin/appraisals",
     label: "All Appraisals",
     icon: <ListIcon />,
     section: "hr",
+    accent: "coral",
   },
   {
     href: "/admin/360",
     label: "All 360 Reviews",
     icon: <Feedback360Icon />,
     section: "hr",
+    accent: "lavender",
   },
   {
     href: "/admin",
     label: "HR Administration",
     icon: <SettingsIcon />,
     section: "hr",
+    accent: "lavender",
   },
   {
     href: "/admin",
     label: "HR Administration",
     icon: <SettingsIcon />,
     section: "admin",
+    accent: "lavender",
   },
   {
     href: "/admin/operational-plan",
     label: "Operational Plan",
     icon: <OperationalPlanIcon />,
     section: "admin",
+    accent: "amber",
   },
   {
     href: "/admin/users",
@@ -162,6 +179,63 @@ const navItems: NavItem[] = [
     section: "admin",
   },
 ];
+
+function navLinkClass(isActive: boolean, collapsed: boolean) {
+  return cn(
+    "group relative flex items-center rounded-ds-button text-[13px] transition-colors duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60",
+    collapsed ? "justify-center p-2.5" : "gap-2.5 px-2.5 py-[7px]",
+    isActive
+      ? "bg-white/[0.09] font-medium text-white"
+      : "font-normal text-white/65 hover:bg-white/[0.05] hover:text-white"
+  );
+}
+
+function NavLinkItem({ item, isActive, collapsed }: { item: NavItem; isActive: boolean; collapsed: boolean }) {
+  return (
+    <Link
+      href={item.href}
+      title={collapsed ? item.label : undefined}
+      aria-current={isActive ? "page" : undefined}
+      className={navLinkClass(isActive, collapsed)}
+    >
+      {isActive && <ActiveMarker accent={item.accent} />}
+      <NavIcon accent={item.accent} isActive={isActive}>
+        {item.icon}
+      </NavIcon>
+      {!collapsed && <span className="truncate">{item.label}</span>}
+    </Link>
+  );
+}
+
+function ActiveMarker({ accent }: { accent?: NavAccent }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn("absolute inset-y-1.5 left-0 w-0.5 rounded-full", accent ? NAV_ACCENT[accent].marker : "bg-white/60")}
+    />
+  );
+}
+
+function NavIcon({ accent, isActive, children }: { accent?: NavAccent; isActive: boolean; children: React.ReactNode }) {
+  return (
+    <span
+      className={cn(
+        "shrink-0 transition-[color,opacity] duration-100",
+        accent
+          ? cn(NAV_ACCENT[accent].icon, isActive ? "opacity-100" : "opacity-75 group-hover:opacity-100")
+          : isActive
+            ? "text-white/80"
+            : "text-white/40 group-hover:text-white/60"
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+function SectionLabel({ children, first = false }: { children: React.ReactNode; first?: boolean }) {
+  return <div className={cn("mb-1.5 px-2.5 text-[11px] font-medium text-white/40", !first && "mt-5")}>{children}</div>;
+}
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -189,135 +263,75 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "relative flex h-full flex-col overflow-hidden transition-all duration-200",
+        "relative flex h-full flex-col overflow-hidden bg-ds-accent transition-[width] duration-200",
         collapsed ? "w-16" : "w-60"
       )}
-      style={{ backgroundColor: "var(--navy)" }}
     >
-      {/* Blue glow top-right */}
-      <div
-        className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full opacity-50"
-        style={{ background: "radial-gradient(circle, rgba(59,130,246,0.25) 0%, transparent 70%)" }}
-      />
-      {/* Gold glow bottom-left */}
-      <div
-        className="pointer-events-none absolute -bottom-20 -left-20 h-60 w-60 rounded-full opacity-40"
-        style={{ background: "radial-gradient(circle, rgba(245,158,11,0.10) 0%, transparent 70%)" }}
-      />
-
       {/* Logo block */}
       <div
-        className="relative z-10 flex items-center gap-3 px-4 py-4"
-        style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}
+        className={cn(
+          "flex items-center border-b border-white/[0.08]",
+          collapsed ? "flex-col gap-2 px-2 py-3" : "gap-2.5 px-4 py-2.5"
+        )}
       >
-        <div
-          className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[9px]"
-          style={{ background: "linear-gradient(135deg, #3b82f6, #1d4ed8)" }}
-        >
-          <svg className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M9 12l2 2 4-4" />
-            <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9c1.5 0 2.92.37 4.17 1.02" />
-          </svg>
-        </div>
-        {!collapsed && (
-          <div className="flex flex-col overflow-hidden">
-            <span className="font-display text-[15px] font-semibold text-white truncate">
-              Appraisal Portal
-            </span>
-            <span className="text-[10px] uppercase tracking-wider text-white/40">
-              Performance Management
-            </span>
-          </div>
+        {collapsed ? (
+          <Image
+            src="/brand/dbj-ascend-mark.png"
+            alt="DBJ Ascend"
+            width={242}
+            height={234}
+            priority
+            className="h-8 w-8 shrink-0 object-contain"
+          />
+        ) : (
+          <Image
+            src="/brand/dbj-ascend-logo.png"
+            alt="DBJ Ascend — Performance & Development Portal"
+            width={960}
+            height={241}
+            priority
+            className="h-10 w-auto min-w-0 max-w-[172px] object-contain object-left"
+          />
         )}
         <button
+          type="button"
           onClick={() => setCollapsed(!collapsed)}
           className={cn(
-            "ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded text-white/50 hover:bg-white/10 hover:text-white transition-colors",
-            collapsed && "mx-auto ml-0"
+            "ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-ds-button text-white/45 transition-colors duration-100 hover:bg-white/[0.08] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60",
+            collapsed && "mx-auto"
           )}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {collapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
         </button>
       </div>
 
       {/* Navigation */}
-      <nav className="relative z-10 flex-1 overflow-y-auto px-3 py-4">
+      <nav aria-label="Main" className="flex-1 overflow-y-auto px-3 py-4">
         {/* Main section */}
-        {!collapsed && (
-          <div className="mb-2 px-3 text-[9.5px] font-semibold uppercase tracking-[0.1em] text-white/30">
-            Main
-          </div>
-        )}
-        <div className="space-y-0.5">
+        {!collapsed && <SectionLabel first>Main</SectionLabel>}
+        <div className="space-y-px">
           {mainItems.map((item) => {
             const isActive = item.exactMatch
               ? pathname === item.href
               : pathname === item.href || pathname.startsWith(item.href + "/");
 
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                title={collapsed ? item.label : undefined}
-                className={cn(
-                  "group relative flex items-center rounded-md text-[13.5px] font-medium transition-all duration-150",
-                  collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2",
-                  isActive
-                    ? "bg-[rgba(59,130,246,0.20)] text-accent-bright"
-                    : "text-white/60 hover:bg-white/[0.07] hover:text-white"
-                )}
-              >
-                {isActive && (
-                  <div
-                    className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r"
-                    style={{ backgroundColor: "var(--accent-bright)" }}
-                  />
-                )}
-                <span className="shrink-0">{item.icon}</span>
-                {!collapsed && <span className="truncate">{item.label}</span>}
-              </Link>
-            );
+            return <NavLinkItem key={item.href} item={item} isActive={isActive} collapsed={collapsed} />;
           })}
         </div>
 
         {/* Admin section */}
         {adminItems.length > 0 && (
           <>
-            {!collapsed && (
-              <div className="mb-2 mt-6 px-3 text-[9.5px] font-semibold uppercase tracking-[0.1em] text-white/30">
-                Admin
-              </div>
-            )}
-            <div className="space-y-0.5">
+            {!collapsed && <SectionLabel>Admin</SectionLabel>}
+            <div className="space-y-px">
               {adminItems.map((item) => {
                 const isActive = item.exactMatch
                   ? pathname === item.href
                   : pathname === item.href || pathname.startsWith(item.href + "/");
 
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    title={collapsed ? item.label : undefined}
-                    className={cn(
-                      "group relative flex items-center rounded-md text-[13.5px] font-medium transition-all duration-150",
-                      collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2",
-                      isActive
-                        ? "bg-[rgba(59,130,246,0.20)] text-accent-bright"
-                        : "text-white/60 hover:bg-white/[0.07] hover:text-white"
-                    )}
-                  >
-                    {isActive && (
-                      <div
-                        className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r"
-                        style={{ backgroundColor: "var(--accent-bright)" }}
-                      />
-                    )}
-                    <span className="shrink-0">{item.icon}</span>
-                    {!collapsed && <span className="truncate">{item.label}</span>}
-                  </Link>
-                );
+                return <NavLinkItem key={item.href} item={item} isActive={isActive} collapsed={collapsed} />;
               })}
             </div>
           </>
@@ -326,12 +340,8 @@ export function Sidebar() {
         {/* HR section */}
         {hrItems.length > 0 && (
           <>
-            {!collapsed && (
-              <div className="mb-2 mt-6 px-3 text-[9.5px] font-semibold uppercase tracking-[0.1em] text-white/30">
-                HR
-              </div>
-            )}
-            <div className="space-y-0.5">
+            {!collapsed && <SectionLabel>HR</SectionLabel>}
+            <div className="space-y-px">
               {hrItems.map((item) => {
                 const isHRAdminActive =
                   item.href === "/admin" &&
@@ -360,42 +370,20 @@ export function Sidebar() {
                             ? true
                             : pathname === item.href || pathname.startsWith(item.href + "/");
 
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    title={collapsed ? item.label : undefined}
-                    className={cn(
-                      "group relative flex items-center rounded-md text-[13.5px] font-medium transition-all duration-150",
-                      collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2",
-                      isActive
-                        ? "bg-[rgba(59,130,246,0.20)] text-accent-bright"
-                        : "text-white/60 hover:bg-white/[0.07] hover:text-white"
-                    )}
-                  >
-                    {isActive && (
-                      <div
-                        className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r"
-                        style={{ backgroundColor: "var(--accent-bright)" }}
-                      />
-                    )}
-                    <span className="shrink-0">{item.icon}</span>
-                    {!collapsed && <span className="truncate">{item.label}</span>}
-                  </Link>
-                );
+                return <NavLinkItem key={item.href} item={item} isActive={isActive} collapsed={collapsed} />;
               })}
             </div>
           </>
         )}
 
         {process.env.NODE_ENV === "development" && (
-          <div className="mt-6 space-y-0.5">
+          <div className="mt-5 space-y-px">
             <Link
               href="/achieveit-api-tester.html"
               title={collapsed ? "AchieveIt API Tester" : undefined}
               className={cn(
-                "group relative flex items-center rounded-md text-[13.5px] font-medium transition-all duration-150 text-white/40 hover:text-white/60",
-                collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2"
+                "group relative flex items-center rounded-ds-button text-[13px] text-white/40 transition-colors duration-100 hover:text-white/65",
+                collapsed ? "justify-center p-2.5" : "gap-2.5 px-2.5 py-[7px]"
               )}
             >
               <span className="shrink-0">
@@ -408,28 +396,22 @@ export function Sidebar() {
       </nav>
 
       {/* User block */}
-      <div
-        className="relative z-10 px-3 py-3"
-        style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}
-      >
+      <div className="border-t border-white/[0.08] px-3 py-3">
         <div
           className={cn(
-            "flex items-center gap-3 rounded-md p-2 transition-colors hover:bg-white/[0.07] cursor-pointer",
+            "flex items-center gap-2.5 rounded-ds-button p-2",
             collapsed && "justify-center"
           )}
         >
-          <div
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-display text-xs font-semibold text-white"
-            style={{ background: "linear-gradient(135deg, #3b82f6, #1d4ed8)" }}
-          >
+          <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-xs font-semibold", avatarAccent(user?.name).className)}>
             {initials}
           </div>
           {!collapsed && (
             <div className="flex flex-col overflow-hidden">
-              <span className="truncate text-[12.5px] font-medium text-white">
+              <span className="truncate text-[13px] font-medium text-white">
                 {user?.name || "User"}
               </span>
-              <span className="truncate text-[10.5px] text-white/40">
+              <span className="truncate text-[11px] text-white/45">
                 {user?.roles?.[0] || "Employee"}
               </span>
             </div>

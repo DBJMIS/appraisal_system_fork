@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getCurrentUser } from "@/lib/auth";
+import { MIDYEAR_FIELD_DEFAULTS, parseMidyearFields, resolveMidyearChange } from "@/lib/midyear-config";
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -74,6 +75,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const parsed = parseMidyearFields(body);
+    if (parsed.error) return NextResponse.json({ error: parsed.error }, { status: 400 });
+    const midyear = resolveMidyearChange(null, parsed.fields);
+    if (midyear.error) return NextResponse.json({ error: midyear.error }, { status: 400 });
+    // Defaults come from the column defaults, so only non-default settings are written.
+    const midyearInsert = Object.fromEntries(
+      Object.entries(midyear.merged).filter(
+        ([k, v]) => v !== MIDYEAR_FIELD_DEFAULTS[k as keyof typeof MIDYEAR_FIELD_DEFAULTS]
+      )
+    );
+
     const supabase = getSupabaseAdmin();
     if (!supabase) {
       return NextResponse.json(
@@ -107,6 +119,7 @@ export async function POST(request: NextRequest) {
         start_date,
         end_date,
         status: "draft",
+        ...midyearInsert,
       })
       .select("id")
       .single();

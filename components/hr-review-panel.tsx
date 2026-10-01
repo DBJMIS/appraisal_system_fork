@@ -95,7 +95,7 @@ export function HRReviewPanel({ rows, filterOptions }: HRReviewPanelProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="text-ds-page-title text-ds-text-primary">
           HR Review Panel
         </h1>
         <p className="text-muted-foreground">

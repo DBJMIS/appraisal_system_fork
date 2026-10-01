@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { sendReminder } from "@/lib/adobe-sign";
 import { resolveDepartmentHeadSystemUserId } from "@/lib/hrmis-approval-auth";
 import { resolveManagerAccessForAppraisal } from "@/lib/appraisal-manager-access";
+import { allowAppraisalTestBypass } from "@/lib/appraisal-test-bypass";
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -66,7 +67,7 @@ export async function POST(
     const hodEmployeeId = await resolveDepartmentHeadSystemUserId(appraisal.employee_id);
     const managerActsAsFinalApprover =
       appraisal.manager_employee_id === hodEmployeeId || !!managerUser;
-    const testOnlyEmployeeSigner = process.env.ALLOW_APPRAISAL_TEST_BYPASS === "true";
+    const testOnlyEmployeeSigner = allowAppraisalTestBypass();
     const managerIsInChain = !testOnlyEmployeeSigner && !managerActsAsFinalApprover;
     const currentFinalSignerIsRequester =
       (managerActsAsFinalApprover && isManager) ||

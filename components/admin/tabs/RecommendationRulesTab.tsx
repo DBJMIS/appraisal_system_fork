@@ -6,6 +6,7 @@ import {
   ActionButton,
   IconButton,
   ActiveBadge,
+  EmptyTableRow,
   AwardIcon,
   PlusIcon,
   PencilIcon,
@@ -21,6 +22,7 @@ export function RecommendationRulesTab() {
     setDeleteConfirm,
     toggleRuleActive,
     emptyRuleForm,
+    referenceDataLoaded,
   } = useAdminPanel();
 
   return (
@@ -28,8 +30,8 @@ export function RecommendationRulesTab() {
       title="Recommendation Rules"
       subtitle="Map rating labels to HR actions"
       icon={<AwardIcon />}
-      iconBg="#fff1f2"
-      iconColor="#e11d48"
+      iconBg="#fef2f2"
+      iconColor="#b42318"
       delay="0.24s"
       rightAction={<ActionButton variant="primary" onClick={() => setRuleModal({ open: true, mode: "create", data: emptyRuleForm })}><PlusIcon /> Create Rule</ActionButton>}
     >
@@ -44,11 +46,16 @@ export function RecommendationRulesTab() {
           </tr>
         </thead>
         <tbody>
+          {rules.length === 0 && (
+            <EmptyTableRow colSpan={5}>
+              {referenceDataLoaded ? "No recommendation rules configured." : "Recommendation rules could not be loaded."}
+            </EmptyTableRow>
+          )}
           {rules.map((r) => (
-            <tr key={r.id} style={{ transition: "background 0.13s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "#f4f8ff"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
-              <td style={{ ...tdStyle, fontWeight: 600, color: "#0f1f3d" }}>{r.rating_label}</td>
+            <tr key={r.id} style={{ transition: "background 0.13s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "#f3f3f3"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
+              <td style={{ ...tdStyle, fontWeight: 600, color: "#0d0d0d" }}>{r.rating_label}</td>
               <td style={tdStyle}>{r.recommendation}</td>
-              <td style={{ ...tdStyle, color: "#8a97b8" }}>{r.description ?? "—"}</td>
+              <td style={{ ...tdStyle, color: "#646f79" }}>{r.description ?? "—"}</td>
               <td style={tdStyle}><ActiveBadge active={r.active} /></td>
               <td style={tdStyle}>
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>

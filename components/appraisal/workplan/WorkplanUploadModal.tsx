@@ -36,10 +36,10 @@ const TARGET_FIELD_OPTIONS = [
 ];
 
 const CONFIDENCE_STYLES: Record<string, string> = {
-  HIGH: "bg-[#ecfdf5] border-[#6ee7b7] text-[#065f46]",
-  MEDIUM: "bg-[#fffbeb] border-[#fcd34d] text-[#92400e]",
-  LOW: "bg-[#fff1f2] border-[#fecaca] text-[#dc2626]",
-  SKIP: "bg-[#f8faff] border-[#dde5f5] text-[#8a97b8]",
+  HIGH: "bg-ds-success-subtle border-ds-success-border text-ds-success",
+  MEDIUM: "bg-ds-warning-subtle border-ds-warning-border text-ds-warning",
+  LOW: "bg-ds-error-subtle border-ds-error-border text-ds-error",
+  SKIP: "bg-ds-surface border-ds-border text-ds-text-secondary",
 };
 const CONFIDENCE_LABELS: Record<string, string> = {
   HIGH: "● High",
@@ -374,19 +374,19 @@ export function WorkplanUploadModal({
       onClick={(e) => e.target === e.currentTarget && step !== "importing" && onClose()}
     >
       <div
-        className="bg-white rounded-[16px] w-full max-w-[640px] max-h-[90vh] overflow-y-auto shadow-xl"
+        className="bg-white rounded-ds-panel w-full max-w-[640px] max-h-[90vh] overflow-y-auto shadow-ds-popover"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-6 border-b border-[#dde5f5]">
+        <div className="p-6 border-b border-ds-border">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-['Sora'] text-[16px] font-bold text-[#0f1f3d]">
+            <h2 className="font-sans text-[16px] font-semibold text-ds-text-primary">
               Import workplan from Excel
             </h2>
             {step !== "importing" && (
               <button
                 type="button"
                 onClick={onClose}
-                className="text-[#8a97b8] hover:text-[#0f1f3d] text-[20px] leading-none"
+                className="text-ds-text-secondary hover:text-ds-text-primary text-[20px] leading-none"
               >
                 ×
               </button>
@@ -399,12 +399,12 @@ export function WorkplanUploadModal({
           {step === "upload" && (
             <>
               <div
-                className="border-2 border-dashed border-[#dde5f5] rounded-[12px] p-10 text-center hover:border-[#0d9488] hover:bg-[#f0fdfa] transition-colors"
-                onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("border-[#0d9488]", "bg-[#f0fdfa]"); }}
-                onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove("border-[#0d9488]", "bg-[#f0fdfa]"); }}
+                className="border-2 border-dashed border-ds-border rounded-ds-panel p-10 text-center hover:border-ds-accent hover:bg-ds-surface transition-colors"
+                onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("border-ds-accent", "bg-ds-surface"); }}
+                onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove("border-ds-accent", "bg-ds-surface"); }}
                 onDrop={(e) => {
                   e.preventDefault();
-                  e.currentTarget.classList.remove("border-[#0d9488]", "bg-[#f0fdfa]");
+                  e.currentTarget.classList.remove("border-ds-accent", "bg-ds-surface");
                   const f = e.dataTransfer.files[0];
                   if (f) handleFile(f);
                 }}
@@ -421,19 +421,19 @@ export function WorkplanUploadModal({
                   }}
                 />
                 <label htmlFor="workplan-excel-upload" className="cursor-pointer block">
-                  <div className="w-12 h-12 rounded-[12px] bg-[#f8faff] border border-[#dde5f5] flex items-center justify-center mx-auto mb-3">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8a97b8" strokeWidth="1.5">
+                  <div className="w-12 h-12 rounded-ds-panel bg-ds-surface border border-ds-border flex items-center justify-center mx-auto mb-3">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#646f79" strokeWidth="1.5">
                       <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
                       <polyline points="14 2 14 8 20 8" />
                       <line x1="12" y1="18" x2="12" y2="12" />
                       <line x1="9" y1="15" x2="15" y2="15" />
                     </svg>
                   </div>
-                  <p className="text-[13px] font-medium text-[#0f1f3d]">Drop your Excel file here or click to browse</p>
-                  <p className="text-[11px] text-[#8a97b8] mt-1">.xlsx or .xls only</p>
+                  <p className="text-[13px] font-medium text-ds-text-primary">Drop your Excel file here or click to browse</p>
+                  <p className="text-[11px] text-ds-text-secondary mt-1">.xlsx or .xls only</p>
                 </label>
               </div>
-              <p className="text-[11px] text-[#8a97b8] mt-3 text-center">
+              <p className="text-[11px] text-ds-text-secondary mt-3 text-center">
                 Expected columns: Corporate objective · Division objective · Major task · Key output · Performance standard · Weight (%) · Metric type · Target
               </p>
             </>
@@ -441,7 +441,7 @@ export function WorkplanUploadModal({
 
           {step === "sheet" && workbookState && (
             <>
-              <p className="text-[12px] text-[#0f1f3d] font-medium mb-2">Select sheet</p>
+              <p className="text-[12px] text-ds-text-primary font-medium mb-2">Select sheet</p>
               {(() => {
                 const parts = [
                   templateMeta.employeeName,
@@ -450,8 +450,8 @@ export function WorkplanUploadModal({
                 ].filter(Boolean);
                 if (parts.length === 0 || dataHeaderRowIndex < 4) return null;
                 return (
-                  <p className="text-[11px] text-[#4a5a82] mb-3 px-1 py-2 rounded-[8px] bg-[#f8faff] border border-[#dde5f5]">
-                    <span className="font-semibold text-[#0f1f3d]">Detected:</span> {parts.join(" · ")}
+                  <p className="text-[11px] text-ds-text-secondary mb-3 px-1 py-2 rounded-[8px] bg-ds-surface border border-ds-border">
+                    <span className="font-semibold text-ds-text-primary">Detected:</span> {parts.join(" · ")}
                   </p>
                 );
               })()}
@@ -462,19 +462,19 @@ export function WorkplanUploadModal({
                     type="button"
                     onClick={() => setSelectedSheet(name)}
                     className={`px-3 py-1.5 rounded-full text-[12px] font-medium transition-colors
-                      ${selectedSheet === name ? "bg-[#0d9488] text-white" : "bg-[#f8faff] border border-[#dde5f5] text-[#4a5a82] hover:border-[#0d9488]"}`}
+                      ${selectedSheet === name ? "bg-ds-accent text-white" : "bg-ds-surface border border-ds-border text-ds-text-secondary hover:border-ds-accent"}`}
                   >
                     {name}
                   </button>
                 ))}
               </div>
-              <p className="text-[11px] text-[#8a97b8] mb-2">Preview (first 5 rows)</p>
-              <div className="max-h-[200px] overflow-auto rounded-[8px] border border-[#dde5f5] mb-4">
+              <p className="text-[11px] text-ds-text-secondary mb-2">Preview (first 5 rows)</p>
+              <div className="max-h-[200px] overflow-auto rounded-[8px] border border-ds-border mb-4">
                 <table className="w-full text-[11px]">
-                  <thead className="bg-[#f8faff] sticky top-0">
+                  <thead className="bg-ds-surface sticky top-0">
                     <tr>
                       {sheetPreviewHeaders.slice(0, 8).map((h) => (
-                        <th key={h} className="text-left p-2 border-b border-[#dde5f5] font-medium text-[#0f1f3d] truncate max-w-[120px]">
+                        <th key={h} className="text-left p-2 border-b border-ds-border font-medium text-ds-text-primary truncate max-w-[120px]">
                           {h}
                         </th>
                       ))}
@@ -482,9 +482,9 @@ export function WorkplanUploadModal({
                   </thead>
                   <tbody>
                     {sheetPreviewRows.slice(0, 5).map((row, i) => (
-                      <tr key={i} className="border-b border-[#dde5f5]">
+                      <tr key={i} className="border-b border-ds-border">
                         {sheetPreviewHeaders.slice(0, 8).map((h) => (
-                          <td key={h} className="p-2 text-[#4a5a82] truncate max-w-[120px]">
+                          <td key={h} className="p-2 text-ds-text-secondary truncate max-w-[120px]">
                             {String((row as Record<string, unknown>)[h] ?? "")}
                           </td>
                         ))}
@@ -496,7 +496,7 @@ export function WorkplanUploadModal({
               <button
                 type="button"
                 onClick={onSheetSelected}
-                className="w-full py-2.5 rounded-[8px] bg-[#0d9488] text-white text-[13px] font-semibold hover:bg-[#0f766e] transition-colors"
+                className="w-full py-2.5 rounded-[8px] bg-ds-accent text-white text-[13px] font-semibold hover:bg-ds-accent-hover transition-colors"
               >
                 Analyse columns →
               </button>
@@ -506,32 +506,32 @@ export function WorkplanUploadModal({
           {step === "mapping" && (
             <>
               {analysing ? (
-                <div className="flex items-center gap-2 py-6 text-[#6d28d9]">
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#f5f3ff] border border-[#c4b5fd]">
+                <div className="flex items-center gap-2 py-6 text-ds-info">
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-ds-badge text-[11px] font-medium bg-ds-info-subtle border border-ds-info-border">
                     AI
                   </span>
                   <span className="text-[13px]">Analysing your columns...</span>
                 </div>
               ) : (
                 <>
-                  <div className="max-h-[280px] overflow-auto rounded-[8px] border border-[#dde5f5] mb-4">
+                  <div className="max-h-[280px] overflow-auto rounded-[8px] border border-ds-border mb-4">
                     <table className="w-full text-[11px]">
-                      <thead className="bg-[#f8faff] sticky top-0">
+                      <thead className="bg-ds-surface sticky top-0">
                         <tr>
-                          <th className="text-left p-2 font-medium text-[#0f1f3d]">Excel column</th>
-                          <th className="text-left p-2 font-medium text-[#0f1f3d]">Map to</th>
-                          <th className="text-left p-2 font-medium text-[#0f1f3d]">Confidence</th>
-                          <th className="text-left p-2 font-medium text-[#0f1f3d]">Reasoning</th>
+                          <th className="text-left p-2 font-medium text-ds-text-primary">Excel column</th>
+                          <th className="text-left p-2 font-medium text-ds-text-primary">Map to</th>
+                          <th className="text-left p-2 font-medium text-ds-text-primary">Confidence</th>
+                          <th className="text-left p-2 font-medium text-ds-text-primary">Reasoning</th>
                         </tr>
                       </thead>
                       <tbody>
                         {mappings.map((m, i) => (
                           <tr
                             key={i}
-                            className={`border-b border-[#dde5f5] ${m.confidence === "LOW" ? "bg-[#fffbeb]" : ""}`}
+                            className={`border-b border-ds-border ${m.confidence === "LOW" ? "bg-ds-warning-subtle" : ""}`}
                           >
                             <td className="p-2">
-                              <span className="font-mono text-[10px] bg-[#f1f5f9] px-2 py-0.5 rounded">
+                              <span className="font-mono text-[10px] bg-ds-surface px-2 py-0.5 rounded">
                                 {m.excelColumn}
                               </span>
                             </td>
@@ -546,7 +546,7 @@ export function WorkplanUploadModal({
                                     return next;
                                   });
                                 }}
-                                className="text-[11px] border border-[#dde5f5] rounded-[6px] px-2 py-1 bg-white"
+                                className="text-[11px] border border-ds-border rounded-[6px] px-2 py-1 bg-white"
                               >
                                 {TARGET_FIELD_OPTIONS.map((opt) => (
                                   <option key={opt.value || "skip"} value={opt.value}>
@@ -562,7 +562,7 @@ export function WorkplanUploadModal({
                                 {CONFIDENCE_LABELS[m.confidence] ?? "— Skip"}
                               </span>
                             </td>
-                            <td className="p-2 text-[10px] text-[#8a97b8] max-w-[160px] truncate">
+                            <td className="p-2 text-[10px] text-ds-text-secondary max-w-[160px] truncate">
                               {m.reasoning}
                             </td>
                           </tr>
@@ -570,7 +570,7 @@ export function WorkplanUploadModal({
                       </tbody>
                     </table>
                   </div>
-                  <div className="flex items-center justify-between text-[11px] text-[#8a97b8] mb-4">
+                  <div className="flex items-center justify-between text-[11px] text-ds-text-secondary mb-4">
                     <span>
                       {mappedCount} mapped · {skipCount} skipped
                     </span>
@@ -581,7 +581,7 @@ export function WorkplanUploadModal({
                         setExcludedSourceIndices([]);
                         setStep("review");
                       }}
-                      className="px-3 py-2 rounded-[8px] bg-[#0d9488] text-white text-[11px] font-semibold hover:bg-[#0f766e]"
+                      className="px-3 py-2 rounded-[8px] bg-ds-accent text-white text-[11px] font-semibold hover:bg-ds-accent-hover"
                     >
                       Preview import →
                     </button>
@@ -594,8 +594,8 @@ export function WorkplanUploadModal({
           {step === "review" && (
             <>
               {enriching ? (
-                <div className="flex items-center gap-2 py-6 text-[#6d28d9]">
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#f5f3ff] border border-[#c4b5fd]">
+                <div className="flex items-center gap-2 py-6 text-ds-info">
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-ds-badge text-[11px] font-medium bg-ds-info-subtle border border-ds-info-border">
                     AI
                   </span>
                   <span className="text-[13px]">Analysing workplan structure...</span>
@@ -603,22 +603,22 @@ export function WorkplanUploadModal({
               ) : (
                 <>
               {!weightValid && (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-[8px] bg-[#fffbeb] border border-[#fcd34d] mb-4 text-[11px] text-[#92400e]">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-[8px] bg-ds-warning-subtle border border-ds-warning-border mb-4 text-[11px] text-ds-warning">
                 Weights sum to {totalWeight.toFixed(1)}% — adjust before confirming
               </div>
               )}
               {!hasRequired && (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-[8px] bg-[#fef2f2] border border-[#fecaca] mb-4 text-[11px] text-[#dc2626]">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-[8px] bg-ds-error-subtle border border-ds-error-border mb-4 text-[11px] text-ds-error">
                   Some rows are missing required fields (Major task, Weight)
                 </div>
               )}
               {hasDupe && duplicateBannerMessage && (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-[8px] bg-[#fffbeb] border border-[#fcd34d] mb-4 text-[11px] text-[#92400e]">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-[8px] bg-ds-warning-subtle border border-ds-warning-border mb-4 text-[11px] text-ds-warning">
                   {duplicateBannerMessage}
                 </div>
               )}
               {importError && (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-[8px] bg-[#fef2f2] border border-[#fecaca] mb-4 text-[11px] text-[#dc2626]">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-[8px] bg-ds-error-subtle border border-ds-error-border mb-4 text-[11px] text-ds-error">
                   {importError}
                 </div>
               )}
@@ -630,18 +630,18 @@ export function WorkplanUploadModal({
                   return (
                     <div
                       key={`${sourceIndex}-${previewIdx}`}
-                      className={`rounded-[12px] border border-[#dde5f5] p-3 bg-[#f8faff] ${
-                        isDupMember ? "border-l-[3px] border-l-solid border-l-[#f59e0b]" : ""
+                      className={`rounded-ds-panel border border-ds-border p-3 bg-ds-surface ${
+                        isDupMember ? "border-l-[3px] border-l-solid border-l-ds-warning" : ""
                       } ${excluded ? "opacity-40" : ""}`}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-center gap-2 min-w-0 flex-1">
-                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#eff6ff] text-[#1d4ed8] text-[11px] font-semibold flex items-center justify-center">
+                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-ds-surface text-ds-info text-[11px] font-semibold flex items-center justify-center">
                             {previewIdx + 1}
                           </span>
                           <div className="min-w-0 flex flex-wrap items-baseline gap-x-2 gap-y-0">
                             <span
-                              className={`font-medium text-[13px] text-[#0f1f3d] truncate ${
+                              className={`font-medium text-[13px] text-ds-text-primary truncate ${
                                 excluded ? "line-through" : ""
                               }`}
                             >
@@ -651,7 +651,7 @@ export function WorkplanUploadModal({
                               <button
                                 type="button"
                                 onClick={() => setRowExcluded(sourceIndex, false)}
-                                className="text-[11px] font-medium text-[#0d9488] hover:underline shrink-0"
+                                className="text-[11px] font-medium text-ds-accent hover:underline shrink-0"
                               >
                                 Undo
                               </button>
@@ -662,7 +662,7 @@ export function WorkplanUploadModal({
                           {isDupMember && (
                             <span
                               className="rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none"
-                              style={{ backgroundColor: "#fef3c7", color: "#92400e" }}
+                              style={{ backgroundColor: "#fffbeb", color: "#8a5a00" }}
                             >
                               Duplicate
                             </span>
@@ -672,39 +672,39 @@ export function WorkplanUploadModal({
                               type="button"
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 min-h-6 min-w-6 p-0 text-[#8a97b8] hover:text-[#0f1f3d]"
+                              className="h-6 w-6 min-h-6 min-w-6 p-0 text-ds-text-secondary hover:text-ds-text-primary"
                               aria-label="Exclude row from import"
                               onClick={() => setRowExcluded(sourceIndex, true)}
                             >
                               <X className="h-4 w-4" strokeWidth={2} />
                             </Button>
                           )}
-                          <span className="text-[12px] font-bold text-[#0d9488] tabular-nums">
+                          <span className="text-[12px] font-semibold text-ds-accent tabular-nums">
                             {(previewWeightBySourceIndex.get(sourceIndex) ?? (item.weight as number) ?? 0).toFixed(2)}%
                           </span>
                         </div>
                       </div>
-                      <p className="text-[10px] text-[#8a97b8] mt-1 truncate">
+                      <p className="text-[10px] text-ds-text-secondary mt-1 truncate">
                         {String(item.corporate_objective ?? "")} → {String(item.division_objective ?? "")}
                       </p>
                       <div className="flex flex-wrap gap-1 mt-2">
                         {item.key_output != null && String(item.key_output).trim() !== "" && (
-                          <span className="inline-flex px-2 py-0.5 rounded bg-white border border-[#dde5f5] text-[10px] text-[#4a5a82]">
+                          <span className="inline-flex px-2 py-0.5 rounded bg-white border border-ds-border text-[10px] text-ds-text-secondary">
                             {String(item.key_output)}
                           </span>
                         )}
                         {item.performance_standard != null && String(item.performance_standard).trim() !== "" && (
-                          <span className="inline-flex px-2 py-0.5 rounded bg-white border border-[#dde5f5] text-[10px] text-[#4a5a82]">
+                          <span className="inline-flex px-2 py-0.5 rounded bg-white border border-ds-border text-[10px] text-ds-text-secondary">
                             {String(item.performance_standard)}
                           </span>
                         )}
                         {item.metric_type != null && String(item.metric_type).trim() !== "" && (
-                          <span className="inline-flex px-2 py-0.5 rounded bg-[#f0fdfa] border border-[#99f6e4] text-[10px] text-[#0d9488]">
+                          <span className="inline-flex px-2 py-0.5 rounded bg-ds-surface border border-ds-border-strong text-[10px] text-ds-accent">
                             {String(item.metric_type)}
                           </span>
                         )}
                         {item.metric_target != null && (
-                          <span className="inline-flex px-2 py-0.5 rounded bg-[#f0fdfa] border border-[#99f6e4] text-[10px] text-[#0d9488]">
+                          <span className="inline-flex px-2 py-0.5 rounded bg-ds-surface border border-ds-border-strong text-[10px] text-ds-accent">
                             Target: {String(item.metric_target)}
                           </span>
                         )}
@@ -721,24 +721,24 @@ export function WorkplanUploadModal({
                     setEnrichedRows(null);
                     setStep("mapping");
                   }}
-                  className="px-3 py-2 rounded-[8px] border border-[#dde5f5] bg-white text-[#4a5a82] text-[11px] font-semibold hover:bg-[#f8faff]"
+                  className="px-3 py-2 rounded-[8px] border border-ds-border bg-white text-ds-text-secondary text-[11px] font-semibold hover:bg-ds-surface"
                 >
                   Edit mapping
                 </button>
                 <div className="flex flex-col items-end gap-1">
-                  <p className="text-[11px] text-[#8a97b8]">
+                  <p className="text-[11px] text-ds-text-secondary">
                     Importing {activePreviewRows.length} of {previewRowsWithSource.length} objectives
                   </p>
                   <button
                     type="button"
                     onClick={handleConfirmImport}
                     disabled={!hasRequired}
-                    className="px-3 py-2 rounded-[8px] bg-[#0d9488] text-white text-[11px] font-semibold hover:bg-[#0f766e] disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-3 py-2 rounded-[8px] bg-ds-accent text-white text-[11px] font-semibold hover:bg-ds-accent-hover disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Confirm & create workplan
                   </button>
                   {hasDupe && duplicateMeta.duplicateRowsToImport > 0 && (
-                    <p className="text-[10px] text-[#92400e] text-right max-w-[280px]">
+                    <p className="text-[10px] text-ds-warning text-right max-w-[280px]">
                       ⚠ {duplicateMeta.duplicateRowsToImport} duplicate
                       {duplicateMeta.duplicateRowsToImport === 1 ? "" : "s"} will be imported
                     </p>
@@ -751,7 +751,7 @@ export function WorkplanUploadModal({
           )}
 
           {step === "importing" && (
-            <div className="py-8 text-center text-[#0d9488] text-[13px] font-medium">
+            <div className="py-8 text-center text-ds-accent text-[13px] font-medium">
               Importing objectives...
             </div>
           )}

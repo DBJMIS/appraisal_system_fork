@@ -1,5 +1,8 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
+import { getCurrentUser, isPlaceholderUser } from "@/lib/auth";
+import { resolveManagerAccessForAppraisal } from "@/lib/appraisal-manager-access";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -7,6 +10,37 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft } from "lucide-react";
 
 type PageParams = { id: string } | Promise<{ id: string }>;
+
+async function canViewSummary(appraisalId: string): Promise<boolean> {
+  const user = await getCurrentUser();
+  if (!user || isPlaceholderUser(user)) return false;
+  if (user.roles?.some((r) => r === "hr" || r === "admin")) return true;
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return false;
+  const supabase = createClient(url, key);
+
+  const { data: appraisal } = await supabase
+    .from("appraisals")
+    .select("id, employee_id, manager_employee_id, division_id")
+    .eq("id", appraisalId)
+    .maybeSingle();
+  if (!appraisal) return false;
+
+  const employeeId = user.employee_id ?? null;
+  if (employeeId && appraisal.employee_id === employeeId) return true;
+  if (user.roles?.includes("gm") && user.division_id && appraisal.division_id === user.division_id) return true;
+
+  const managerAccess = await resolveManagerAccessForAppraisal({
+    supabase,
+    appraisalId,
+    appraisalEmployeeId: appraisal.employee_id,
+    appraisalManagerEmployeeId: appraisal.manager_employee_id,
+    currentEmployeeId: employeeId,
+  });
+  return managerAccess.hasManagerAccess;
+}
 
 async function getScoreSummary(appraisalId: string) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -76,6 +110,7 @@ export default async function AppraisalSummaryPage({
   params: PageParams;
 }) {
   const { id: appraisalId } = await Promise.resolve(params);
+  if (!(await canViewSummary(appraisalId))) notFound();
   const { scores, recommendation } = await getScoreSummary(appraisalId);
 
   if (!scores) {
@@ -108,7 +143,7 @@ export default async function AppraisalSummaryPage({
             Back to Appraisals
           </Link>
         </Button>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight">
+        <h1 className="mt-2 text-ds-page-title text-ds-text-primary">
           Score Summary
         </h1>
         <p className="text-muted-foreground">

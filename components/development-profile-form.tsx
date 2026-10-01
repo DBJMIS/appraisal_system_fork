@@ -71,8 +71,8 @@ function YesNoPills({
           disabled={disabled}
           onClick={() => !disabled && onChange(opt)}
           className={cn(
-            "px-4 py-1.5 rounded-full border-[1.5px] text-[12px] font-semibold transition-all",
-            value === opt ? "bg-[#0f1f3d] text-white border-[#0f1f3d]" : "bg-white text-[#8a97b8] border-[#dde5f5]",
+            "px-4 py-1.5 rounded-ds-button border-[1.5px] text-[12px] font-semibold transition-all",
+            value === opt ? "bg-ds-text-primary text-white border-ds-text-primary" : "bg-white text-ds-text-secondary border-ds-border",
             disabled && "opacity-60 cursor-not-allowed"
           )}
         >
@@ -96,7 +96,7 @@ function FieldGroup({
     <div className="flex flex-col gap-1.5">
       <p className="text-[11px] font-semibold uppercase tracking-[.06em] text-text-muted">
         {label}
-        {questionRef && <span className="ml-1 text-[#8a97b8]/80">({questionRef})</span>}
+        {questionRef && <span className="ml-1 text-[#646f79]/80">({questionRef})</span>}
       </p>
       {children}
     </div>
@@ -104,7 +104,7 @@ function FieldGroup({
 }
 
 const inp =
-  "border-[1.5px] border-[#dde5f5] rounded-[8px] px-3 py-2 text-[13px] text-[#0f1f3d] outline-none transition-colors focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/10 disabled:bg-[#f8faff] disabled:text-[#4a5a82] disabled:cursor-not-allowed w-full font-[DM_Sans]";
+  "border-[1.5px] border-ds-border rounded-[8px] px-3 py-2 text-[13px] text-ds-text-primary outline-none transition-colors focus:border-ds-accent focus:ring-2 focus:ring-[#0d0e10]/10 disabled:bg-ds-surface disabled:text-ds-text-secondary disabled:cursor-not-allowed w-full font-sans";
 
 const STATUS_ORDER: ("planned" | "inprog" | "done")[] = ["planned", "inprog", "done"];
 const STATUS_LABELS: Record<string, string> = { planned: "Planned", inprog: "In Progress", done: "Completed" };
@@ -285,14 +285,14 @@ export function DevelopmentProfileForm({
   return (
     <div className="flex flex-col gap-0">
       {activeAppraisal && isOwner && (
-        <div className="flex items-center gap-3 px-4 py-3 rounded-[8px] bg-[#eff6ff] border border-[#bfdbfe] mb-5">
-          <span className="w-2 h-2 rounded-full bg-[#3b82f6] animate-pulse flex-shrink-0" />
-          <p className="text-[12px] text-[#1d4ed8] font-medium flex-1">
+        <div className="flex items-center gap-3 px-4 py-3 rounded-[8px] bg-ds-surface border border-ds-border-strong mb-5">
+          <span className="w-2 h-2 rounded-full bg-ds-accent animate-pulse flex-shrink-0" />
+          <p className="text-[12px] text-ds-info font-medium flex-1">
             <strong>FY {activeAppraisal.fiscal_year} appraisal is active</strong> — Review and update your development goals before submitting your self-assessment.
           </p>
           <Link
             href={`/appraisals/${activeAppraisal.id}?tab=development`}
-            className="text-[11px] font-bold text-[#1d4ed8] px-3 py-1.5 rounded-full border-[1.5px] border-[#93c5fd] bg-white hover:bg-[#1d4ed8] hover:text-white hover:border-[#1d4ed8] transition-all"
+            className="text-[11px] font-semibold text-ds-info px-3 py-1.5 rounded-ds-button border-[1.5px] border-ds-text-muted bg-white hover:bg-ds-info hover:text-white hover:border-ds-info transition-all"
           >
             Open Appraisal →
           </Link>
@@ -300,13 +300,13 @@ export function DevelopmentProfileForm({
       )}
 
       {error && (
-        <div className="mb-5 px-4 py-3 rounded-[8px] bg-[#fef2f2] border border-[#fecaca] text-[13px] text-[#b91c1c]">
+        <div className="mb-5 px-4 py-3 rounded-[8px] bg-ds-error-subtle border border-ds-error-border text-[13px] text-ds-error">
           {error}
         </div>
       )}
 
       {eqResult ? (
-        <div className="mb-5 shadow-[0_2px_12px_rgba(15,31,61,.07),0_0_1px_rgba(15,31,61,.1)]">
+        <div className="mb-5">
           <EqResultsCard
             result={eqResult}
             daysUntilRetake={daysUntilRetake}
@@ -314,10 +314,10 @@ export function DevelopmentProfileForm({
           />
         </div>
       ) : (
-        <div className="rounded-[14px] border border-[#dde5f5] shadow-[0_2px_12px_rgba(15,31,61,.07),0_0_1px_rgba(15,31,61,.1)] bg-white overflow-hidden mb-5">
-          <div className="px-5 py-4 bg-[#f8faff] border-b border-[#dde5f5] flex items-center justify-between">
+        <div className="rounded-ds-panel border border-ds-border bg-white overflow-hidden mb-5">
+          <div className="px-5 py-4 bg-ds-surface border-b border-ds-border flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-[8px] bg-[#eff6ff] border border-[#bfdbfe] flex items-center justify-center text-[#3b82f6]">
+              <div className="w-10 h-10 rounded-[8px] bg-ds-surface border border-ds-border-strong flex items-center justify-center text-ds-accent">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <circle cx="12" cy="12" r="10" />
                   <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
@@ -325,8 +325,8 @@ export function DevelopmentProfileForm({
                 </svg>
               </div>
               <div>
-                <h2 className="font-['Sora'] text-[16px] font-bold text-[#0f1f3d]">Emotional intelligence</h2>
-                <p className="text-[12px] text-[#8a97b8] mt-0.5">
+                <h2 className="font-sans text-[16px] font-semibold text-ds-text-primary">Emotional intelligence</h2>
+                <p className="text-[12px] text-ds-text-secondary mt-0.5">
                   No assessment on record
                 </p>
               </div>
@@ -334,7 +334,7 @@ export function DevelopmentProfileForm({
             {hasDraft && !eqResult ? null : (
               <Link
                 href={headerCTA.href}
-                className="flex items-center gap-2 px-5 py-2 rounded-[8px] bg-[#0d9488] text-white font-['Sora'] text-[12px] font-semibold hover:bg-[#0f766e] transition-colors"
+                className="flex items-center gap-2 px-5 py-2 rounded-[8px] bg-ds-accent text-white font-sans text-[12px] font-semibold hover:bg-ds-accent-hover transition-colors"
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
@@ -349,28 +349,28 @@ export function DevelopmentProfileForm({
               <div className="px-6 py-5 flex items-center gap-4">
                 <div className="relative w-12 h-12 shrink-0">
                   <svg className="w-12 h-12 -rotate-90" viewBox="0 0 44 44">
-                    <circle cx="22" cy="22" r="18" fill="none" stroke="#f0f4ff" strokeWidth="4" />
+                    <circle cx="22" cy="22" r="18" fill="none" stroke="#f3f3f3" strokeWidth="4" />
                     <circle
                       cx="22"
                       cy="22"
                       r="18"
                       fill="none"
-                      stroke="#0d9488"
+                      stroke="#0d0e10"
                       strokeWidth="4"
                       strokeDasharray={`${(draftAnsweredCount / 50) * 113} 113`}
                       strokeLinecap="round"
                     />
                   </svg>
-                  <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold text-[#0f1f3d]">
+                  <span className="absolute inset-0 flex items-center justify-center text-[11px] font-semibold text-ds-text-primary">
                     {draftAnsweredCount}
                   </span>
                 </div>
                 <div>
-                  <p className="text-[13.5px] font-semibold text-[#0f1f3d]">Assessment in progress</p>
-                  <p className="text-[12px] text-[#8a97b8] mt-0.5">
+                  <p className="text-[13.5px] font-semibold text-ds-text-primary">Assessment in progress</p>
+                  <p className="text-[12px] text-ds-text-secondary mt-0.5">
                     {draftAnsweredCount}/50 questions answered · Page {(eqDraft?.last_page ?? 0) + 1} of 5
                   </p>
-                  <p className="text-[11px] text-[#8a97b8] mt-0.5">
+                  <p className="text-[11px] text-ds-text-secondary mt-0.5">
                     Last saved{" "}
                     {new Date(eqDraft?.updated_at ?? "").toLocaleDateString("en-JM", {
                       day: "numeric",
@@ -383,7 +383,7 @@ export function DevelopmentProfileForm({
                 <div className="ml-auto">
                   <Link
                     href="/development/eq/take"
-                    className="flex items-center gap-2 px-5 py-2 rounded-[8px] bg-[#0d9488] text-white font-['Sora'] text-[12px] font-semibold hover:bg-[#0f766e] transition-colors"
+                    className="flex items-center gap-2 px-5 py-2 rounded-[8px] bg-ds-accent text-white font-sans text-[12px] font-semibold hover:bg-ds-accent-hover transition-colors"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <polygon points="5 3 19 12 5 21 5 3" />
@@ -394,39 +394,39 @@ export function DevelopmentProfileForm({
               </div>
 
               <div className="px-6 pb-5">
-                <div className="h-[4px] bg-[#f0f4ff] rounded-full overflow-hidden">
-                  <div className="h-full bg-[#0d9488] rounded-full transition-all" style={{ width: `${(draftAnsweredCount / 50) * 100}%` }} />
+                <div className="h-[4px] bg-ds-surface rounded-full overflow-hidden">
+                  <div className="h-full bg-ds-accent rounded-full transition-all" style={{ width: `${(draftAnsweredCount / 50) * 100}%` }} />
                 </div>
                 <div className="flex justify-between mt-1">
-                  <span className="text-[10px] text-[#8a97b8]">{Math.round((draftAnsweredCount / 50) * 100)}% complete</span>
-                  <span className="text-[10px] text-[#8a97b8]">{50 - draftAnsweredCount} remaining</span>
+                  <span className="text-[10px] text-ds-text-secondary">{Math.round((draftAnsweredCount / 50) * 100)}% complete</span>
+                  <span className="text-[10px] text-ds-text-secondary">{50 - draftAnsweredCount} remaining</span>
                 </div>
               </div>
             </>
           ) : (
             <div className="px-6 py-6 flex items-center gap-4">
-              <div className="w-11 h-11 rounded-full bg-[#f0f4ff] flex items-center justify-center shrink-0">
-                <svg className="w-5 h-5 text-[#8a97b8]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <div className="w-11 h-11 rounded-full bg-ds-surface flex items-center justify-center shrink-0">
+                <svg className="w-5 h-5 text-ds-text-secondary" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <circle cx="12" cy="12" r="10" />
                   <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
                   <line x1="12" y1="17" x2="12.01" y2="17" />
                 </svg>
               </div>
               <div>
-                <p className="text-[13.5px] font-semibold text-[#0f1f3d]">Discover your emotional intelligence profile</p>
-                <p className="text-[12px] text-[#8a97b8] mt-0.5">50 questions · 5 competencies · takes about 10 minutes</p>
+                <p className="text-[13.5px] font-semibold text-ds-text-primary">Discover your emotional intelligence profile</p>
+                <p className="text-[12px] text-ds-text-secondary mt-0.5">50 questions · 5 competencies · takes about 10 minutes</p>
               </div>
             </div>
           )}
         </div>
       )}
 
-      <div className="rounded-[14px] border border-[#dde5f5] shadow-[0_2px_12px_rgba(15,31,61,.07),0_0_1px_rgba(15,31,61,.1)] bg-white overflow-hidden mb-5">
-        <div className="px-6 py-4 border-b border-[#dde5f5] flex items-center gap-3"
-          style={{ background: "var(--surface, #f8faff)" }}>
+      <div className="rounded-ds-panel border border-ds-border bg-white overflow-hidden mb-5">
+        <div className="px-6 py-4 border-b border-ds-border flex items-center gap-3"
+          style={{ background: "var(--surface, #f3f3f3)" }}>
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
-            style={{ background: "linear-gradient(135deg, #f0fdfa, #ccfbf1)" }}>
-            <svg className="w-5 h-5" style={{ color: "#0d9488" }} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            style={{ background: "#f3f3f3" }}>
+            <svg className="w-5 h-5" style={{ color: "#0d0e10" }} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
@@ -439,7 +439,7 @@ export function DevelopmentProfileForm({
           <div className="grid grid-cols-2 gap-7 mb-5">
             <div className="flex flex-col gap-1.5">
               <p className="text-[11px] font-semibold uppercase tracking-[.06em] text-text-muted">Has an EIP been issued for FY 25/26?</p>
-              <p className="text-[11px] text-[#8a97b8] leading-relaxed">If applicable, please attach documentation.</p>
+              <p className="text-[11px] text-ds-text-secondary leading-relaxed">If applicable, please attach documentation.</p>
               <div className="flex gap-2 mt-1 items-center flex-wrap">
                 {["Yes", "No"].map((opt) => (
                   <button
@@ -448,8 +448,8 @@ export function DevelopmentProfileForm({
                     disabled={!isManager}
                     onClick={() => isManager && setEipIssued(opt === "Yes")}
                     className={cn(
-                      "px-4 py-1.5 rounded-full border-[1.5px] text-[12px] font-semibold transition-all",
-                      (opt === "Yes" ? eipIssued : !eipIssued) ? "bg-[#0d9488] text-white border-[#0d9488]" : "bg-white text-[#8a97b8] border-[#dde5f5]",
+                      "px-4 py-1.5 rounded-ds-button border-[1.5px] text-[12px] font-semibold transition-all",
+                      (opt === "Yes" ? eipIssued : !eipIssued) ? "bg-ds-accent text-white border-ds-accent" : "bg-white text-ds-text-secondary border-ds-border",
                       !isManager && "opacity-60 cursor-not-allowed"
                     )}
                   >
@@ -457,7 +457,7 @@ export function DevelopmentProfileForm({
                   </button>
                 ))}
                 {!isManager && (
-                  <span className="inline-flex items-center gap-1 text-[10px] text-[#8a97b8] ml-1">
+                  <span className="inline-flex items-center gap-1 text-[10px] text-ds-text-secondary ml-1">
                     <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
@@ -476,8 +476,8 @@ export function DevelopmentProfileForm({
                     disabled={!isManager}
                     onClick={() => isManager && setEipNextFy(opt === "Yes")}
                     className={cn(
-                      "px-4 py-1.5 rounded-full border-[1.5px] text-[12px] font-semibold transition-all",
-                      (opt === "Yes" ? eipNextFy : !eipNextFy) ? "bg-[#0d9488] text-white border-[#0d9488]" : "bg-white text-[#8a97b8] border-[#dde5f5]",
+                      "px-4 py-1.5 rounded-ds-button border-[1.5px] text-[12px] font-semibold transition-all",
+                      (opt === "Yes" ? eipNextFy : !eipNextFy) ? "bg-ds-accent text-white border-ds-accent" : "bg-white text-ds-text-secondary border-ds-border",
                       !isManager && "opacity-60 cursor-not-allowed"
                     )}
                   >
@@ -485,7 +485,7 @@ export function DevelopmentProfileForm({
                   </button>
                 ))}
                 {!isManager && (
-                  <span className="inline-flex items-center gap-1 text-[10px] text-[#8a97b8] ml-1">
+                  <span className="inline-flex items-center gap-1 text-[10px] text-ds-text-secondary ml-1">
                     <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
@@ -495,7 +495,7 @@ export function DevelopmentProfileForm({
               </div>
             </div>
           </div>
-          <hr className="border-t border-[#dde5f5] my-5" />
+          <hr className="border-t border-ds-border my-5" />
           <div className="grid grid-cols-2 gap-5">
             <div className="flex flex-col gap-1.5">
               <p className="text-[11px] font-semibold uppercase tracking-[.06em] text-text-muted">Employee — L&D Comments</p>
@@ -506,15 +506,15 @@ export function DevelopmentProfileForm({
                 rows={5}
                 placeholder="Describe your development priorities and goals..."
                 className={cn(
-                  "w-full border-[1.5px] border-[#dde5f5] rounded-[8px] p-3 font-[DM_Sans] text-[13px] text-[#0f1f3d] resize-none outline-none transition-colors",
-                  isOwner ? "focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/10" : "bg-[#f8faff] text-[#4a5a82] cursor-not-allowed"
+                  "w-full border-[1.5px] border-ds-border rounded-[8px] p-3 font-sans text-[13px] text-ds-text-primary resize-none outline-none transition-colors",
+                  isOwner ? "focus:border-ds-accent focus:ring-2 focus:ring-[#0d0e10]/10" : "bg-ds-surface text-ds-text-secondary cursor-not-allowed"
                 )}
               />
             </div>
             <div className="flex flex-col gap-1.5">
               <p className="text-[11px] font-semibold uppercase tracking-[.06em] text-text-muted flex items-center gap-1.5">
                 Manager — L&D Notes
-                <span className="px-1.5 py-0.5 rounded bg-[#ede9fe] text-[#7c3aed] text-[8px] font-bold">MANAGER ONLY</span>
+                <span className="px-1.5 py-0.5 rounded bg-ds-info-subtle text-ds-info text-[8px] font-semibold">MANAGER ONLY</span>
               </p>
               <textarea
                 value={managerLdNotes}
@@ -523,25 +523,25 @@ export function DevelopmentProfileForm({
                 rows={5}
                 placeholder={isManager ? "Add your L&D notes and recommendations..." : "Set by manager"}
                 className={cn(
-                  "w-full border-[1.5px] rounded-[8px] p-3 font-[DM_Sans] text-[13px] text-[#0f1f3d] resize-none outline-none transition-colors",
-                  isManager ? "border-[#ddd6fe] focus:border-[#7c3aed] focus:ring-2 focus:ring-[#7c3aed]/10" : "border-[#dde5f5] bg-[#f8faff] text-[#4a5a82] cursor-not-allowed"
+                  "w-full border-[1.5px] rounded-[8px] p-3 font-sans text-[13px] text-ds-text-primary resize-none outline-none transition-colors",
+                  isManager ? "border-ds-info-border focus:border-ds-info focus:ring-2 focus:ring-[#3d5a78]/10" : "border-ds-border bg-ds-surface text-ds-text-secondary cursor-not-allowed"
                 )}
               />
               {managerLdNotes && profile?.manager_notes_at && (
-                <p className="text-[10px] text-[#8a97b8]">Updated {formatDate(profile.manager_notes_at)}</p>
+                <p className="text-[10px] text-ds-text-secondary">Updated {formatDate(profile.manager_notes_at)}</p>
               )}
             </div>
           </div>
         </div>
       </div>
 
-      <div className="rounded-[14px] border border-[#dde5f5] shadow-[0_2px_12px_rgba(15,31,61,.07),0_0_1px_rgba(15,31,61,.1)] bg-white overflow-hidden mb-5">
-        <div className="px-6 py-4 border-b border-[#dde5f5] flex items-center justify-between"
-          style={{ background: "var(--surface, #f8faff)" }}>
+      <div className="rounded-ds-panel border border-ds-border bg-white overflow-hidden mb-5">
+        <div className="px-6 py-4 border-b border-ds-border flex items-center justify-between"
+          style={{ background: "var(--surface, #f3f3f3)" }}>
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
-              style={{ background: "linear-gradient(135deg, #eff6ff, #dbeafe)" }}>
-              <svg className="w-5 h-5" style={{ color: "#3b82f6" }} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              style={{ background: "#f3f3f3" }}>
+              <svg className="w-5 h-5" style={{ color: "#0d0e10" }} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
               </svg>
             </div>
@@ -554,7 +554,7 @@ export function DevelopmentProfileForm({
             <button
               type="button"
               onClick={addSkill}
-              className="flex items-center gap-2 px-4 py-2 rounded-[8px] bg-[#0d9488] text-white font-['Sora'] text-[12px] font-semibold hover:bg-[#0f766e] transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-[8px] bg-ds-accent text-white font-sans text-[12px] font-semibold hover:bg-ds-accent-hover transition-colors"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <line x1="12" y1="5" x2="12" y2="19" />
@@ -567,31 +567,31 @@ export function DevelopmentProfileForm({
         <div className="overflow-x-auto">
           {skills.length === 0 ? (
             <div className="p-10 flex flex-col items-center justify-center text-center">
-              <div className="w-14 h-14 rounded-[8px] bg-[#eef2fb] border border-[#dde5f5] flex items-center justify-center text-[#8a97b8] mb-3">
+              <div className="w-14 h-14 rounded-[8px] bg-ds-surface border border-ds-border flex items-center justify-center text-ds-text-secondary mb-3">
                 <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               </div>
-              <p className="font-['Sora'] text-[14px] font-semibold text-[#0f1f3d]">No skills added yet</p>
-              <p className="text-[12px] text-[#8a97b8] mt-1">Click &apos;Add Skill&apos; to start tracking development goals.</p>
+              <p className="font-sans text-[14px] font-semibold text-ds-text-primary">No skills added yet</p>
+              <p className="text-[12px] text-ds-text-secondary mt-1">Click &apos;Add Skill&apos; to start tracking development goals.</p>
             </div>
           ) : (
             <table className="w-full border-collapse">
               <thead>
-                <tr className="bg-[#eef2fb] border-b border-[#dde5f5]">
-                  <th className="px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-[#8a97b8]">#</th>
-                  <th className="px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-[#8a97b8]" style={{ width: "30%" }}>Skill / Competency</th>
-                  <th className="px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-[#8a97b8]">Development Action / Remarks</th>
-                  <th className="px-3 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-[#8a97b8]" style={{ width: "11%" }}>Status</th>
+                <tr className="bg-ds-surface border-b border-ds-border">
+                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-ds-text-secondary">#</th>
+                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-ds-text-secondary" style={{ width: "30%" }}>Skill / Competency</th>
+                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-ds-text-secondary">Development Action / Remarks</th>
+                  <th className="px-3 py-2.5 text-center text-[10px] font-semibold uppercase tracking-wider text-ds-text-secondary" style={{ width: "11%" }}>Status</th>
                   <th className="px-3 py-2.5 w-10" />
                 </tr>
               </thead>
               <tbody>
                 {skills.map((skill, index) => (
-                  <tr key={skill.id} className="border-b border-[#dde5f5] hover:bg-[#f8faff] transition-colors">
+                  <tr key={skill.id} className="border-b border-ds-border hover:bg-ds-surface transition-colors">
                     <td className="px-3 py-2.5">
-                      <span className="w-[22px] h-[22px] rounded-[6px] bg-[#eef2fb] border border-[#dde5f5] inline-flex items-center justify-center text-[10px] font-bold text-[#8a97b8]">
+                      <span className="w-[22px] h-[22px] rounded-[6px] bg-ds-surface border border-ds-border inline-flex items-center justify-center text-[10px] font-semibold text-ds-text-secondary">
                         {index + 1}
                       </span>
                     </td>
@@ -602,7 +602,7 @@ export function DevelopmentProfileForm({
                         disabled={!isOwner}
                         onChange={(e) => updateSkill(skill.id, "skill", e.target.value)}
                         placeholder="e.g. Project Management"
-                        className="w-full border-none outline-none bg-transparent text-[13px] text-[#0f1f3d] disabled:text-[#4a5a82] placeholder:text-[#8a97b8]"
+                        className="w-full border-none outline-none bg-transparent text-[13px] text-ds-text-primary disabled:text-ds-text-secondary placeholder:text-ds-text-secondary"
                       />
                     </td>
                     <td className="px-3 py-2.5">
@@ -612,7 +612,7 @@ export function DevelopmentProfileForm({
                         disabled={!isOwner}
                         onChange={(e) => updateSkill(skill.id, "action", e.target.value)}
                         placeholder="Training, certification, or action..."
-                        className="w-full border-none outline-none bg-transparent text-[13px] text-[#0f1f3d] disabled:text-[#4a5a82] placeholder:text-[#8a97b8]"
+                        className="w-full border-none outline-none bg-transparent text-[13px] text-ds-text-primary disabled:text-ds-text-secondary placeholder:text-ds-text-secondary"
                       />
                     </td>
                     <td className="px-3 py-2.5 text-center" style={{ width: "11%" }}>
@@ -621,10 +621,10 @@ export function DevelopmentProfileForm({
                         disabled={!isOwner}
                         onClick={() => cycleStatus(skill.id)}
                         className={cn(
-                          "inline-flex items-center gap-1 px-2 py-0.5 rounded-full border-[1.5px] text-[10px] font-semibold transition-all",
-                          skill.status === "planned" && "bg-[#eff6ff] border-[#93c5fd] text-[#1d4ed8]",
-                          skill.status === "inprog" && "bg-[#fffbeb] border-[#fcd34d] text-[#92400e]",
-                          skill.status === "done" && "bg-[#ecfdf5] border-[#6ee7b7] text-[#065f46]",
+                          "inline-flex items-center gap-1 px-2 py-0.5 rounded-ds-button border-[1.5px] text-[10px] font-semibold transition-all",
+                          skill.status === "planned" && "bg-ds-surface border-ds-text-muted text-ds-info",
+                          skill.status === "inprog" && "bg-ds-warning-subtle border-ds-warning-border text-ds-warning",
+                          skill.status === "done" && "bg-ds-success-subtle border-ds-success-border text-ds-success",
                           !isOwner && "cursor-default"
                         )}
                       >
@@ -636,7 +636,7 @@ export function DevelopmentProfileForm({
                         <button
                           type="button"
                           onClick={() => removeSkill(skill.id)}
-                          className="text-[#8a97b8] hover:text-[#dc2626] hover:bg-[#fff1f2] p-1 rounded-[6px] transition-all"
+                          className="text-ds-text-secondary hover:text-ds-error hover:bg-ds-error-subtle p-1 rounded-[6px] transition-all"
                         >
                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -650,8 +650,8 @@ export function DevelopmentProfileForm({
             </table>
           )}
           {isOwner && skills.length > 0 && (
-            <div className="px-5 py-3 border-t border-[#dde5f5]">
-              <button type="button" onClick={addSkill} className="text-[12px] font-semibold text-[#3b82f6] hover:underline">
+            <div className="px-5 py-3 border-t border-ds-border">
+              <button type="button" onClick={addSkill} className="text-[12px] font-semibold text-ds-accent hover:underline">
                 Add another skill
               </button>
             </div>
@@ -659,12 +659,12 @@ export function DevelopmentProfileForm({
         </div>
       </div>
 
-      <div className="rounded-[14px] border border-[#dde5f5] shadow-[0_2px_12px_rgba(15,31,61,.07),0_0_1px_rgba(15,31,61,.1)] bg-white overflow-hidden mb-5">
-        <div className="px-6 py-4 border-b border-[#dde5f5] flex items-center gap-3"
-          style={{ background: "var(--surface, #f8faff)" }}>
+      <div className="rounded-ds-panel border border-ds-border bg-white overflow-hidden mb-5">
+        <div className="px-6 py-4 border-b border-ds-border flex items-center gap-3"
+          style={{ background: "var(--surface, #f3f3f3)" }}>
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
-            style={{ background: "linear-gradient(135deg, #fffbeb, #fef3c7)" }}>
-            <svg className="w-5 h-5" style={{ color: "#d97706" }} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            style={{ background: "#fffbeb" }}>
+            <svg className="w-5 h-5" style={{ color: "#8a5a00" }} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
             </svg>
           </div>
@@ -714,7 +714,7 @@ export function DevelopmentProfileForm({
               />
             </FieldGroup>
           </div>
-          <hr className="border-t border-[#dde5f5]" />
+          <hr className="border-t border-ds-border" />
           <div className="grid grid-cols-2 gap-4">
             <FieldGroup label="Interested in secondment or loan opportunities?" questionRef="Q6">
               <YesNoPills value={secondment} onChange={(v) => setSecondment(v)} disabled={!isOwner} />
@@ -726,11 +726,11 @@ export function DevelopmentProfileForm({
         </div>
       </div>
 
-      <div className="sticky bottom-0 left-0 right-0 z-10 flex items-center justify-between px-6 py-3.5 bg-white border-t border-[#dde5f5] shadow-[0_-4px_16px_rgba(15,31,61,0.06)]">
-        <span className="text-[11px] text-[#8a97b8] flex items-center gap-1.5">
+      <div className="sticky bottom-0 left-0 right-0 z-10 flex items-center justify-between px-6 py-3.5 bg-white border-t border-ds-border shadow-[0_-4px_16px_rgba(13,13,13,0.06)]">
+        <span className="text-[11px] text-ds-text-secondary flex items-center gap-1.5">
           {lastSaved ? (
             <>
-              <svg className="w-3 h-3 text-[#0d9488]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3 h-3 text-ds-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               Saved {formatDate(lastSaved)}
@@ -745,7 +745,7 @@ export function DevelopmentProfileForm({
               type="button"
               onClick={handleManagerSave}
               disabled={savingManager}
-              className="flex items-center gap-2 px-5 py-2 rounded-[8px] bg-[#ede9fe] text-[#7c3aed] border border-[#ddd6fe] font-['Sora'] text-[12px] font-semibold hover:bg-[#ddd6fe] transition-colors disabled:opacity-60"
+              className="flex items-center gap-2 px-5 py-2 rounded-[8px] bg-ds-info-subtle text-ds-info border border-ds-info-border font-sans text-[12px] font-semibold hover:bg-ds-info-border transition-colors disabled:opacity-60"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
@@ -758,7 +758,7 @@ export function DevelopmentProfileForm({
               type="button"
               onClick={handleEmployeeSave}
               disabled={savingEmployee}
-              className="inline-flex items-center gap-2 rounded-lg bg-[#1D9E75] px-5 py-2 text-sm font-medium text-white hover:bg-[#0F6E56] transition-colors disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-lg bg-ds-accent px-5 py-2 text-sm font-medium text-white hover:bg-ds-accent-hover transition-colors disabled:opacity-60"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
@@ -829,11 +829,11 @@ export function DevelopmentProfileLoader({ userId }: { userId: string }) {
   }, [userId]);
 
   if (loading) {
-    return <p className="text-[13px] text-[#8a97b8] py-6">Loading development profile…</p>;
+    return <p className="text-[13px] text-ds-text-secondary py-6">Loading development profile…</p>;
   }
   if (err || !data) {
     return (
-      <div className="rounded-[14px] border border-[#fecaca] bg-[#fef2f2] px-5 py-4 text-[13px] text-[#b91c1c]">
+      <div className="rounded-ds-panel border border-ds-error-border bg-ds-error-subtle px-5 py-4 text-[13px] text-ds-error">
         {err ?? "Failed to load profile"}
       </div>
     );
@@ -846,8 +846,8 @@ export function DevelopmentProfileLoader({ userId }: { userId: string }) {
     <div style={{ animation: "fadeUp 0.4s ease both" }}>
       <div className="flex items-start justify-between mb-5">
         <div className="flex items-start gap-4 mb-6">
-          <div className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl"
-            style={{ background: "linear-gradient(135deg, #eff6ff, #dbeafe)" }}>
+          <div className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-ds-panel"
+            style={{ background: "#f3f3f3" }}>
             <span className="text-accent">
               <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
@@ -855,7 +855,7 @@ export function DevelopmentProfileLoader({ userId }: { userId: string }) {
             </span>
           </div>
           <div className="pt-0.5">
-            <h1 className="font-display text-2xl font-bold tracking-tight text-text-primary"
+            <h1 className="text-ds-page-title text-ds-text-primary"
               style={{ letterSpacing: "-0.02em" }}>
               Development Profile
             </h1>
@@ -865,7 +865,7 @@ export function DevelopmentProfileLoader({ userId }: { userId: string }) {
           </div>
         </div>
         {profile?.last_updated_at && (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#f0fdfa] border border-[#99f6e4] text-[#0d9488] text-[11px] font-semibold">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-ds-badge bg-ds-surface border border-ds-border-strong text-ds-accent text-[11px] font-semibold">
             <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>

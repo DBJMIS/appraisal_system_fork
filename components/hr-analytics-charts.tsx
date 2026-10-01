@@ -17,7 +17,7 @@ import type {
   PerformerRow,
 } from "@/lib/hr-analytics-data";
 
-const DISTRIBUTION_COLORS = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#16a34a"];
+const DISTRIBUTION_COLORS = ["#b42318", "#8a5a00", "#8a5a00", "#2e7d4f", "#2e7d4f"];
 
 interface HRAnalyticsChartsProps {
   scoreDistribution: ScoreDistributionBucket[];

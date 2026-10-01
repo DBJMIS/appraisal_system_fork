@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { downloadSignedPDF } from "@/lib/adobe-sign";
+import { downloadSignedPDF, fetchAgreementLifecycle } from "@/lib/adobe-sign";
 import { sendNotification, type SupabaseLike } from "@/lib/notifications";
 import { resolveDepartmentHeadSystemUserId } from "@/lib/hrmis-approval-auth";
+import { allowAppraisalTestBypass } from "@/lib/appraisal-test-bypass";
 
 // Adobe Sign webhook verification expects client ID echoed in response header.
 export async function GET(req: NextRequest) {
@@ -71,26 +72,46 @@ function extractParticipantEmail(body: Record<string, unknown>): string | undefi
 }
 
 export async function POST(req: NextRequest) {
+  // Adobe treats a notification as failed unless the client id is echoed back.
+  const clientId = req.headers.get("x-adobesign-clientid");
+  const reply = (status = 200) => {
+    const response = NextResponse.json({ ok: status === 200 }, { status });
+    if (clientId) response.headers.set("X-AdobeSign-ClientId", clientId);
+    return response;
+  };
+
+  try {
+    return await handleNotification(req, reply);
+  } catch (err) {
+    console.error("[webhook] adobe-sign", err);
+    return reply(500);
+  }
+}
+
+async function handleNotification(
+  req: NextRequest,
+  reply: (status?: number) => NextResponse
+): Promise<NextResponse> {
   const supabase = getSupabaseAdmin();
   let body: Record<string, unknown>;
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ ok: true });
+    return reply();
   }
 
   const event = extractWebhookEvent(body);
   const agreementId = extractAgreementId(body);
 
-  if (!agreementId) return NextResponse.json({ ok: true });
+  if (!agreementId) return reply();
 
   const { data: agreement, error: aggErr } = await supabase
     .from("appraisal_agreements")
-    .select("id, appraisal_id, employee_signed_at, manager_signed_at, hr_signed_at")
+    .select("id, appraisal_id, status, employee_signed_at, manager_signed_at, hr_signed_at")
     .eq("adobe_agreement_id", agreementId)
     .maybeSingle();
 
-  if (aggErr || !agreement) return NextResponse.json({ ok: true });
+  if (aggErr || !agreement) return reply();
 
   const { data: appraisal, error: appErr } = await supabase
     .from("appraisals")
@@ -98,7 +119,7 @@ export async function POST(req: NextRequest) {
     .eq("id", agreement.appraisal_id)
     .single();
 
-  if (appErr || !appraisal) return NextResponse.json({ ok: true });
+  if (appErr || !appraisal) return reply();
 
   const { data: emp } = await supabase
     .from("employees")
@@ -131,7 +152,7 @@ export async function POST(req: NextRequest) {
 
   const managerActsAsFinalApprover =
     appraisal.manager_employee_id === hodEmployeeId || !!managerUser;
-  const testOnlyEmployeeSigner = process.env.ALLOW_APPRAISAL_TEST_BYPASS === "true";
+  const testOnlyEmployeeSigner = allowAppraisalTestBypass();
   const managerIsInChain = !testOnlyEmployeeSigner && !managerActsAsFinalApprover;
   const finalSignerEmployeeId = testOnlyEmployeeSigner
     ? appraisal.employee_id
@@ -143,7 +164,9 @@ export async function POST(req: NextRequest) {
   const normalizedEvent =
     event === "AGREEMENT_WORKFLOW_COMPLETED" || event === "WORKFLOW_COMPLETED"
       ? "AGREEMENT_COMPLETED"
-      : event;
+      : event === "AGREEMENT_REJECTED"
+        ? "AGREEMENT_DECLINED"
+        : event;
 
   switch (normalizedEvent) {
     case "AGREEMENT_ACTION_COMPLETED": {
@@ -195,6 +218,9 @@ export async function POST(req: NextRequest) {
     }
 
     case "AGREEMENT_COMPLETED": {
+      if (agreement.status === "SIGNED") break;
+      if ((await fetchAgreementLifecycle(agreementId)) !== "SIGNED") break;
+
       const signedPdfBuffer = await downloadSignedPDF(agreementId);
       const signedPath = `${agreement.appraisal_id}/signed-${Date.now()}.pdf`;
 
@@ -218,12 +244,19 @@ export async function POST(req: NextRequest) {
         completionUpdate.employee_signed_at = completedAt;
       }
 
-      await supabase.from("appraisal_agreements").update(completionUpdate).eq("id", agreement.id);
+      const { data: claimed } = await supabase
+        .from("appraisal_agreements")
+        .update(completionUpdate)
+        .eq("id", agreement.id)
+        .neq("status", "SIGNED")
+        .select("id");
+      if (!claimed?.length) break;
 
       await supabase
         .from("appraisals")
-        .update({ status: "HOD_REVIEW" })
-        .eq("id", agreement.appraisal_id);
+        .update({ status: "HR_REVIEW" })
+        .eq("id", agreement.appraisal_id)
+        .eq("status", "PENDING_SIGNOFF");
 
       const recipients = Array.from(
         new Set(
@@ -237,7 +270,7 @@ export async function POST(req: NextRequest) {
           {
             recipientEmployeeId,
             type: "SIGNOFF_COMPLETE",
-            message: `Sign-off is complete for ${emp?.full_name ?? "Employee"}'s FY 2026 appraisal. The appraisal is now moving to HOD Review.`,
+            message: `Sign-off is complete for ${emp?.full_name ?? "Employee"}'s FY 2026 appraisal. The appraisal is now moving to HR Review.`,
             appraisalId: agreement.appraisal_id,
           },
           supabase as unknown as SupabaseLike
@@ -247,6 +280,7 @@ export async function POST(req: NextRequest) {
     }
 
     case "AGREEMENT_DECLINED": {
+      if ((await fetchAgreementLifecycle(agreementId)) !== "DECLINED") break;
       const declinerEmail = extractParticipantEmail(body) ?? (actionInfo?.participantEmail as string) ?? "";
       const declineReason = (actionInfo?.comment as string) ?? "";
 
@@ -264,7 +298,8 @@ export async function POST(req: NextRequest) {
       await supabase
         .from("appraisals")
         .update({ status: "MANAGER_REVIEW" })
-        .eq("id", agreement.appraisal_id);
+        .eq("id", agreement.appraisal_id)
+        .eq("status", "PENDING_SIGNOFF");
 
       if (mgr?.employee_id) {
         await sendNotification(
@@ -281,6 +316,7 @@ export async function POST(req: NextRequest) {
     }
 
     case "AGREEMENT_EXPIRED": {
+      if ((await fetchAgreementLifecycle(agreementId)) !== "EXPIRED") break;
       await supabase
         .from("appraisal_agreements")
         .update({ status: "EXPIRED", updated_at: new Date().toISOString() })
@@ -289,7 +325,8 @@ export async function POST(req: NextRequest) {
       await supabase
         .from("appraisals")
         .update({ status: "MANAGER_REVIEW" })
-        .eq("id", agreement.appraisal_id);
+        .eq("id", agreement.appraisal_id)
+        .eq("status", "PENDING_SIGNOFF");
 
       if (finalSignerEmployeeId) {
         await sendNotification(
@@ -306,6 +343,7 @@ export async function POST(req: NextRequest) {
     }
 
     case "AGREEMENT_RECALLED": {
+      if ((await fetchAgreementLifecycle(agreementId)) !== "CANCELLED") break;
       await supabase
         .from("appraisal_agreements")
         .update({ status: "CANCELLED", updated_at: new Date().toISOString() })
@@ -317,5 +355,5 @@ export async function POST(req: NextRequest) {
       break;
   }
 
-  return NextResponse.json({ ok: true });
+  return reply();
 }

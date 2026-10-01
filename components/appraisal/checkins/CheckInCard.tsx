@@ -5,6 +5,7 @@ import type { CheckInWithResponses, CheckInResponse, ObjectiveStatus } from "@/t
 import { StatusPills } from "./StatusPills";
 import { ProgressSlider } from "./ProgressSlider";
 import { TrafficLightDots } from "./TrafficLightDots";
+import { dedupeFiscalYearPrefix, formatCheckInDate } from "@/lib/midyear-config";
 
 interface CheckInCardProps {
   appraisalId: string;
@@ -16,28 +17,21 @@ interface CheckInCardProps {
 }
 
 const STATUS_STYLES: Record<string, { bg: string; border: string; text: string; label: string }> = {
-  ON_TRACK: { bg: "#ecfdf5", border: "#6ee7b7", text: "#065f46", label: "On track" },
-  AT_RISK: { bg: "#fffbeb", border: "#fcd34d", text: "#92400e", label: "At risk" },
-  BEHIND: { bg: "#fff1f2", border: "#fecaca", text: "#dc2626", label: "Behind" },
-  COMPLETE: { bg: "#ecfdf5", border: "#6ee7b7", text: "#065f46", label: "Complete" },
+  ON_TRACK: { bg: "#ecfdf5", border: "#bbf0d9", text: "#2e7d4f", label: "On track" },
+  AT_RISK: { bg: "#fffbeb", border: "#fbe3a1", text: "#8a5a00", label: "At risk" },
+  BEHIND: { bg: "#fef2f2", border: "#fbd5d5", text: "#b42318", label: "Behind" },
+  COMPLETE: { bg: "#ecfdf5", border: "#bbf0d9", text: "#2e7d4f", label: "Complete" },
 };
 
-function formatDate(s: string | null): string {
-  if (!s) return "—";
-  try {
-    return new Date(s).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-  } catch {
-    return s;
-  }
-}
+const formatDate = (s: string | null) => formatCheckInDate(s) ?? "—";
 
 export function CheckInCard({ appraisalId, checkIn, role, onUpdate, embedded = false }: CheckInCardProps) {
-  const cardStyle = { borderColor: "#dde5f5", boxShadow: "0 2px 12px rgba(15,31,61,0.07)" };
+  const cardStyle = { borderColor: "#e7e7e7", boxShadow: "none" };
   const wrap = (children: React.ReactNode) =>
     embedded ? (
       <div className="p-5">{children}</div>
     ) : (
-      <div className="rounded-[14px] border p-5" style={cardStyle}>{children}</div>
+      <div className="rounded-ds-panel border p-5" style={cardStyle}>{children}</div>
     );
   const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -86,16 +80,16 @@ export function CheckInCard({ appraisalId, checkIn, role, onUpdate, embedded = f
   if (status === "CANCELLED") {
     return (
       <div
-        className="bg-white border border-[#dde5f5] rounded-[10px] overflow-hidden mb-2 p-4 opacity-80"
-        style={{ boxShadow: "0 2px 12px rgba(15,31,61,0.07)" }}
+        className="bg-white border border-ds-border rounded-ds-panel overflow-hidden mb-2 p-4 opacity-80"
+        style={{ boxShadow: "none" }}
       >
         <div className="flex items-center justify-between">
-          <span className="text-[12px] font-semibold text-[#0f1f3d] font-['Sora']">{checkIn.title}</span>
-          <span className="px-2.5 py-1 rounded-full border text-[10px] font-semibold bg-[#f1f5f9] border-[#e2e8f0] text-[#64748b]">
+          <span className="text-[12px] font-semibold text-ds-text-primary font-sans">{dedupeFiscalYearPrefix(checkIn.title)}</span>
+          <span className="px-2.5 py-1 rounded-ds-badge border text-[10px] font-semibold bg-ds-surface border-ds-border text-ds-text-secondary">
             Cancelled
           </span>
         </div>
-        <p className="text-[10px] text-[#8a97b8] mt-1">{formatDate(checkIn.created_at)}</p>
+        <p className="text-[10px] text-ds-text-secondary mt-1">{formatDate(checkIn.created_at)}</p>
       </div>
     );
   }
@@ -104,28 +98,28 @@ export function CheckInCard({ appraisalId, checkIn, role, onUpdate, embedded = f
   if (status === "MANAGER_REVIEWED" || status === "COMPLETE") {
     return (
       <div
-        className="bg-white border border-[#dde5f5] rounded-[10px] overflow-hidden mb-2"
-        style={{ boxShadow: "0 2px 12px rgba(15,31,61,0.07)" }}
+        className="bg-white border border-ds-border rounded-ds-panel overflow-hidden mb-2"
+        style={{ boxShadow: "none" }}
       >
         <button
           type="button"
           onClick={() => setExpanded(!expanded)}
-          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#f8faff] transition-colors text-left"
+          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-ds-surface transition-colors text-left"
         >
-          <div className="w-7 h-7 rounded-[8px] bg-[#ecfdf5] border border-[#6ee7b7] flex items-center justify-center flex-shrink-0">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2">
+          <div className="w-7 h-7 rounded-[8px] bg-ds-success-subtle border border-ds-success-border flex items-center justify-center flex-shrink-0">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#2e7d4f" strokeWidth="2">
               <polyline points="20 6 9 17 4 12" />
             </svg>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[12px] font-semibold text-[#0f1f3d] truncate font-['Sora']">{checkIn.title}</p>
-            <p className="text-[10px] text-[#8a97b8] mt-0.5">
+            <p className="text-[12px] font-semibold text-ds-text-primary truncate font-sans">{dedupeFiscalYearPrefix(checkIn.title)}</p>
+            <p className="text-[10px] text-ds-text-secondary mt-0.5">
               {formatDate(checkIn.created_at)}
               {checkIn.manager_reviewed_at && ` · Completed ${formatDate(checkIn.manager_reviewed_at)}`}
             </p>
           </div>
           <TrafficLightDots responses={responses} />
-          <span className="px-2.5 py-1 rounded-full border text-[10px] font-semibold bg-[#ecfdf5] border-[#6ee7b7] text-[#065f46] flex-shrink-0">
+          <span className="px-2.5 py-1 rounded-ds-badge border text-[10px] font-semibold bg-ds-success-subtle border-ds-success-border text-ds-success flex-shrink-0">
             Complete
           </span>
           <svg
@@ -133,7 +127,7 @@ export function CheckInCard({ appraisalId, checkIn, role, onUpdate, embedded = f
             height="14"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="#8a97b8"
+            stroke="#646f79"
             strokeWidth="2"
             className={`flex-shrink-0 transition-transform ${expanded ? "rotate-90" : ""}`}
           >
@@ -141,22 +135,22 @@ export function CheckInCard({ appraisalId, checkIn, role, onUpdate, embedded = f
           </svg>
         </button>
         {expanded && (
-          <div className="border-t border-[#dde5f5] px-4 pb-4 pt-2 space-y-4">
+          <div className="border-t border-ds-border px-4 pb-4 pt-2 space-y-4">
             {responses.map((r) => (
               <div key={r.id} className="space-y-2">
-                <p className="text-[11px] font-semibold text-[#8a97b8] uppercase tracking-wider">
+                <p className="text-[11px] font-semibold text-ds-text-secondary uppercase tracking-wider">
                   {r.workplan_item?.major_task || "Objective"}
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="rounded-[8px] border border-[#dde5f5] p-3 bg-white">
-                    <p className="text-[10px] font-semibold text-[#8a97b8] mb-1">Employee</p>
-                    <p className="text-[12px] text-[#0f1f3d]">
+                  <div className="rounded-[8px] border border-ds-border p-3 bg-white">
+                    <p className="text-[10px] font-semibold text-ds-text-secondary mb-1">Employee</p>
+                    <p className="text-[12px] text-ds-text-primary">
                       {r.employee_status && (
                         <span
                           className="inline-block px-2 py-0.5 rounded text-[10px] font-semibold mr-2"
                           style={{
                             background: STATUS_STYLES[r.employee_status]?.bg,
-                            border: `1px solid ${STATUS_STYLES[r.employee_status]?.border ?? "#dde5f5"}`,
+                            border: `1px solid ${STATUS_STYLES[r.employee_status]?.border ?? "#e7e7e7"}`,
                             color: STATUS_STYLES[r.employee_status]?.text,
                           }}
                         >
@@ -164,37 +158,37 @@ export function CheckInCard({ appraisalId, checkIn, role, onUpdate, embedded = f
                         </span>
                       )}
                       {r.progress_pct != null && <span>{r.progress_pct}%</span>}
-                      {r.employee_comment && <p className="mt-1 text-[#4a5a82]">{r.employee_comment}</p>}
+                      {r.employee_comment && <p className="mt-1 text-ds-text-secondary">{r.employee_comment}</p>}
                     </p>
                   </div>
-                  <div className="rounded-[8px] border p-3" style={{ background: "#f0fdfa", borderColor: "#99f6e4" }}>
-                    <p className="text-[10px] font-semibold text-[#0f766e] mb-1">Manager</p>
-                    <p className="text-[12px] text-[#0f1f3d]">
+                  <div className="rounded-[8px] border p-3" style={{ background: "#f3f3f3", borderColor: "#d0d4d8" }}>
+                    <p className="text-[10px] font-semibold text-ds-accent-hover mb-1">Manager</p>
+                    <p className="text-[12px] text-ds-text-primary">
                       {r.mgr_status_override && (
                         <span
                           className="inline-block px-2 py-0.5 rounded text-[10px] font-semibold mr-2"
                           style={{
                             background: STATUS_STYLES[r.mgr_status_override]?.bg,
-                            border: `1px solid ${STATUS_STYLES[r.mgr_status_override]?.border ?? "#dde5f5"}`,
+                            border: `1px solid ${STATUS_STYLES[r.mgr_status_override]?.border ?? "#e7e7e7"}`,
                             color: STATUS_STYLES[r.mgr_status_override]?.text,
                           }}
                         >
                           {STATUS_STYLES[r.mgr_status_override]?.label ?? r.mgr_status_override}
                         </span>
                       )}
-                      {r.mgr_comment && <p className="mt-1 text-[#4a5a82]">{r.mgr_comment}</p>}
+                      {r.mgr_comment && <p className="mt-1 text-ds-text-secondary">{r.mgr_comment}</p>}
                     </p>
                   </div>
                 </div>
               </div>
             ))}
             {checkIn.manager_overall_notes && (
-              <div className="rounded-[8px] border p-3" style={{ background: "#f0fdfa", borderColor: "#99f6e4" }}>
-                <p className="text-[10px] font-semibold text-[#0f766e] mb-1">Overall notes</p>
-                <p className="text-[12px] text-[#0f1f3d]">{checkIn.manager_overall_notes}</p>
+              <div className="rounded-[8px] border p-3" style={{ background: "#f3f3f3", borderColor: "#d0d4d8" }}>
+                <p className="text-[10px] font-semibold text-ds-accent-hover mb-1">Overall notes</p>
+                <p className="text-[12px] text-ds-text-primary">{checkIn.manager_overall_notes}</p>
               </div>
             )}
-            <p className="text-[10px] text-[#8a97b8]">
+            <p className="text-[10px] text-ds-text-secondary">
               Signed off on {formatDate(checkIn.manager_reviewed_at)}
             </p>
           </div>
@@ -207,15 +201,15 @@ export function CheckInCard({ appraisalId, checkIn, role, onUpdate, embedded = f
   if (status === "OPEN" && role === "EMPLOYEE") {
     return wrap(
       <>
-        <div className="rounded-[10px] border mb-4 px-3 py-2" style={{ background: "#fffbeb", borderColor: "#fcd34d" }}>
-          <p className="text-[12px] font-semibold text-[#92400e]">Action required</p>
+        <div className="rounded-ds-panel border mb-4 px-3 py-2" style={{ background: "#fffbeb", borderColor: "#fbe3a1" }}>
+          <p className="text-[12px] font-semibold text-ds-warning">Action required</p>
         </div>
         <div className="space-y-4">
           {responses.map((r) => {
             const val = getResponse(r);
             return (
-              <div key={r.id} className="rounded-[10px] border border-[#dde5f5] p-3 space-y-2">
-                <p className="text-[12px] font-semibold text-[#0f1f3d]" style={{ fontFamily: "Sora, sans-serif" }}>
+              <div key={r.id} className="rounded-ds-panel border border-ds-border p-3 space-y-2">
+                <p className="text-[12px] font-semibold text-ds-text-primary" style={{ fontFamily: "var(--ds-font-sans)" }}>
                   {r.workplan_item?.major_task || "Objective"}
                 </p>
                 <StatusPills
@@ -248,18 +242,18 @@ export function CheckInCard({ appraisalId, checkIn, role, onUpdate, embedded = f
                     }))
                   }
                   rows={2}
-                  className="w-full px-3 py-2 rounded-[8px] border border-[#dde5f5] text-[12px] resize-y"
+                  className="w-full px-3 py-2 rounded-[8px] border border-ds-border text-[12px] resize-y"
                 />
               </div>
             );
           })}
         </div>
-        <div className="flex gap-2 mt-4 pt-4 border-t border-[#dde5f5]">
+        <div className="flex gap-2 mt-4 pt-4 border-t border-ds-border">
           <button
             type="button"
             disabled={loading}
             onClick={() => patch({ action: "EMPLOYEE_SAVE_DRAFT", responses: buildResponsesPayload() })}
-            className="px-4 py-2 rounded-[8px] border border-[#dde5f5] text-[12px] font-semibold text-[#4a5a82] hover:bg-[#f8faff] disabled:opacity-60"
+            className="px-4 py-2 rounded-[8px] border border-ds-border text-[12px] font-semibold text-ds-text-secondary hover:bg-ds-surface disabled:opacity-60"
           >
             {loading ? "Saving…" : "Save draft"}
           </button>
@@ -267,7 +261,7 @@ export function CheckInCard({ appraisalId, checkIn, role, onUpdate, embedded = f
             type="button"
             disabled={loading}
             onClick={() => patch({ action: "EMPLOYEE_SUBMIT", responses: buildResponsesPayload() })}
-            className="px-4 py-2 rounded-[8px] text-[12px] font-semibold text-white bg-[#0d9488] hover:opacity-90 disabled:opacity-60"
+            className="px-4 py-2 rounded-[8px] text-[12px] font-semibold text-white bg-ds-accent hover:opacity-90 disabled:opacity-60"
           >
             {loading ? "Submitting…" : "Submit to manager →"}
           </button>
@@ -280,23 +274,23 @@ export function CheckInCard({ appraisalId, checkIn, role, onUpdate, embedded = f
   if (status === "OPEN" && (role === "MANAGER" || role === "HR")) {
     return wrap(
       <>
-        <div className="rounded-[10px] border mb-4 px-3 py-2" style={{ background: "#f8faff", borderColor: "#dde5f5" }}>
-          <p className="text-[12px] font-semibold text-[#4a5a82]">Awaiting employee input</p>
+        <div className="rounded-ds-panel border mb-4 px-3 py-2" style={{ background: "#f3f3f3", borderColor: "#e7e7e7" }}>
+          <p className="text-[12px] font-semibold text-ds-text-secondary">Awaiting employee input</p>
         </div>
         <div className="space-y-3">
           {responses.map((r) => (
-            <div key={r.id} className="rounded-[8px] border border-[#dde5f5] p-3 flex items-center justify-between">
-              <p className="text-[12px] text-[#8a97b8]">{r.workplan_item?.major_task || "Objective"}</p>
-              <span className="text-[11px] text-[#8a97b8]">—</span>
+            <div key={r.id} className="rounded-[8px] border border-ds-border p-3 flex items-center justify-between">
+              <p className="text-[12px] text-ds-text-secondary">{r.workplan_item?.major_task || "Objective"}</p>
+              <span className="text-[11px] text-ds-text-secondary">—</span>
             </div>
           ))}
         </div>
-        <div className="flex gap-2 mt-4 pt-4 border-t border-[#dde5f5]">
+        <div className="flex gap-2 mt-4 pt-4 border-t border-ds-border">
           <button
             type="button"
             disabled
             title="Available after employee submits"
-            className="px-4 py-2 rounded-[8px] border border-[#dde5f5] text-[12px] font-semibold text-[#8a97b8] bg-[#f1f5f9] cursor-not-allowed"
+            className="px-4 py-2 rounded-[8px] border border-ds-border text-[12px] font-semibold text-ds-text-secondary bg-ds-surface cursor-not-allowed"
           >
             Add manager response
           </button>
@@ -304,7 +298,7 @@ export function CheckInCard({ appraisalId, checkIn, role, onUpdate, embedded = f
             type="button"
             disabled={loading}
             onClick={() => patch({ action: "CANCEL" })}
-            className="px-4 py-2 rounded-[8px] border border-[#fecaca] text-[12px] font-semibold text-[#dc2626] hover:bg-[#fff1f2] disabled:opacity-60"
+            className="px-4 py-2 rounded-[8px] border border-ds-error-border text-[12px] font-semibold text-ds-error hover:bg-ds-error-subtle disabled:opacity-60"
           >
             {loading ? "Cancelling…" : "Cancel check-in"}
           </button>
@@ -317,16 +311,16 @@ export function CheckInCard({ appraisalId, checkIn, role, onUpdate, embedded = f
   if (status === "EMPLOYEE_SUBMITTED" && role === "EMPLOYEE") {
     return wrap(
       <>
-        <div className="rounded-[10px] border mb-4 px-3 py-2" style={{ background: "#eff6ff", borderColor: "#bfdbfe" }}>
-          <p className="text-[12px] font-semibold text-[#1d4ed8]">Submitted — awaiting manager review</p>
+        <div className="rounded-ds-panel border mb-4 px-3 py-2" style={{ background: "#f3f3f3", borderColor: "#d0d4d8" }}>
+          <p className="text-[12px] font-semibold text-ds-info">Submitted — awaiting manager review</p>
         </div>
         <div className="space-y-3">
           {responses.map((r) => {
             const val = getResponse(r);
             return (
-              <div key={r.id} className="rounded-[8px] border border-[#dde5f5] p-3">
-                <p className="text-[12px] font-semibold text-[#0f1f3d]">{r.workplan_item?.major_task || "Objective"}</p>
-                <p className="text-[11px] text-[#4a5a82] mt-1">
+              <div key={r.id} className="rounded-[8px] border border-ds-border p-3">
+                <p className="text-[12px] font-semibold text-ds-text-primary">{r.workplan_item?.major_task || "Objective"}</p>
+                <p className="text-[11px] text-ds-text-secondary mt-1">
                   {val.employee_status && STATUS_STYLES[val.employee_status]?.label}
                   {val.progress_pct != null && ` · ${val.progress_pct}%`}
                   {val.employee_comment && ` · ${val.employee_comment}`}
@@ -343,16 +337,16 @@ export function CheckInCard({ appraisalId, checkIn, role, onUpdate, embedded = f
   if (status === "EMPLOYEE_SUBMITTED" && (role === "MANAGER" || role === "HR")) {
     return wrap(
       <>
-        <div className="rounded-[10px] border mb-4 px-3 py-2" style={{ background: "#f0fdfa", borderColor: "#99f6e4" }}>
-          <p className="text-[12px] font-semibold text-[#0f766e]">Employee has submitted — add your response</p>
+        <div className="rounded-ds-panel border mb-4 px-3 py-2" style={{ background: "#f3f3f3", borderColor: "#d0d4d8" }}>
+          <p className="text-[12px] font-semibold text-ds-accent-hover">Employee has submitted — add your response</p>
         </div>
         <div className="space-y-4">
           {responses.map((r) => {
             const val = getResponse(r);
             return (
-              <div key={r.id} className="rounded-[10px] border border-[#dde5f5] p-3 space-y-2">
-                <p className="text-[12px] font-semibold text-[#0f1f3d]">{r.workplan_item?.major_task || "Objective"}</p>
-                <div className="rounded-[8px] border border-[#dde5f5] p-2 bg-[#f8faff] text-[11px] text-[#4a5a82]">
+              <div key={r.id} className="rounded-ds-panel border border-ds-border p-3 space-y-2">
+                <p className="text-[12px] font-semibold text-ds-text-primary">{r.workplan_item?.major_task || "Objective"}</p>
+                <div className="rounded-[8px] border border-ds-border p-2 bg-ds-surface text-[11px] text-ds-text-secondary">
                   Employee: {val.employee_status && STATUS_STYLES[val.employee_status]?.label}
                   {val.progress_pct != null && ` · ${val.progress_pct}%`}
                   {val.employee_comment && ` — ${val.employee_comment}`}
@@ -376,23 +370,23 @@ export function CheckInCard({ appraisalId, checkIn, role, onUpdate, embedded = f
                     }))
                   }
                   rows={2}
-                  className="w-full px-3 py-2 rounded-[8px] border border-[#dde5f5] text-[12px] resize-y"
+                  className="w-full px-3 py-2 rounded-[8px] border border-ds-border text-[12px] resize-y"
                 />
               </div>
             );
           })}
         </div>
         <div className="mt-4">
-          <label className="block text-[11px] font-semibold text-[#8a97b8] mb-2">Overall notes</label>
+          <label className="block text-[11px] font-semibold text-ds-text-secondary mb-2">Overall notes</label>
           <textarea
             value={managerOverallNotes}
             onChange={(e) => setManagerOverallNotes(e.target.value)}
             placeholder="Optional overall feedback..."
             rows={2}
-            className="w-full px-3 py-2 rounded-[8px] border border-[#dde5f5] text-[12px] resize-y"
+            className="w-full px-3 py-2 rounded-[8px] border border-ds-border text-[12px] resize-y"
           />
         </div>
-        <div className="flex gap-2 mt-4 pt-4 border-t border-[#dde5f5]">
+        <div className="flex gap-2 mt-4 pt-4 border-t border-ds-border">
           <button
             type="button"
             disabled={loading}
@@ -403,7 +397,7 @@ export function CheckInCard({ appraisalId, checkIn, role, onUpdate, embedded = f
                 manager_overall_notes: managerOverallNotes || null,
               })
             }
-            className="px-4 py-2 rounded-[8px] border border-[#dde5f5] text-[12px] font-semibold text-[#4a5a82] hover:bg-[#f8faff] disabled:opacity-60"
+            className="px-4 py-2 rounded-[8px] border border-ds-border text-[12px] font-semibold text-ds-text-secondary hover:bg-ds-surface disabled:opacity-60"
           >
             {loading ? "Saving…" : "Save draft"}
           </button>
@@ -418,7 +412,7 @@ export function CheckInCard({ appraisalId, checkIn, role, onUpdate, embedded = f
               });
               await patch({ action: "MANAGER_COMPLETE" });
             }}
-            className="px-4 py-2 rounded-[8px] text-[12px] font-semibold text-white bg-[#0d9488] hover:opacity-90 disabled:opacity-60"
+            className="px-4 py-2 rounded-[8px] text-[12px] font-semibold text-white bg-ds-accent hover:opacity-90 disabled:opacity-60"
           >
             {loading ? "Completing…" : "Complete check-in ✓"}
           </button>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getCurrentUser } from "@/lib/auth";
+import { hasOversightReadAccess } from "@/lib/appraisal-oversight";
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -37,7 +38,7 @@ export async function GET(req: NextRequest, context: RouteContext) {
     const isEmployee = appraisal.employee_id === user.employee_id;
     const isManager = appraisal.manager_employee_id === user.employee_id;
 
-    if (!isHrOrAdmin && !isEmployee && !isManager) {
+    if (!isHrOrAdmin && !isEmployee && !isManager && !(await hasOversightReadAccess(user, appraisal))) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -136,7 +137,7 @@ export async function PUT(req: NextRequest, context: RouteContext) {
 
     const { data: appraisal, error: appErr } = await supabase
       .from("appraisals")
-      .select("id, employee_id, manager_employee_id")
+      .select("id, status, employee_id, manager_employee_id")
       .eq("id", appraisalId)
       .single();
 
@@ -145,11 +146,18 @@ export async function PUT(req: NextRequest, context: RouteContext) {
     }
 
     const isHrOrAdmin = user.roles?.some((r) => r === "hr" || r === "admin");
-    const isEmployee = appraisal.employee_id === user.employee_id;
-    const isManager = appraisal.manager_employee_id === user.employee_id;
+    const isEmployee = !!user.employee_id && appraisal.employee_id === user.employee_id;
+    const isManager = !!user.employee_id && appraisal.manager_employee_id === user.employee_id;
 
     if (!isHrOrAdmin && !isEmployee && !isManager) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    if (["PENDING_SIGNOFF", "HOD_REVIEW", "HR_REVIEW", "COMPLETE"].includes(String(appraisal.status ?? "").toUpperCase())) {
+      return NextResponse.json(
+        { error: "Technical competencies can no longer be changed at this stage.", code: "COMPETENCIES_LOCKED" },
+        { status: 409 }
+      );
     }
 
     const body = await req.json();

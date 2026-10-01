@@ -7,6 +7,10 @@ import { RatingScaleTab } from "./tabs/RatingScaleTab";
 import { RecommendationRulesTab } from "./tabs/RecommendationRulesTab";
 import { VisibilityTab } from "./tabs/VisibilityTab";
 import { EmployeeSyncTab } from "./tabs/EmployeeSyncTab";
+import { EmailPreviewTab } from "./tabs/EmailPreviewTab";
+import { ReminderRunPanel } from "./ReminderRunPanel";
+import { NotificationActivityPanel } from "./NotificationActivityPanel";
+import { OutstandingActionsPanel } from "./OutstandingActionsPanel";
 
 const TABS = [
   { id: "cycles", label: "Appraisal cycles" },
@@ -15,6 +19,7 @@ const TABS = [
   { id: "rules", label: "Recommendation rules" },
   { id: "360-settings", label: "360 settings" },
   { id: "sync", label: "Employee sync" },
+  { id: "email-preview", label: "Email & reminders" },
 ] as const;
 
 export function AdminTabs() {
@@ -26,7 +31,7 @@ export function AdminTabs() {
         style={{
           display: "flex",
           gap: 0,
-          borderBottom: "1px solid #dde5f5",
+          borderBottom: "1px solid #e7e7e7",
           marginBottom: "24px",
         }}
       >
@@ -43,10 +48,10 @@ export function AdminTabs() {
               fontSize: "12px",
               fontWeight: 600,
               border: "none",
-              borderBottom: active === tab.id ? "2px solid #0d9488" : "2px solid transparent",
+              borderBottom: active === tab.id ? "2px solid #0d0e10" : "2px solid transparent",
               marginBottom: active === tab.id ? "-1px" : "-1px",
               background: "none",
-              color: active === tab.id ? "#0f1f3d" : "#8a97b8",
+              color: active === tab.id ? "#0d0d0d" : "#646f79",
               cursor: "pointer",
               whiteSpace: "nowrap",
               transition: "color 0.15s, border-color 0.15s",
@@ -63,6 +68,14 @@ export function AdminTabs() {
       {active === "rules" && <RecommendationRulesTab />}
       {active === "360-settings" && <VisibilityTab />}
       {active === "sync" && <EmployeeSyncTab />}
+      {active === "email-preview" && (
+        <div className="space-y-6">
+          <EmailPreviewTab />
+          <ReminderRunPanel />
+          <NotificationActivityPanel />
+          <OutstandingActionsPanel />
+        </div>
+      )}
     </>
   );
 }

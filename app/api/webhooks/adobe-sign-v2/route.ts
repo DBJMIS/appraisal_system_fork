@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { downloadSignedPDF } from "@/lib/adobe-sign";
+import { downloadSignedPDF, fetchAgreementLifecycle } from "@/lib/adobe-sign";
 import { sendNotification, type SupabaseLike } from "@/lib/notifications";
 import { resolveDepartmentHeadSystemUserId } from "@/lib/hrmis-approval-auth";
+import { allowAppraisalTestBypass } from "@/lib/appraisal-test-bypass";
 
 // Adobe Sign webhook verification expects client ID echoed in response header.
 export async function GET(req: NextRequest) {
@@ -71,36 +72,53 @@ function extractParticipantEmail(body: Record<string, unknown>): string | undefi
 }
 
 export async function POST(req: NextRequest) {
+  // Adobe treats a notification as failed unless the client id is echoed back.
+  const clientId = req.headers.get("x-adobesign-clientid");
+  const reply = (status = 200) => {
+    const response = NextResponse.json({ ok: status === 200 }, { status });
+    if (clientId) response.headers.set("X-AdobeSign-ClientId", clientId);
+    return response;
+  };
+
+  try {
+    return await handleNotification(req, reply);
+  } catch (err) {
+    console.error("[webhook] adobe-sign-v2", err);
+    return reply(500);
+  }
+}
+
+async function handleNotification(
+  req: NextRequest,
+  reply: (status?: number) => NextResponse
+): Promise<NextResponse> {
   const supabase = getSupabaseAdmin();
   let body: Record<string, unknown>;
   try {
     body = await req.json();
   } catch {
     console.log("[webhook] Failed to parse JSON body; exiting");
-    return NextResponse.json({ ok: true });
+    return reply();
   }
 
   const agreementObject = body.agreement as { id?: string; status?: string } | undefined;
   const eventType = body?.event as string;
-  console.log("[webhook] Raw body received");
-  console.log("[webhook] Event type:", eventType);
-  console.log("[webhook] Adobe agreement ID:", agreementObject?.id);
-  console.log("[webhook] Participant email:", body?.participantUserEmail);
-  console.log("[webhook] Agreement ID:", agreementObject?.id ?? "NONE");
-  console.log("[webhook] Agreement status:", agreementObject?.status ?? "NONE");
-  console.log("[webhook] Full payload:", JSON.stringify(body, null, 2));
+  console.log("[webhook] Event received", {
+    eventType: eventType ?? "UNKNOWN",
+    agreementId: agreementObject?.id ?? "NONE",
+    agreementStatus: agreementObject?.status ?? "NONE",
+  });
 
   const agreementId = agreementObject?.id;
-  console.log("[webhook] Checking event type match:", eventType ?? "UNKNOWN");
 
   if (!agreementId) {
     console.log("[webhook] No agreement ID found; exiting");
-    return NextResponse.json({ ok: true });
+    return reply();
   }
 
   const { data: agreement, error: aggErr } = await supabase
     .from("appraisal_agreements")
-    .select("id, appraisal_id, employee_signed_at, manager_signed_at, hr_signed_at")
+    .select("id, appraisal_id, status, employee_signed_at, manager_signed_at, hr_signed_at")
     .eq("adobe_agreement_id", agreementId)
     .maybeSingle();
 
@@ -109,7 +127,7 @@ export async function POST(req: NextRequest) {
       agreementId,
       aggErr: aggErr?.message ?? null,
     });
-    return NextResponse.json({ ok: true });
+    return reply();
   }
 
   const { data: appraisal, error: appErr } = await supabase
@@ -123,7 +141,7 @@ export async function POST(req: NextRequest) {
       appraisalId: agreement.appraisal_id,
       appErr: appErr?.message ?? null,
     });
-    return NextResponse.json({ ok: true });
+    return reply();
   }
 
   const { data: emp } = await supabase
@@ -157,7 +175,7 @@ export async function POST(req: NextRequest) {
 
   const managerActsAsFinalApprover =
     appraisal.manager_employee_id === hodEmployeeId || !!managerUser;
-  const testOnlyEmployeeSigner = process.env.ALLOW_APPRAISAL_TEST_BYPASS === "true";
+  const testOnlyEmployeeSigner = allowAppraisalTestBypass();
   const managerIsInChain = !testOnlyEmployeeSigner && !managerActsAsFinalApprover;
   const finalSignerEmployeeId = testOnlyEmployeeSigner
     ? appraisal.employee_id
@@ -167,6 +185,9 @@ export async function POST(req: NextRequest) {
   const signerEmail = (body?.participantUserEmail as string | undefined) ?? extractParticipantEmail(body);
 
   const runCompletedFlow = async () => {
+    if (agreement.status === "SIGNED") return;
+    if ((await fetchAgreementLifecycle(agreementId)) !== "SIGNED") return;
+
     const signedPdfBuffer = await downloadSignedPDF(agreementId);
     const signedPath = `${agreement.appraisal_id}/signed-${Date.now()}.pdf`;
 
@@ -180,7 +201,7 @@ export async function POST(req: NextRequest) {
 
     const completedAt = new Date().toISOString();
     const completionUpdate: Record<string, string | null> = {
-      status: "COMPLETED",
+      status: "SIGNED",
       signed_pdf_url: urlData?.signedUrl ?? null,
       signed_pdf_path: signedPath,
       employee_signed_at: agreement.employee_signed_at ?? completedAt,
@@ -189,12 +210,19 @@ export async function POST(req: NextRequest) {
       updated_at: completedAt,
     };
 
-    await supabase.from("appraisal_agreements").update(completionUpdate).eq("id", agreement.id);
+    const { data: claimed } = await supabase
+      .from("appraisal_agreements")
+      .update(completionUpdate)
+      .eq("id", agreement.id)
+      .neq("status", "SIGNED")
+      .select("id");
+    if (!claimed?.length) return;
 
     await supabase
       .from("appraisals")
       .update({ status: "HR_REVIEW" })
-      .eq("id", agreement.appraisal_id);
+      .eq("id", agreement.appraisal_id)
+      .eq("status", "PENDING_SIGNOFF");
 
     const recipients = Array.from(
       new Set(
@@ -274,14 +302,17 @@ export async function POST(req: NextRequest) {
       break;
     }
 
-    case "AGREEMENT_COMPLETED": {
+    case "AGREEMENT_COMPLETED":
+    case "AGREEMENT_WORKFLOW_COMPLETED": {
       console.log("[webhook] Checking event type match:", eventType);
       await runCompletedFlow();
       break;
     }
 
-    case "AGREEMENT_DECLINED": {
+    case "AGREEMENT_DECLINED":
+    case "AGREEMENT_REJECTED": {
       console.log("[webhook] Checking event type match:", eventType);
+      if ((await fetchAgreementLifecycle(agreementId)) !== "DECLINED") break;
       const declinerEmail = extractParticipantEmail(body) ?? (actionInfo?.participantEmail as string) ?? "";
       const declineReason = (actionInfo?.comment as string) ?? "";
 
@@ -299,7 +330,8 @@ export async function POST(req: NextRequest) {
       await supabase
         .from("appraisals")
         .update({ status: "MANAGER_REVIEW" })
-        .eq("id", agreement.appraisal_id);
+        .eq("id", agreement.appraisal_id)
+        .eq("status", "PENDING_SIGNOFF");
 
       if (mgr?.employee_id) {
         await sendNotification(
@@ -317,6 +349,7 @@ export async function POST(req: NextRequest) {
 
     case "AGREEMENT_EXPIRED": {
       console.log("[webhook] Checking event type match:", eventType);
+      if ((await fetchAgreementLifecycle(agreementId)) !== "EXPIRED") break;
       await supabase
         .from("appraisal_agreements")
         .update({ status: "EXPIRED", updated_at: new Date().toISOString() })
@@ -325,7 +358,8 @@ export async function POST(req: NextRequest) {
       await supabase
         .from("appraisals")
         .update({ status: "MANAGER_REVIEW" })
-        .eq("id", agreement.appraisal_id);
+        .eq("id", agreement.appraisal_id)
+        .eq("status", "PENDING_SIGNOFF");
 
       if (finalSignerEmployeeId) {
         await sendNotification(
@@ -343,6 +377,7 @@ export async function POST(req: NextRequest) {
 
     case "AGREEMENT_RECALLED": {
       console.log("[webhook] Checking event type match:", eventType);
+      if ((await fetchAgreementLifecycle(agreementId)) !== "CANCELLED") break;
       await supabase
         .from("appraisal_agreements")
         .update({ status: "CANCELLED", updated_at: new Date().toISOString() })
@@ -355,5 +390,5 @@ export async function POST(req: NextRequest) {
       break;
   }
 
-  return NextResponse.json({ ok: true });
+  return reply();
 }

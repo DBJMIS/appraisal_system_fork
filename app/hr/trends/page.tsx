@@ -26,7 +26,7 @@ export default async function HRTrendsPage({ searchParams }: PageProps) {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
+          <h1 className="text-ds-page-title text-ds-text-primary">
             Performance Trends
           </h1>
           <p className="text-muted-foreground">

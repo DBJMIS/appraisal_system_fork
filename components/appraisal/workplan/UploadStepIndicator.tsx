@@ -18,9 +18,9 @@ export function UploadStepIndicator({ currentStep }: UploadStepIndicatorProps) {
             <div
               className={`
                 flex items-center justify-center w-7 h-7 rounded-full text-[11px] font-semibold
-                ${isCompleted ? "bg-[#0d9488] text-white" : ""}
-                ${isActive ? "bg-[#0f1f3d] text-white" : ""}
-                ${!isCompleted && !isActive ? "bg-[#e2e8f0] text-[#8a97b8]" : ""}
+                ${isCompleted ? "bg-ds-accent text-white" : ""}
+                ${isActive ? "bg-ds-text-primary text-white" : ""}
+                ${!isCompleted && !isActive ? "bg-ds-border text-ds-text-secondary" : ""}
               `}
             >
               {isCompleted ? (
@@ -33,15 +33,15 @@ export function UploadStepIndicator({ currentStep }: UploadStepIndicatorProps) {
             </div>
             <span
               className={`text-[11px] font-medium max-w-[90px] truncate hidden sm:inline
-                ${isActive ? "text-[#0f1f3d]" : ""}
-                ${isCompleted ? "text-[#0d9488]" : ""}
-                ${!isCompleted && !isActive ? "text-[#8a97b8]" : ""}
+                ${isActive ? "text-ds-text-primary" : ""}
+                ${isCompleted ? "text-ds-accent" : ""}
+                ${!isCompleted && !isActive ? "text-ds-text-secondary" : ""}
               `}
             >
               {label}
             </span>
             {i < STEPS.length - 1 && (
-              <span className="text-[#8a97b8] text-[10px] mx-0.5">›</span>
+              <span className="text-ds-text-secondary text-[10px] mx-0.5">›</span>
             )}
           </div>
         );

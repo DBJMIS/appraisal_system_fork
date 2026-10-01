@@ -6,7 +6,13 @@
 import { createClient } from "@supabase/supabase-js";
 import path from "path";
 import fs from "fs";
-import { fetchAppraisalPDFData, type WorkplanItemRow, type FactorRatingRow } from "./pdf/fetch-appraisal-pdf-data";
+import {
+  fetchAppraisalPDFData,
+  type AppraisalPDFData,
+  type PDFScoreSource,
+  type WorkplanItemRow,
+  type FactorRatingRow,
+} from "./pdf/fetch-appraisal-pdf-data";
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -152,9 +158,11 @@ function buildFactorRows(items: FactorRatingRow[]): string {
 
 /** Builds the full HTML for the appraisal PDF (for preview or PDF generation). */
 export async function buildAppraisalPDFHTML(appraisalId: string): Promise<string> {
-  const supabase = getSupabaseAdmin();
-  const data = await fetchAppraisalPDFData(appraisalId, supabase);
+  const data = await fetchAppraisalPDFData(appraisalId, getSupabaseAdmin());
+  return renderAppraisalPDFHTML(appraisalId, data);
+}
 
+function renderAppraisalPDFHTML(appraisalId: string, data: AppraisalPDFData): string {
   const templatePath = path.join(process.cwd(), "lib", "pdf", "appraisal-template.html");
   let html = fs.readFileSync(templatePath, "utf-8");
 
@@ -225,8 +233,22 @@ export async function buildAppraisalPDFHTML(appraisalId: string): Promise<string
 }
 
 export async function generateAppraisalPDF(appraisalId: string): Promise<Buffer> {
-  const html = await buildAppraisalPDFHTML(appraisalId);
+  return renderPDF(await buildAppraisalPDFHTML(appraisalId));
+}
 
+/**
+ * Generates the PDF and returns the calcSummary input/result it printed, from the same data load,
+ * so a stored score can match the document exactly.
+ */
+export async function generateAppraisalPDFWithScore(
+  appraisalId: string
+): Promise<{ pdf: Buffer; scoreSource: PDFScoreSource | null }> {
+  const data = await fetchAppraisalPDFData(appraisalId, getSupabaseAdmin());
+  const pdf = await renderPDF(renderAppraisalPDFHTML(appraisalId, data));
+  return { pdf, scoreSource: data.scoreSource };
+}
+
+async function renderPDF(html: string): Promise<Buffer> {
   const isVercelRuntime = process.env.VERCEL === "1";
   const browser = isVercelRuntime
     ? await (async () => {

@@ -154,26 +154,26 @@ export default function OperationalPlanPage() {
     <div className="w-full px-[28px] py-6">
       <div className="mb-6 flex items-start justify-between">
         <div>
-          <p className="mb-1 text-[10px] font-bold uppercase tracking-[.1em] text-[#8a97b8]">
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-[.1em] text-ds-text-secondary">
             HR Administration
           </p>
-          <h1 className="font-['Sora'] text-[20px] font-extrabold text-[#0f1f3d]">
+          <h1 className="font-sans text-[20px] font-semibold text-ds-text-primary">
             Operational Plan
           </h1>
-          <p className="mt-1 text-[13px] text-[#8a97b8]">
+          <p className="mt-1 text-[13px] text-ds-text-secondary">
             Upload an AchieveIt export to populate appraisal objectives for the cycle.
           </p>
         </div>
       </div>
 
-      <div className="mb-4 overflow-hidden rounded-[14px] border border-[#dde5f5] bg-white shadow-[0_2px_12px_rgba(15,31,61,0.07),0_0_1px_rgba(15,31,61,0.1)]">
-        <div className="flex items-center gap-3 border-b border-[#dde5f5] bg-[#f8faff] px-5 py-4">
-          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] border border-[#bfdbfe] bg-[#eff6ff]">
-            <Upload className="h-4 w-4 text-[#3b82f6]" />
+      <div className="mb-4 overflow-hidden rounded-ds-panel border border-ds-border bg-white">
+        <div className="flex items-center gap-3 border-b border-ds-border bg-ds-surface px-5 py-4">
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-ds-panel border border-ds-border-strong bg-ds-surface">
+            <Upload className="h-4 w-4 text-ds-accent" />
           </div>
           <div>
-            <p className="font-['Sora'] text-[13px] font-bold text-[#0f1f3d]">Upload AchieveIt Export</p>
-            <p className="text-[11px] text-[#8a97b8]">.xlsx file — corporate and divisional objectives will be extracted</p>
+            <p className="font-sans text-[13px] font-semibold text-ds-text-primary">Upload AchieveIt Export</p>
+            <p className="text-[11px] text-ds-text-secondary">.xlsx file — corporate and divisional objectives will be extracted</p>
           </div>
         </div>
 
@@ -192,10 +192,10 @@ export default function OperationalPlanPage() {
             onClick={() => document.getElementById("xlsx-input")?.click()}
             onKeyDown={(e) => e.key === "Enter" && document.getElementById("xlsx-input")?.click()}
             className={cn(
-              "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-[10px] border-[2px] border-dashed py-10 transition-all",
-              dragging && "border-[#3b82f6] bg-[#eff6ff]",
-              !dragging && !file && "border-[#dde5f5] bg-[#f8faff] hover:border-[#3b82f6] hover:bg-[#eff6ff]",
-              file && "border-[#0d9488] bg-[#f0fdfa]"
+              "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-ds-panel border-[2px] border-dashed py-10 transition-all",
+              dragging && "border-ds-accent bg-ds-surface",
+              !dragging && !file && "border-ds-border bg-ds-surface hover:border-ds-accent hover:bg-ds-surface",
+              file && "border-ds-accent bg-ds-surface"
             )}
           >
             <input
@@ -207,48 +207,48 @@ export default function OperationalPlanPage() {
             />
             {file ? (
               <>
-                <div className="flex h-10 w-10 items-center justify-center rounded-[10px] border border-[#99f6e4] bg-white shadow-sm">
-                  <CheckCircle className="h-4 w-4 text-[#0d9488]" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-ds-panel border border-ds-border-strong bg-white">
+                  <CheckCircle className="h-4 w-4 text-ds-accent" />
                 </div>
-                <p className="font-['Sora'] text-[13px] font-semibold text-[#0f1f3d]">{file.name}</p>
-                <p className="text-[11px] text-[#8a97b8]">{(file.size / 1024).toFixed(0)} KB · click to change</p>
+                <p className="font-sans text-[13px] font-semibold text-ds-text-primary">{file.name}</p>
+                <p className="text-[11px] text-ds-text-secondary">{(file.size / 1024).toFixed(0)} KB · click to change</p>
               </>
             ) : (
               <>
-                <div className="flex h-10 w-10 items-center justify-center rounded-[10px] border border-[#dde5f5] bg-white shadow-sm">
-                  <Upload className="h-4 w-4 text-[#8a97b8]" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-ds-panel border border-ds-border bg-white">
+                  <Upload className="h-4 w-4 text-ds-text-secondary" />
                 </div>
-                <p className="text-[13px] font-semibold text-[#4a5a82]">Drop AchieveIt .xlsx export here</p>
-                <p className="text-[11px] text-[#8a97b8]">or click to browse</p>
+                <p className="text-[13px] font-semibold text-ds-text-secondary">Drop AchieveIt .xlsx export here</p>
+                <p className="text-[11px] text-ds-text-secondary">or click to browse</p>
               </>
             )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-[.07em] text-[#8a97b8]">Cycle Year</label>
+              <label className="text-[10px] font-semibold uppercase tracking-[.07em] text-ds-text-secondary">Cycle Year</label>
               <input
                 value={cycleYear}
                 onChange={(e) => handleCycleYearChange(e.target.value)}
                 placeholder="2025/2026"
-                className="rounded-[8px] border-[1.5px] border-[#dde5f5] px-3 py-2 text-[13px] text-[#0f1f3d] outline-none transition-colors focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/10"
+                className="rounded-[8px] border-[1.5px] border-ds-border px-3 py-2 text-[13px] text-ds-text-primary outline-none transition-colors focus:border-ds-accent focus:ring-2 focus:ring-[#0d0e10]/10"
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-[.07em] text-[#8a97b8]">Label</label>
+              <label className="text-[10px] font-semibold uppercase tracking-[.07em] text-ds-text-secondary">Label</label>
               <input
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
                 placeholder="2025/2026 Operational Plan"
-                className="rounded-[8px] border-[1.5px] border-[#dde5f5] px-3 py-2 text-[13px] text-[#0f1f3d] outline-none transition-colors focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/10"
+                className="rounded-[8px] border-[1.5px] border-ds-border px-3 py-2 text-[13px] text-ds-text-primary outline-none transition-colors focus:border-ds-accent focus:ring-2 focus:ring-[#0d0e10]/10"
               />
             </div>
           </div>
 
-          <div className="flex items-start gap-3 rounded-[8px] border border-[#dde5f5] bg-[#f8faff] px-4 py-3">
+          <div className="flex items-start gap-3 rounded-[8px] border border-ds-border bg-ds-surface px-4 py-3">
             <div className="flex-1">
-              <p className="text-[13px] font-semibold text-[#0f1f3d]">Set as active cycle</p>
-              <p className="mt-0.5 text-[11px] text-[#8a97b8]">Staff appraisals will draw objectives from this plan</p>
+              <p className="text-[13px] font-semibold text-ds-text-primary">Set as active cycle</p>
+              <p className="mt-0.5 text-[11px] text-ds-text-secondary">Staff appraisals will draw objectives from this plan</p>
             </div>
             <button
               type="button"
@@ -257,7 +257,7 @@ export default function OperationalPlanPage() {
               onClick={() => setSetActive((v) => !v)}
               className={cn(
                 "relative mt-0.5 h-5 w-9 flex-shrink-0 rounded-full transition-colors",
-                setActive ? "bg-[#0d9488]" : "bg-[#eef2fb]"
+                setActive ? "bg-ds-accent" : "bg-ds-surface"
               )}
             >
               <span className={cn("absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform", setActive ? "translate-x-4" : "translate-x-0.5")} />
@@ -265,28 +265,28 @@ export default function OperationalPlanPage() {
           </div>
 
           {uploadState === "error" && errorMsg && (
-            <div className="flex items-start gap-2.5 rounded-[10px] border border-[#fecaca] bg-[#fef2f2] px-4 py-3">
-              <svg className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="flex items-start gap-2.5 rounded-ds-panel border border-ds-error-border bg-ds-error-subtle px-4 py-3">
+              <svg className="mt-0.5 h-4 w-4 flex-shrink-0 text-ds-error" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <p className="text-[13px] text-red-700">{errorMsg}</p>
+              <p className="text-[13px] text-ds-error">{errorMsg}</p>
             </div>
           )}
 
           {uploadState === "success" && result && (
-            <div className="overflow-hidden rounded-[10px] border border-[#99f6e4] bg-[#f0fdfa]">
-              <div className="flex items-center gap-2 border-b border-[#99f6e4] px-4 py-2.5">
-                <CheckCircle className="h-3.5 w-3.5 text-[#0d9488]" />
-                <p className="text-[12px] font-bold text-[#0f766e]">Uploaded successfully</p>
+            <div className="overflow-hidden rounded-ds-panel border border-ds-border-strong bg-ds-surface">
+              <div className="flex items-center gap-2 border-b border-ds-border-strong px-4 py-2.5">
+                <CheckCircle className="h-3.5 w-3.5 text-ds-accent" />
+                <p className="text-[12px] font-semibold text-ds-accent-hover">Uploaded successfully</p>
               </div>
-              <div className="grid grid-cols-2 divide-x divide-[#99f6e4]">
+              <div className="grid grid-cols-2 divide-x divide-ds-border-strong">
                 <div className="flex flex-col items-center justify-center gap-1 py-5">
-                  <span className="font-['Sora'] text-[26px] font-extrabold text-[#0d9488]">{result.corporate_objectives}</span>
-                  <span className="text-[11px] font-medium text-[#0f766e]">Corporate objectives</span>
+                  <span className="font-sans text-[26px] font-semibold text-ds-accent">{result.corporate_objectives}</span>
+                  <span className="text-[11px] font-medium text-ds-accent-hover">Corporate objectives</span>
                 </div>
                 <div className="flex flex-col items-center justify-center gap-1 py-5">
-                  <span className="font-['Sora'] text-[26px] font-extrabold text-[#0d9488]">{result.department_objectives}</span>
-                  <span className="text-[11px] font-medium text-[#0f766e]">Divisional objectives</span>
+                  <span className="font-sans text-[26px] font-semibold text-ds-accent">{result.department_objectives}</span>
+                  <span className="text-[11px] font-medium text-ds-accent-hover">Divisional objectives</span>
                 </div>
               </div>
             </div>
@@ -298,8 +298,8 @@ export default function OperationalPlanPage() {
               onClick={handleUpload}
               disabled={!file || uploadState === "uploading"}
               className={cn(
-                "inline-flex items-center gap-2 rounded-[8px] px-6 py-2.5 font-['Sora'] text-[13px] font-semibold transition-all",
-                file && uploadState !== "uploading" ? "bg-[#0d9488] text-white hover:bg-[#0f766e]" : "cursor-not-allowed bg-[#eef2fb] text-[#8a97b8]"
+                "inline-flex items-center gap-2 rounded-[8px] px-6 py-2.5 font-sans text-[13px] font-semibold transition-all",
+                file && uploadState !== "uploading" ? "bg-ds-accent text-white hover:bg-ds-accent-hover" : "cursor-not-allowed bg-ds-surface text-ds-text-secondary"
               )}
             >
               {uploadState === "uploading" ? <><Loader2 className="h-4 w-4 animate-spin" /> Processing…</> : <><Upload className="h-4 w-4" /> Upload & process</>}
@@ -308,30 +308,30 @@ export default function OperationalPlanPage() {
         </div>
       </div>
 
-      <div className="mb-4 overflow-hidden rounded-[14px] border border-[#dde5f5] bg-white shadow-[0_2px_12px_rgba(15,31,61,0.07),0_0_1px_rgba(15,31,61,0.1)]">
-        <div className="flex items-center gap-3 border-b border-[#dde5f5] bg-[#f8faff] px-5 py-4">
-          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] border border-[#bfdbfe] bg-[#eff6ff]">
-            <RefreshCw className="h-4 w-4 text-[#3b82f6]" />
+      <div className="mb-4 overflow-hidden rounded-ds-panel border border-ds-border bg-white">
+        <div className="flex items-center gap-3 border-b border-ds-border bg-ds-surface px-5 py-4">
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-ds-panel border border-ds-border-strong bg-ds-surface">
+            <RefreshCw className="h-4 w-4 text-ds-accent" />
           </div>
           <div>
-            <p className="font-['Sora'] text-[13px] font-bold text-[#0f1f3d]">Sync from AchieveIt API</p>
-            <p className="text-[11px] text-[#8a97b8]">Fetch objectives directly from AchieveIt by Plan ID</p>
+            <p className="font-sans text-[13px] font-semibold text-ds-text-primary">Sync from AchieveIt API</p>
+            <p className="text-[11px] text-ds-text-secondary">Fetch objectives directly from AchieveIt by Plan ID</p>
           </div>
         </div>
         <div className="flex flex-col gap-5 p-5">
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-bold uppercase tracking-[.07em] text-[#8a97b8]">AchieveIt Plan ID</label>
+            <label className="text-[10px] font-semibold uppercase tracking-[.07em] text-ds-text-secondary">AchieveIt Plan ID</label>
             <div className="flex items-center gap-2">
               <input
                 value={syncPlanId}
                 onChange={(e) => { setSyncPlanId(e.target.value); setSyncPlanIdError(null); }}
                 placeholder="e.g. 4182395d-dad6-4c56-870f-08dd7c837889"
-                className="flex-1 font-mono text-[12px] rounded-[8px] border-[1.5px] border-[#dde5f5] px-3 py-2 text-[#0f1f3d] outline-none focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/10 placeholder:text-[#8a97b8] placeholder:font-sans"
+                className="flex-1 font-mono text-[12px] rounded-[8px] border-[1.5px] border-ds-border px-3 py-2 text-ds-text-primary outline-none focus:border-ds-accent focus:ring-2 focus:ring-[#0d0e10]/10 placeholder:text-ds-text-secondary placeholder:font-sans"
               />
               <div className="group relative">
                 <button
                   type="button"
-                  className="w-8 h-8 rounded-[8px] border border-[#dde5f5] bg-[#f8faff] flex items-center justify-center text-[#8a97b8] hover:border-[#0d9488] hover:text-[#0d9488] transition-all"
+                  className="w-8 h-8 rounded-[8px] border border-ds-border bg-ds-surface flex items-center justify-center text-ds-text-secondary hover:border-ds-accent hover:text-ds-accent transition-all"
                   title="In AchieveIt: open the plan → click ··· → Copy Plan ID"
                 >
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -340,38 +340,38 @@ export default function OperationalPlanPage() {
                     <line x1="12" y1="16" x2="12.01" y2="16" />
                   </svg>
                 </button>
-                <div className="absolute right-0 top-9 w-[220px] p-2.5 rounded-[8px] bg-[#0f1f3d] text-white text-[10px] leading-relaxed opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
+                <div className="absolute right-0 top-9 w-[220px] p-2.5 rounded-[8px] bg-ds-text-primary text-white text-[10px] leading-relaxed opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-ds-popover">
                   In AchieveIt: open the plan → click ··· → Copy Plan ID
                 </div>
               </div>
             </div>
-            <p className="text-[10px] text-[#8a97b8]">In AchieveIt, open the plan → click the ··· options menu → Copy Plan ID</p>
-            {syncPlanIdError && <p className="text-[11px] text-red-600">{syncPlanIdError}</p>}
+            <p className="text-[10px] text-ds-text-secondary">In AchieveIt, open the plan → click the ··· options menu → Copy Plan ID</p>
+            {syncPlanIdError && <p className="text-[11px] text-ds-error">{syncPlanIdError}</p>}
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-[.07em] text-[#8a97b8]">Cycle Year</label>
+              <label className="text-[10px] font-semibold uppercase tracking-[.07em] text-ds-text-secondary">Cycle Year</label>
               <input
                 value={syncCycleYear}
                 onChange={(e) => handleSyncCycleYearChange(e.target.value)}
                 placeholder="2025/2026"
-                className="rounded-[8px] border-[1.5px] border-[#dde5f5] px-3 py-2 text-[13px] text-[#0f1f3d] outline-none focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/10"
+                className="rounded-[8px] border-[1.5px] border-ds-border px-3 py-2 text-[13px] text-ds-text-primary outline-none focus:border-ds-accent focus:ring-2 focus:ring-[#0d0e10]/10"
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-[.07em] text-[#8a97b8]">Label</label>
+              <label className="text-[10px] font-semibold uppercase tracking-[.07em] text-ds-text-secondary">Label</label>
               <input
                 value={syncLabel}
                 onChange={(e) => setSyncLabel(e.target.value)}
                 placeholder="2025/2026 Operational Plan"
-                className="rounded-[8px] border-[1.5px] border-[#dde5f5] px-3 py-2 text-[13px] text-[#0f1f3d] outline-none focus:border-[#0d9488] focus:ring-2 focus:ring-[#0d9488]/10"
+                className="rounded-[8px] border-[1.5px] border-ds-border px-3 py-2 text-[13px] text-ds-text-primary outline-none focus:border-ds-accent focus:ring-2 focus:ring-[#0d0e10]/10"
               />
             </div>
           </div>
-          <div className="flex items-start gap-3 rounded-[8px] border border-[#dde5f5] bg-[#f8faff] px-4 py-3">
+          <div className="flex items-start gap-3 rounded-[8px] border border-ds-border bg-ds-surface px-4 py-3">
             <div className="flex-1">
-              <p className="text-[13px] font-semibold text-[#0f1f3d]">Set as active cycle</p>
-              <p className="mt-0.5 text-[11px] text-[#8a97b8]">Staff appraisals will draw objectives from this plan</p>
+              <p className="text-[13px] font-semibold text-ds-text-primary">Set as active cycle</p>
+              <p className="mt-0.5 text-[11px] text-ds-text-secondary">Staff appraisals will draw objectives from this plan</p>
             </div>
             <button
               type="button"
@@ -380,30 +380,30 @@ export default function OperationalPlanPage() {
               onClick={() => setSyncSetAsActive((v) => !v)}
               className={cn(
                 "relative mt-0.5 h-5 w-9 flex-shrink-0 rounded-full transition-colors",
-                syncSetAsActive ? "bg-[#0d9488]" : "bg-[#eef2fb]"
+                syncSetAsActive ? "bg-ds-accent" : "bg-ds-surface"
               )}
             >
               <span className={cn("absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform", syncSetAsActive ? "translate-x-4" : "translate-x-0.5")} />
             </button>
           </div>
           {syncResult && (
-            <div className="overflow-hidden rounded-[10px] border border-[#99f6e4] bg-[#f0fdfa]">
-              <div className="flex items-center gap-2 border-b border-[#99f6e4] px-4 py-2.5">
-                <CheckCircle className="h-3.5 w-3.5 text-[#0d9488]" />
-                <p className="text-[12px] font-bold text-[#0f766e]">Synced successfully</p>
+            <div className="overflow-hidden rounded-ds-panel border border-ds-border-strong bg-ds-surface">
+              <div className="flex items-center gap-2 border-b border-ds-border-strong px-4 py-2.5">
+                <CheckCircle className="h-3.5 w-3.5 text-ds-accent" />
+                <p className="text-[12px] font-semibold text-ds-accent-hover">Synced successfully</p>
               </div>
-              <div className="grid grid-cols-3 divide-x divide-[#99f6e4]">
+              <div className="grid grid-cols-3 divide-x divide-ds-border-strong">
                 <div className="flex flex-col items-center justify-center gap-1 py-5">
-                  <span className="font-['Sora'] text-[22px] font-extrabold text-[#0d9488]">{syncResult.corporate_count}</span>
-                  <span className="text-[11px] font-medium text-[#0f766e]">Corporate</span>
+                  <span className="font-sans text-[22px] font-semibold text-ds-accent">{syncResult.corporate_count}</span>
+                  <span className="text-[11px] font-medium text-ds-accent-hover">Corporate</span>
                 </div>
                 <div className="flex flex-col items-center justify-center gap-1 py-5">
-                  <span className="font-['Sora'] text-[22px] font-extrabold text-[#0d9488]">{syncResult.divisional_count}</span>
-                  <span className="text-[11px] font-medium text-[#0f766e]">Divisional</span>
+                  <span className="font-sans text-[22px] font-semibold text-ds-accent">{syncResult.divisional_count}</span>
+                  <span className="text-[11px] font-medium text-ds-accent-hover">Divisional</span>
                 </div>
                 <div className="flex flex-col items-center justify-center gap-1 py-5">
-                  <span className="font-['Sora'] text-[22px] font-extrabold text-[#0d9488]">{syncResult.total_fetched}</span>
-                  <span className="text-[11px] font-medium text-[#0f766e]">Total fetched</span>
+                  <span className="font-sans text-[22px] font-semibold text-ds-accent">{syncResult.total_fetched}</span>
+                  <span className="text-[11px] font-medium text-ds-accent-hover">Total fetched</span>
                 </div>
               </div>
             </div>
@@ -414,8 +414,8 @@ export default function OperationalPlanPage() {
               onClick={handleSync}
               disabled={isSyncing}
               className={cn(
-                "inline-flex items-center gap-2 rounded-[8px] px-6 py-2.5 font-['Sora'] text-[13px] font-semibold transition-all",
-                !isSyncing ? "bg-[#0d9488] text-white hover:bg-[#0f766e]" : "cursor-not-allowed bg-[#eef2fb] text-[#8a97b8]"
+                "inline-flex items-center gap-2 rounded-[8px] px-6 py-2.5 font-sans text-[13px] font-semibold transition-all",
+                !isSyncing ? "bg-ds-accent text-white hover:bg-ds-accent-hover" : "cursor-not-allowed bg-ds-surface text-ds-text-secondary"
               )}
             >
               {isSyncing ? <><Loader2 className="h-4 w-4 animate-spin" /> Syncing…</> : <><RefreshCw className="h-4 w-4" /> Sync from API</>}
@@ -424,21 +424,21 @@ export default function OperationalPlanPage() {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-[14px] border border-[#dde5f5] bg-white shadow-[0_2px_12px_rgba(15,31,61,0.07),0_0_1px_rgba(15,31,61,0.1)]">
-        <div className="flex items-center gap-3 border-b border-[#dde5f5] bg-[#f8faff] px-5 py-4">
-          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] border border-[#99f6e4] bg-[#f0fdfa]">
-            <History className="h-4 w-4 text-[#0d9488]" />
+      <div className="overflow-hidden rounded-ds-panel border border-ds-border bg-white">
+        <div className="flex items-center gap-3 border-b border-ds-border bg-ds-surface px-5 py-4">
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-ds-panel border border-ds-border-strong bg-ds-surface">
+            <History className="h-4 w-4 text-ds-accent" />
           </div>
           <div>
-            <p className="font-['Sora'] text-[13px] font-bold text-[#0f1f3d]">Uploaded Cycles</p>
-            <p className="text-[11px] text-[#8a97b8]">Previously uploaded operational plans</p>
+            <p className="font-sans text-[13px] font-semibold text-ds-text-primary">Uploaded Cycles</p>
+            <p className="text-[11px] text-ds-text-secondary">Previously uploaded operational plans</p>
           </div>
         </div>
 
         {cycles.length === 0 ? (
-          <div className="px-5 py-10 text-center text-[13px] text-[#8a97b8]">No cycles uploaded yet</div>
+          <div className="px-5 py-10 text-center text-[13px] text-ds-text-secondary">No cycles uploaded yet</div>
         ) : (
-          <div className="divide-y divide-[#dde5f5]">
+          <div className="divide-y divide-ds-border">
             {cycles.map((c) => (
               <div
                 key={c.id}
@@ -446,25 +446,25 @@ export default function OperationalPlanPage() {
                 tabIndex={0}
                 onClick={() => router.push(`/admin/operational-plan/${c.id}`)}
                 onKeyDown={(e) => e.key === "Enter" && router.push(`/admin/operational-plan/${c.id}`)}
-                className="flex cursor-pointer items-center gap-4 px-5 py-4 transition-colors hover:bg-[#f8faff]"
+                className="flex cursor-pointer items-center gap-4 px-5 py-4 transition-colors hover:bg-ds-surface"
               >
                 {c.is_active ? (
-                  <span className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-[#6ee7b7] bg-[#ecfdf5] px-2.5 py-1 text-[10px] font-bold text-[#065f46]">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#059669] animate-pulse" />
+                  <span className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-ds-badge border border-ds-success-border bg-ds-success-subtle px-2.5 py-1 text-[10px] font-semibold text-ds-success">
+                    <span className="h-1.5 w-1.5 rounded-full bg-ds-mint animate-pulse" />
                     ACTIVE
                   </span>
                 ) : (
-                  <span className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-[#dde5f5] bg-[#f8faff] px-2.5 py-1 text-[10px] font-bold text-[#8a97b8]">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#8a97b8]" />
+                  <span className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-ds-badge border border-ds-border bg-ds-surface px-2.5 py-1 text-[10px] font-semibold text-ds-text-secondary">
+                    <span className="h-1.5 w-1.5 rounded-full bg-ds-text-secondary" />
                     INACTIVE
                   </span>
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="font-['Sora'] truncate text-[13px] font-bold text-[#0f1f3d]">{c.label}</p>
-                  <p className="mt-0.5 text-[11px] text-[#8a97b8]">
+                  <p className="font-sans truncate text-[13px] font-semibold text-ds-text-primary">{c.label}</p>
+                  <p className="mt-0.5 text-[11px] text-ds-text-secondary">
                     {c.total_corp} corporate · {c.total_dept} divisional · {formatDate(c.uploaded_at)}
                     {c.achieveit_plan_id && (
-                      <span className="inline-flex ml-2 items-center gap-1 px-2 py-0.5 rounded-full bg-[#eff6ff] border border-[#bfdbfe] text-[9px] font-semibold text-[#1d4ed8]">
+                      <span className="inline-flex ml-2 items-center gap-1 px-2 py-0.5 rounded-ds-badge bg-ds-surface border border-ds-border-strong text-[9px] font-semibold text-ds-info">
                         <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <polyline points="1 4 1 10 7 10" />
                           <polyline points="23 20 23 14 17 14" />
@@ -482,7 +482,7 @@ export default function OperationalPlanPage() {
                       e.stopPropagation();
                       handleSetActive(c.id);
                     }}
-                    className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-[8px] border-[1.5px] border-[#dde5f5] bg-white px-3 py-1.5 text-[11px] font-semibold text-[#4a5a82] transition-all hover:border-[#0f1f3d] hover:text-[#0f1f3d]"
+                    className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-[8px] border-[1.5px] border-ds-border bg-white px-3 py-1.5 text-[11px] font-semibold text-ds-text-secondary transition-all hover:border-ds-text-primary hover:text-ds-text-primary"
                   >
                     Set active
                   </button>
@@ -493,7 +493,7 @@ export default function OperationalPlanPage() {
                     e.stopPropagation();
                     router.push(`/admin/operational-plan/${c.id}`);
                   }}
-                  className="inline-flex flex-shrink-0 items-center gap-1 rounded-[8px] border-[1.5px] border-[#dde5f5] bg-white px-3 py-1.5 text-[11px] font-semibold text-[#4a5a82] transition-all hover:border-[#0f1f3d] hover:text-[#0f1f3d]"
+                  className="inline-flex flex-shrink-0 items-center gap-1 rounded-[8px] border-[1.5px] border-ds-border bg-white px-3 py-1.5 text-[11px] font-semibold text-ds-text-secondary transition-all hover:border-ds-text-primary hover:text-ds-text-primary"
                 >
                   View details
                   <ChevronRight className="h-3 w-3" />

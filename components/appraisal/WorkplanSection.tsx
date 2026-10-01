@@ -5,16 +5,21 @@ import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { createPortal } from "react-dom";
 import { calcMetricPercentage, calcMgrResult, getDateVariance, type MetricType, type WorkplanMetricItem } from "@/lib/metric-calc";
 import { cn } from "@/utils/cn";
+import { allowAppraisalTestBypassClient } from "@/lib/appraisal-test-bypass";
 import { MetricTypePicker } from "@/components/appraisal/MetricTypePicker";
 import { EvidenceBadge } from "@/components/appraisal/workplan/EvidenceBadge";
 import { EvidenceModal } from "@/components/appraisal/workplan/EvidenceModal";
 import { WorkplanUploadModal } from "@/components/appraisal/workplan/WorkplanUploadModal";
+import { MidyearResultValue, MidyearScoreLine, useMidyearFinalReviewContext } from "@/components/appraisal/workplan/MidyearFinalReviewContext";
+import { MIDYEAR_BUTTON, MidyearLastSaved } from "@/components/appraisal/checkins/MidyearReviewWorkspace";
+import { DRAFT_SAVED_MS } from "@/hooks/useDraftSaveFeedback";
+import { NumericDraftInput } from "@/components/appraisal/workplan/NumericDraftInput";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { createClient } from "@/lib/supabase";
+import { missingWorkplanItemFields } from "@/lib/appraisal-completion";
 import { Search, ChevronRight, Building2, Layers, Briefcase, Copy } from "lucide-react";
 
 export interface PickerObjective {
@@ -97,11 +102,11 @@ function getTotalPoints(items: WorkplanItemRow[]): number {
 }
 
 const gradeColors: Record<string, { bg: string; text: string }> = {
-  A: { bg: "#f0fdf4", text: "#166534" },
-  B: { bg: "#eff6ff", text: "#1d4ed8" },
-  C: { bg: "#fffbeb", text: "#92400e" },
-  D: { bg: "#f5f3ff", text: "#6d28d9" },
-  E: { bg: "#fff1f2", text: "#9f1239" },
+  A: { bg: "#ecfdf5", text: "#2e7d4f" },
+  B: { bg: "#f3f3f3", text: "#3d5a78" },
+  C: { bg: "#fffbeb", text: "#8a5a00" },
+  D: { bg: "#f1f4f7", text: "#3d5a78" },
+  E: { bg: "#fef2f2", text: "#b42318" },
 };
 
 function nextNewId() {
@@ -119,6 +124,8 @@ interface WorkplanSectionProps {
   onDirtyChange?: (dirty: boolean) => void;
   /** Optional: register save function for parent (e.g. unsaved-changes modal Save). */
   registerSave?: (save: (() => Promise<void>) | null) => void;
+  /** Read-only oversight by a manager higher in the reporting line: no editing, no exports. */
+  oversight?: boolean;
 }
 
 const PlusIcon = () => (
@@ -199,15 +206,15 @@ const ClockIcon = () => (
 );
 
 const TYPE_CONFIG: Record<MetricType, { icon: string; label: string; bg: string; border: string; text: string }> = {
-  NUMBER: { icon: "🔢", label: "Number", bg: "bg-blue-50", border: "border-blue-300", text: "text-blue-700" },
-  DATE: { icon: "📅", label: "Date", bg: "bg-purple-50", border: "border-purple-300", text: "text-purple-700" },
-  PERCENT: { icon: "%", label: "Percent", bg: "bg-emerald-50", border: "border-emerald-300", text: "text-emerald-700" },
+  NUMBER: { icon: "🔢", label: "Number", bg: "bg-ds-info-subtle", border: "border-ds-info-border", text: "text-ds-info" },
+  DATE: { icon: "📅", label: "Date", bg: "bg-ds-info-subtle", border: "border-ds-info-border", text: "text-ds-info" },
+  PERCENT: { icon: "%", label: "Percent", bg: "bg-ds-success-subtle", border: "border-ds-success-border", text: "text-ds-success" },
 };
 
 const inputBase = [
   "border-[1.5px] rounded-lg outline-none transition-all duration-150",
-  'font-["DM_Sans"] text-[13px] font-semibold',
-  "placeholder:text-[#8a97b8] placeholder:font-normal",
+  'font-sans text-[13px] font-semibold',
+  "placeholder:text-ds-text-secondary placeholder:font-normal",
 ].join(" ");
 
 function formatDeadline(iso: string | null | undefined): string {
@@ -221,32 +228,32 @@ function formatDeadline(iso: string | null | undefined): string {
 }
 
 function getResultPillStyle(percent: number | null | undefined): { bg: string; text: string; border: string } {
-  if (percent == null) return { bg: "transparent", text: "#8a97b8", border: "1px dashed #cbd5e1" };
-  if (percent >= 95) return { bg: "#ecfdf5", text: "#059669", border: "1px solid #a7f3d0" };
-  if (percent >= 80) return { bg: "#eff6ff", text: "#1d4ed8", border: "1px solid #bfdbfe" };
-  if (percent >= 60) return { bg: "#fffbeb", text: "#d97706", border: "1px solid #fde68a" };
-  return { bg: "#fff1f2", text: "#e11d48", border: "1px solid #fecdd3" };
+  if (percent == null) return { bg: "transparent", text: "#646f79", border: "1px dashed #d0d4d8" };
+  if (percent >= 95) return { bg: "#ecfdf5", text: "#2e7d4f", border: "1px solid #bbf0d9" };
+  if (percent >= 80) return { bg: "#f3f3f3", text: "#3d5a78", border: "1px solid #d0d4d8" };
+  if (percent >= 60) return { bg: "#fffbeb", text: "#8a5a00", border: "1px solid #fbe3a1" };
+  return { bg: "#fef2f2", text: "#b42318", border: "1px solid #fbd5d5" };
 }
 
 function VarianceBadge({ emp, mgr, type }: { emp: number | string; mgr: number | string; type: string }) {
   if (type === "DATE") {
     const same = emp === mgr;
     return same ? (
-      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-300 text-emerald-700">✓ Same</span>
+      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-ds-badge bg-ds-success-subtle border border-ds-success-border text-ds-success">✓ Same</span>
     ) : (
-      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 border border-rose-300 text-rose-700">Changed</span>
+      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-ds-badge bg-ds-error-subtle border border-ds-error-border text-ds-error">Changed</span>
     );
   }
   const diff = (mgr as number) - (emp as number);
   if (Math.abs(diff) < 0.01) {
-    return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-300 text-emerald-700">✓ Agrees</span>;
+    return <span className="text-[10px] font-semibold px-2 py-0.5 rounded-ds-badge bg-ds-success-subtle border border-ds-success-border text-ds-success">✓ Agrees</span>;
   }
   const sign = diff > 0 ? "+" : "";
   return (
     <span
       className={cn(
-        "text-[10px] font-bold px-2 py-0.5 rounded-full border",
-        diff > 0 ? "bg-emerald-50 border-emerald-300 text-emerald-700" : "bg-rose-50 border-rose-300 text-rose-700"
+        "text-[10px] font-semibold px-2 py-0.5 rounded-ds-badge border",
+        diff > 0 ? "bg-ds-success-subtle border-ds-success-border text-ds-success" : "bg-ds-error-subtle border-ds-error-border text-ds-error"
       )}
     >
       {sign}
@@ -282,9 +289,9 @@ function MgrActualInput({
         className={cn(
           "text-[11px] px-2 w-[130px]",
           mgrInputBase,
-          isChanged && "border-amber-400 bg-amber-50 focus:ring-amber-200",
-          isConfirmed && "border-emerald-400 bg-emerald-50",
-          !isChanged && !isConfirmed && "border-violet-300 bg-violet-50 focus:border-violet-500 focus:ring-violet-100"
+          isChanged && "border-ds-warning-border bg-ds-warning-subtle focus:ring-ds-warning-border",
+          isConfirmed && "border-ds-success-border bg-ds-success-subtle",
+          !isChanged && !isConfirmed && "border-ds-info-border bg-ds-info-subtle focus:border-ds-info focus:ring-ds-info-border"
         )}
         value={value ?? item.metric_completion_date ?? ""}
         onChange={(e) => onChange(e.target.value || null)}
@@ -295,42 +302,46 @@ function MgrActualInput({
   if (isPercent) {
     return (
       <div className="relative">
-        <input
-          type="number"
+        <NumericDraftInput
           step={0.1}
           min={0}
           max={100}
+          showRangeHint={false}
+          aria-label="Manager Actual YTD"
+          data-mgr-actual
           className={cn(
             "w-16 text-center pr-5 pl-2",
             mgrInputBase,
-            isChanged && "border-amber-400 bg-amber-50 focus:ring-amber-200",
-            isConfirmed && "border-emerald-400 bg-emerald-50",
-            !isChanged && !isConfirmed && "border-violet-300 bg-violet-50 focus:border-violet-500 focus:ring-violet-100"
+            isChanged && "border-ds-warning-border bg-ds-warning-subtle focus:ring-ds-warning-border",
+            isConfirmed && "border-ds-success-border bg-ds-success-subtle",
+            !isChanged && !isConfirmed && "border-ds-info-border bg-ds-info-subtle focus:border-ds-info focus:ring-ds-info-border"
           )}
-          value={value ?? item.metric_actual_raw ?? ""}
-          onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))}
+          value={value == null ? item.metric_actual_raw : Number(value)}
+          onValueChange={onChange}
         />
-        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 pointer-events-none">%</span>
+        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-ds-text-secondary pointer-events-none">%</span>
       </div>
     );
   }
   return (
     <div className="flex items-center gap-1">
-      <input
-        type="number"
+      <NumericDraftInput
         min={0}
         max={item.metric_target ?? undefined}
+        showRangeHint={false}
+        aria-label="Manager Actual YTD"
+        data-mgr-actual
         className={cn(
           "w-10 text-center px-1.5",
           mgrInputBase,
-          isChanged && "border-amber-400 bg-amber-50 focus:ring-amber-200",
-          isConfirmed && "border-emerald-400 bg-emerald-50",
-          !isChanged && !isConfirmed && "border-violet-300 bg-violet-50 focus:border-violet-500 focus:ring-violet-100"
+          isChanged && "border-ds-warning-border bg-ds-warning-subtle focus:ring-ds-warning-border",
+          isConfirmed && "border-ds-success-border bg-ds-success-subtle",
+          !isChanged && !isConfirmed && "border-ds-info-border bg-ds-info-subtle focus:border-ds-info focus:ring-ds-info-border"
         )}
-        value={value ?? item.metric_actual_raw ?? ""}
-        onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))}
+        value={value == null ? item.metric_actual_raw : Number(value)}
+        onValueChange={onChange}
       />
-      <span className="text-[11px] text-slate-400">/ {item.metric_target ?? "—"}</span>
+      <span className="text-[11px] text-ds-text-secondary">/ {item.metric_target ?? "—"}</span>
     </div>
   );
 }
@@ -346,10 +357,10 @@ const inputStyle: React.CSSProperties = {
   width: "100%",
   margin: 0,
   padding: "7px 10px",
-  borderRadius: "8px",
-  border: "1px solid #dde5f5",
+  borderRadius: "6px",
+  border: "1px solid #8b949e",
   fontSize: "13px",
-  color: "#0f1f3d",
+  color: "#0d0d0d",
   background: "white",
   outline: "none",
   transition: "border-color 0.15s, box-shadow 0.15s",
@@ -371,12 +382,12 @@ const thStyle: React.CSSProperties = {
   padding: "10px 12px",
   textAlign: "left",
   fontSize: "10.5px",
-  fontWeight: 700,
+  fontWeight: 600,
   letterSpacing: "0.07em",
   textTransform: "uppercase",
-  color: "#8a97b8",
-  background: "#f8faff",
-  borderBottom: "1px solid #dde5f5",
+  color: "#646f79",
+  background: "#f3f3f3",
+  borderBottom: "1px solid #e7e7e7",
   whiteSpace: "nowrap",
   verticalAlign: "top",
 };
@@ -387,8 +398,27 @@ const tdStyle: React.CSSProperties = {
   padding: "10px 12px",
   fontSize: "13px",
   verticalAlign: "top",
-  borderBottom: "1px solid #dde5f5",
+  borderBottom: "1px solid #e7e7e7",
 };
+
+const RequiredMark = () => (
+  <span title="Required" aria-label="required" data-required-mark style={{ color: "#b42318", marginLeft: "3px" }}>*</span>
+);
+
+/** Row hint for the planning structure the completion check requires (same rule, via missingWorkplanItemFields). */
+function IncompleteRowHint({ row }: { row: WorkplanItemRow }) {
+  const missing = missingWorkplanItemFields(row);
+  if (missing.length === 0) return null;
+  return (
+    <div
+      data-workplan-row-incomplete
+      style={{ display: "flex", alignItems: "center", gap: "4px", marginTop: "4px", fontSize: "11px", color: "#8a5a00" }}
+    >
+      <span style={{ color: "#8a5a00", display: "inline-flex", transform: "scale(0.75)" }}><AlertIcon /></span>
+      Incomplete: {missing.join(", ")} required
+    </div>
+  );
+}
 
 export function WorkplanSection({
   appraisalId,
@@ -399,6 +429,7 @@ export function WorkplanSection({
   isHR,
   onDirtyChange,
   registerSave,
+  oversight = false,
 }: WorkplanSectionProps) {
   const [isDirty, setIsDirty] = useState(false);
   useUnsavedChanges(isDirty);
@@ -439,7 +470,7 @@ export function WorkplanSection({
   // Actual YTD only in SELF_ASSESSMENT by employee
   const canEditActualResults = status === "SELF_ASSESSMENT" && isEmployee;
 
-  const testBypass = process.env.NEXT_PUBLIC_ALLOW_APPRAISAL_TEST_BYPASS === "true";
+  const testBypass = !oversight && allowAppraisalTestBypassClient();
   // Manager can enter/override Actual YTD (and thus points) during MANAGER_REVIEW
   const canEditManagerWorkplanRatings = status === "MANAGER_REVIEW" && (isManager || testBypass);
 
@@ -452,6 +483,11 @@ export function WorkplanSection({
   // Show actual results from SELF_ASSESSMENT onward
   const showActualResults = ["SELF_ASSESSMENT", "SUBMITTED", "MANAGER_REVIEW", "PENDING_SIGNOFF", "HR_REVIEW", "COMPLETE"].includes(status);
   const showTargetColumn = canEditPlanningFields || showActualResults || status === "IN_PROGRESS";
+  const midyearContext = useMidyearFinalReviewContext(appraisalId, showActualResults);
+  const showMidyearColumn = showActualResults && midyearContext != null;
+  const canSaveAssessment = canEditActualResults || canEditManagerWorkplanRatings;
+  const [assessmentJustSaved, setAssessmentJustSaved] = useState(false);
+  const [assessmentLastSavedAt, setAssessmentLastSavedAt] = useState<number | null>(null);
 
   const isPlanningPhase = status === "DRAFT" || status === "PENDING_APPROVAL";
   const canSubmitSelfAssessment = status === "SELF_ASSESSMENT" && isEmployee;
@@ -473,15 +509,19 @@ export function WorkplanSection({
         return;
       }
 
-      setWorkplan({
-        id: data.workplan.id,
-        status: data.workplan.status ?? "draft",
-        locked_at: data.workplan.locked_at,
-        submitted_at: data.workplan.submitted_at,
-        rejection_reason: data.workplan.rejection_reason,
-        imported_from_file: data.workplan.imported_from_file ?? null,
-        imported_sheet: data.workplan.imported_sheet ?? null,
-      });
+      setWorkplan(
+        data.workplan
+          ? {
+              id: data.workplan.id,
+              status: data.workplan.status ?? "draft",
+              locked_at: data.workplan.locked_at,
+              submitted_at: data.workplan.submitted_at,
+              rejection_reason: data.workplan.rejection_reason,
+              imported_from_file: data.workplan.imported_from_file ?? null,
+              imported_sheet: data.workplan.imported_sheet ?? null,
+            }
+          : null
+      );
 
       const mapped: WorkplanItemRow[] = (data.items ?? []).map((r: Record<string, unknown>) => {
         const weight = Number(r.weight) || 0;
@@ -569,21 +609,18 @@ export function WorkplanSection({
     loadWorkplan();
   }, [loadWorkplan]);
 
+  const hasItems = items.length > 0;
   const fetchEvidenceCounts = useCallback(async () => {
-    if (!appraisalId || items.length === 0) return;
-    const supabase = createClient();
-    const ids = items.map((i) => i.id);
-    const { data } = await supabase
-      .from("workplan_item_evidence")
-      .select("workplan_item_id")
-      .eq("appraisal_id", appraisalId)
-      .in("workplan_item_id", ids);
-    const counts: Record<string, number> = {};
-    data?.forEach((row: { workplan_item_id: string }) => {
-      counts[row.workplan_item_id] = (counts[row.workplan_item_id] ?? 0) + 1;
-    });
-    setEvidenceCounts(counts);
-  }, [appraisalId, items]);
+    if (!appraisalId || !hasItems) return;
+    try {
+      const res = await fetch(`/api/appraisals/${appraisalId}/workplan/evidence-counts`);
+      if (!res.ok) return;
+      const data = (await res.json()) as { counts?: Record<string, number> };
+      setEvidenceCounts(data.counts ?? {});
+    } catch {
+      /* counts are informational only */
+    }
+  }, [appraisalId, hasItems]);
 
   useEffect(() => {
     fetchEvidenceCounts();
@@ -649,9 +686,15 @@ export function WorkplanSection({
           if (row.id !== id) return row;
           const next = { ...row, [field]: val } as WorkplanItemRow;
           const w = next.weight;
+          if (field === "actual_result" && (next.metric_type ?? "PERCENT") === "PERCENT") {
+            next.metric_actual_raw = val != null && val !== "" ? Number(val) : null;
+          }
           if (field === "weight" || field === "actual_result" || planningFields.includes(field) || actualFields.includes(field)) {
             const computed = calcMetricPercentage(next);
-            if (computed != null) {
+            if (computed == null && field === "metric_actual_raw" && val == null) {
+              next.actual_result = null;
+              next.points = null;
+            } else if (computed != null) {
               next.actual_result = computed;
               next.points = calculatePoints(w, computed);
             } else if (field === "actual_result") {
@@ -849,6 +892,17 @@ export function WorkplanSection({
   }, [canEditManagerWorkplanRatings, workplan?.id, appraisalId, items, loadWorkplan, onDirtyChange]);
 
   useEffect(() => {
+    if (!saveSuccess || !canSaveAssessment) return;
+    setAssessmentLastSavedAt(Date.now());
+    setAssessmentJustSaved(true);
+    const timer = setTimeout(() => setAssessmentJustSaved(false), DRAFT_SAVED_MS);
+    return () => {
+      clearTimeout(timer);
+      setAssessmentJustSaved(false);
+    };
+  }, [saveSuccess, canSaveAssessment]);
+
+  useEffect(() => {
     if (!registerSave) return;
     const save = () => (canEditManagerWorkplanRatings ? saveManagerWorkplan() : saveWorkplan());
     registerSave(save);
@@ -929,8 +983,24 @@ export function WorkplanSection({
   }, [canApproveWorkplan, appraisalId, rejectReason, loadWorkplan]);
 
   if (loading) {
-    return <p style={{ color: "#8a97b8", padding: "16px 0" }}>Loading workplan…</p>;
+    return <p style={{ color: "#646f79", padding: "16px 0" }}>Loading workplan…</p>;
   }
+
+  const downloadExcelButton = items.length > 0 && !loading && !oversight ? (
+    <button
+      type="button"
+      onClick={handleDownloadExcel}
+      disabled={exportingExcel}
+      className="inline-flex items-center gap-2 px-3 py-2 rounded-[8px] bg-white text-ds-text-primary border border-ds-border text-[11px] font-semibold hover:bg-ds-surface transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+        <polyline points="7 10 12 15 17 10" />
+        <line x1="12" y1="15" x2="12" y2="3" />
+      </svg>
+      {exportingExcel ? "Downloading…" : "Download Excel"}
+    </button>
+  ) : null;
 
   return (
     <div className="w-full">
@@ -952,13 +1022,13 @@ export function WorkplanSection({
                 gap: "7px",
                 padding: "9px 20px",
                 borderRadius: "8px",
-                background: !approving ? "linear-gradient(135deg, #059669, #047857)" : "#e2e8f0",
+                background: !approving ? "#0d0e10" : "#e7e7e7",
                 border: "none",
                 fontSize: "13px",
                 fontWeight: 600,
-                color: !approving ? "white" : "#94a3b8",
+                color: !approving ? "white" : "#646f79",
                 cursor: !approving ? "pointer" : "not-allowed",
-                boxShadow: !approving ? "0 2px 8px rgba(5,150,105,0.35)" : "none",
+                boxShadow: !approving ? "none" : "none",
                 transition: "all 0.16s",
               }}
             >
@@ -973,11 +1043,11 @@ export function WorkplanSection({
                 gap: "7px",
                 padding: "9px 20px",
                 borderRadius: "8px",
-                background: "#fff1f2",
-                border: "1px solid #fecdd3",
+                background: "#fef2f2",
+                border: "1px solid #fbd5d5",
                 fontSize: "13px",
                 fontWeight: 600,
-                color: "#e11d48",
+                color: "#b42318",
                 cursor: !approving ? "pointer" : "not-allowed",
                 transition: "all 0.16s",
               }}
@@ -991,6 +1061,7 @@ export function WorkplanSection({
           <button
             onClick={async () => {
               const comment = window.prompt("Reason for dispute (optional):");
+              if (comment === null) return;
               setSubmitting(true);
               setError(null);
               try {
@@ -1012,8 +1083,8 @@ export function WorkplanSection({
             style={{
               display: "inline-flex", alignItems: "center", gap: "7px",
               padding: "9px 18px", borderRadius: "8px",
-              background: "#fff1f2", border: "1px solid #fecdd3",
-              fontSize: "13px", fontWeight: 600, color: "#e11d48", cursor: "pointer",
+              background: "#fef2f2", border: "1px solid #fbd5d5",
+              fontSize: "13px", fontWeight: 600, color: "#b42318", cursor: "pointer",
             }}
           >
             Raise Dispute
@@ -1023,74 +1094,75 @@ export function WorkplanSection({
 
       {/* Alerts */}
       {error && (
-        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", padding: "14px 16px", borderRadius: "10px", background: "#fef2f2", border: "1px solid #fecaca", marginBottom: "16px" }}>
-          <span style={{ color: "#dc2626", marginTop: "2px" }}><AlertIcon /></span>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", padding: "14px 16px", borderRadius: "8px", background: "#fef2f2", border: "1px solid #fbd5d5", marginBottom: "16px" }}>
+          <span style={{ color: "#b42318", marginTop: "2px" }}><AlertIcon /></span>
           <div>
-            <div style={{ fontWeight: 600, fontSize: "13px", color: "#991b1b" }}>Error</div>
-            <div style={{ fontSize: "13px", color: "#b91c1c" }}>{error}</div>
+            <div style={{ fontWeight: 600, fontSize: "13px", color: "#b42318" }}>Error</div>
+            <div style={{ fontSize: "13px", color: "#b42318" }}>{error}</div>
           </div>
         </div>
       )}
 
-      {saveSuccess && (
-        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", padding: "14px 16px", borderRadius: "10px", background: "#f0fdf4", border: "1px solid #bbf7d0", marginBottom: "16px" }}>
+      {saveSuccess && !canSaveAssessment && (
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", padding: "14px 16px", borderRadius: "8px", background: "#ecfdf5", border: "1px solid #bbf0d9", marginBottom: "16px" }}>
           <div>
-            <div style={{ fontWeight: 600, fontSize: "13px", color: "#166534" }}>Success</div>
-            <div style={{ fontSize: "13px", color: "#15803d" }}>Changes saved successfully.</div>
+            <div style={{ fontWeight: 600, fontSize: "13px", color: "#2e7d4f" }}>Success</div>
+            <div style={{ fontSize: "13px", color: "#2e7d4f" }}>Changes saved successfully.</div>
           </div>
         </div>
       )}
 
       {!weightValid && items.length > 0 && canEditPlanningFields && (
-        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", padding: "14px 16px", borderRadius: "10px", background: totalWeight > 100 ? "#fef2f2" : "#fffbeb", border: `1px solid ${totalWeight > 100 ? "#fecaca" : "#fde68a"}`, marginBottom: "16px" }}>
-          <span style={{ color: totalWeight > 100 ? "#dc2626" : "#d97706", marginTop: "2px" }}><AlertIcon /></span>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", padding: "14px 16px", borderRadius: "8px", background: totalWeight > 100 ? "#fef2f2" : "#fffbeb", border: `1px solid ${totalWeight > 100 ? "#fbd5d5" : "#fbe3a1"}`, marginBottom: "16px" }}>
+          <span style={{ color: totalWeight > 100 ? "#b42318" : "#8a5a00", marginTop: "2px" }}><AlertIcon /></span>
           <div>
-            <div style={{ fontWeight: 600, fontSize: "13px", color: totalWeight > 100 ? "#991b1b" : "#92400e" }}>Weight validation</div>
-            <div style={{ fontSize: "13px", color: totalWeight > 100 ? "#b91c1c" : "#a16207" }}>Total objective weight must equal 100%. Current total: {totalWeight.toFixed(1)}%</div>
+            <div style={{ fontWeight: 600, fontSize: "13px", color: totalWeight > 100 ? "#b42318" : "#8a5a00" }}>Weight validation</div>
+            <div style={{ fontSize: "13px", color: totalWeight > 100 ? "#b42318" : "#8a5a00" }}>Total objective weight must equal 100%. Current total: {totalWeight.toFixed(1)}%</div>
           </div>
         </div>
       )}
 
       {hasEmptyTask && canEditPlanningFields && (
-        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", padding: "14px 16px", borderRadius: "10px", background: "#fffbeb", border: "1px solid #fde68a", marginBottom: "16px" }}>
-          <span style={{ color: "#d97706", marginTop: "2px" }}><AlertIcon /></span>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", padding: "14px 16px", borderRadius: "8px", background: "#fffbeb", border: "1px solid #fbe3a1", marginBottom: "16px" }}>
+          <span style={{ color: "#8a5a00", marginTop: "2px" }}><AlertIcon /></span>
           <div>
-            <div style={{ fontWeight: 600, fontSize: "13px", color: "#92400e" }}>Required field</div>
-            <div style={{ fontSize: "13px", color: "#a16207" }}>Major Tasks cannot be empty. Fill in the Major Tasks column for every row before saving.</div>
+            <div style={{ fontWeight: 600, fontSize: "13px", color: "#8a5a00" }}>Required field</div>
+            <div style={{ fontSize: "13px", color: "#8a5a00" }}>Major Tasks cannot be empty. Fill in the Major Tasks column for every row before saving.</div>
           </div>
         </div>
       )}
 
       {/* Card */}
       <div
-        className="w-full overflow-hidden rounded-[14px] border border-[#dde5f5] bg-white"
+        className="w-full overflow-hidden rounded-ds-panel border border-ds-border bg-white"
         style={{
           width: "100%",
-          boxShadow: "0 2px 12px rgba(15,31,61,0.07), 0 0 1px rgba(15,31,61,0.1)",
+          boxShadow: "none",
         }}
       >
         {/* Card header */}
-        <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #dde5f5", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", flexWrap: "wrap" }}>
+        <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #e7e7e7", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", flexWrap: "wrap" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <div style={{ width: "32px", height: "32px", borderRadius: "9px", background: "#eff6ff", display: "flex", alignItems: "center", justifyContent: "center", color: "#3b82f6" }}>
+            <div style={{ width: "32px", height: "32px", borderRadius: "9px", background: "#f3f3f3", display: "flex", alignItems: "center", justifyContent: "center", color: "#0d0e10" }}>
               <ClipboardIcon />
             </div>
             <div>
-              <div style={{ fontFamily: "Sora, sans-serif", fontSize: "15px", fontWeight: 600, color: "#0f1f3d", letterSpacing: "-0.01em" }}>
+              <div style={{ fontFamily: "var(--ds-font-sans)", fontSize: "15px", fontWeight: 600, color: "#0d0d0d", letterSpacing: "-0.01em" }}>
                 {isPlanningPhase ? "Workplan Objectives" : "Performance Assessment"}
               </div>
-              <div style={{ fontSize: "12px", color: "#8a97b8", marginTop: "1px" }}>
+              <div style={{ fontSize: "12px", color: "#646f79", marginTop: "1px" }}>
                 {isPlanningPhase 
                   ? (canEditPlanningFields ? "Define objectives, tasks, and expected outputs. Total weight must equal 100%." : "Objectives for this appraisal period")
                   : "Enter actual results achieved against each objective"
                 }
               </div>
+              {showMidyearColumn && midyearContext.score && <MidyearScoreLine score={midyearContext.score} />}
             </div>
           </div>
           {canEditPlanningFields && (
             <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
               {workplan?.imported_from_file && (
-                <span className="text-[11px] text-[#0d9488] bg-[#f0fdfa] border border-[#99f6e4] px-3 py-1 rounded-full">
+                <span className="text-[11px] text-ds-accent bg-ds-surface border border-ds-border-strong px-3 py-1 rounded-ds-badge">
                   Imported from {workplan.imported_from_file}
                   <button
                     type="button"
@@ -1104,7 +1176,7 @@ export function WorkplanSection({
               <button
                 type="button"
                 onClick={() => setShowUploadModal(true)}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-[8px] bg-[#f0fdfa] text-[#0d9488] border border-[#99f6e4] text-[11px] font-semibold hover:bg-[#ecfdf5] transition-colors"
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-[8px] bg-ds-surface text-ds-accent border border-ds-border-strong text-[11px] font-semibold hover:bg-ds-success-subtle transition-colors"
               >
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
@@ -1122,7 +1194,7 @@ export function WorkplanSection({
                   gap: "7px",
                   padding: "10px 20px",
                   borderRadius: "8px",
-                  background: "#0B1F45",
+                  background: "#0d0d0d",
                   border: "none",
                   fontSize: "13px",
                   fontWeight: 500,
@@ -1133,10 +1205,10 @@ export function WorkplanSection({
                 }}
                 onMouseEnter={(e) => {
                   if (!workplan?.id) return;
-                  e.currentTarget.style.background = "#162d5e";
+                  e.currentTarget.style.background = "#0d0d0d";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "#0B1F45";
+                  e.currentTarget.style.background = "#0d0d0d";
                   e.currentTarget.style.transform = "scale(1)";
                 }}
                 onMouseDown={(e) => {
@@ -1159,13 +1231,13 @@ export function WorkplanSection({
                   gap: "7px",
                   padding: "9px 20px",
                   borderRadius: "8px",
-                  background: canSave ? "linear-gradient(135deg, #3b82f6, #1d4ed8)" : "#e2e8f0",
+                  background: canSave ? "#0d0e10" : "#e7e7e7",
                   border: "none",
                   fontSize: "13px",
                   fontWeight: 600,
-                  color: canSave ? "white" : "#94a3b8",
+                  color: canSave ? "white" : "#646f79",
                   cursor: canSave ? "pointer" : "not-allowed",
-                  boxShadow: canSave ? "0 2px 8px rgba(59,130,246,0.35)" : "none",
+                  boxShadow: canSave ? "none" : "none",
                   transition: "all 0.16s",
                 }}
               >
@@ -1173,112 +1245,94 @@ export function WorkplanSection({
               </button>
             </div>
           )}
-          {(canEditActualResults || canEditManagerWorkplanRatings) && (
-            <button
-              onClick={canEditManagerWorkplanRatings ? saveManagerWorkplan : saveWorkplan}
-              disabled={canEditManagerWorkplanRatings ? !canSaveManager : !canSave}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "7px",
-                padding: "9px 20px",
-                borderRadius: "8px",
-                background: (canEditManagerWorkplanRatings ? canSaveManager : canSave) ? "linear-gradient(135deg, #3b82f6, #1d4ed8)" : "#e2e8f0",
-                border: "none",
-                fontSize: "13px",
-                fontWeight: 600,
-                color: (canEditManagerWorkplanRatings ? canSaveManager : canSave) ? "white" : "#94a3b8",
-                cursor: (canEditManagerWorkplanRatings ? canSaveManager : canSave) ? "pointer" : "not-allowed",
-                boxShadow: (canEditManagerWorkplanRatings ? canSaveManager : canSave) ? "0 2px 8px rgba(59,130,246,0.35)" : "none",
-                transition: "all 0.16s",
-              }}
-            >
-              <SaveIcon /> Save Assessment
-            </button>
-          )}
-          {items.length > 0 && !loading && (
-            <button
-              type="button"
-              onClick={handleDownloadExcel}
-              disabled={exportingExcel}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-[8px] bg-white text-[#0f1f3d] border border-[#dde5f5] text-[11px] font-semibold hover:bg-[#f8faff] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
-              {exportingExcel ? "Downloading…" : "Download Excel"}
-            </button>
-          )}
+          {!canSaveAssessment && downloadExcelButton}
         </div>
 
         {workplan && workplan.status !== "draft" && (
-          <div className="flex items-center gap-2 px-5 py-3 bg-[#fffbeb] border-b border-[#fcd34d]">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2">
+          <div className="flex items-center gap-2 px-5 py-3 bg-ds-warning-subtle border-b border-ds-warning-border">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8a5a00" strokeWidth="2">
               <rect x="3" y="11" width="18" height="11" rx="2" />
               <path d="M7 11V7a5 5 0 0110 0v4" />
             </svg>
-            <p className="text-[11px] text-[#92400e]">
+            <p className="text-[11px] text-ds-warning">
               Workplan is locked — use Check-ins to track progress
             </p>
           </div>
         )}
 
+        {canSaveAssessment && (
+          <div data-assessment-actions className="flex flex-col gap-2 border-b border-ds-border px-6 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <div className="flex min-w-0 flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+              <button
+                type="button"
+                data-save-assessment
+                onClick={canEditManagerWorkplanRatings ? saveManagerWorkplan : saveWorkplan}
+                disabled={canEditManagerWorkplanRatings ? !canSaveManager : !canSave}
+                aria-live="polite"
+                className={MIDYEAR_BUTTON.secondary}
+              >
+                <SaveIcon /> {saving ? "Saving…" : assessmentJustSaved ? "Saved ✓" : "Save Assessment"}
+              </button>
+              {assessmentLastSavedAt != null && <MidyearLastSaved at={assessmentLastSavedAt} />}
+            </div>
+            {downloadExcelButton && <div className="flex sm:justify-end">{downloadExcelButton}</div>}
+          </div>
+        )}
+
         {/* Table */}
         {items.length === 0 && workplan?.status === "draft" && canEditPlanningFields ? (
-          <div className="border-2 border-dashed border-[#dde5f5] rounded-[14px] p-12 flex flex-col items-center text-center">
-            <div className="w-12 h-12 rounded-[14px] bg-[#f8faff] border border-[#dde5f5] flex items-center justify-center mb-4">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8a97b8" strokeWidth="1.5">
+          <div className="border-2 border-dashed border-ds-border rounded-ds-panel p-12 flex flex-col items-center text-center">
+            <div className="w-12 h-12 rounded-ds-panel bg-ds-surface border border-ds-border flex items-center justify-center mb-4">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#646f79" strokeWidth="1.5">
                 <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
                 <polyline points="14 2 14 8 20 8" />
                 <line x1="12" y1="18" x2="12" y2="12" />
                 <line x1="9" y1="15" x2="15" y2="15" />
               </svg>
             </div>
-            <p className="font-['Sora'] text-[14px] font-bold text-[#0f1f3d] mb-2">
+            <p className="font-sans text-[14px] font-semibold text-ds-text-primary mb-2">
               No objectives yet
             </p>
-            <p className="text-[12px] text-[#8a97b8] max-w-[360px] leading-relaxed mb-6">
+            <p className="text-[12px] text-ds-text-secondary max-w-[360px] leading-relaxed mb-6">
               Add objectives manually or import from your Excel workplan template
             </p>
             <div className="grid grid-cols-2 gap-3 w-full max-w-[480px]">
               <button
                 type="button"
                 onClick={() => setShowUploadModal(true)}
-                className="border border-[#99f6e4] rounded-[12px] p-4 bg-[#f0fdfa] text-left hover:bg-[#ecfdf5] transition-colors group"
+                className="border border-ds-border-strong rounded-ds-panel p-4 bg-ds-surface text-left hover:bg-ds-success-subtle transition-colors group"
               >
-                <div className="w-8 h-8 rounded-[9px] bg-white border border-[#6ee7b7] flex items-center justify-center mb-3">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0d9488" strokeWidth="2">
+                <div className="w-8 h-8 rounded-[9px] bg-white border border-ds-success-border flex items-center justify-center mb-3">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0d0e10" strokeWidth="2">
                     <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
                     <polyline points="17 8 12 3 7 8" />
                     <line x1="12" y1="3" x2="12" y2="15" />
                   </svg>
                 </div>
-                <p className="text-[12px] font-semibold text-[#0f766e] mb-1">Import from Excel</p>
-                <p className="text-[10px] text-[#0d9488] leading-relaxed">
+                <p className="text-[12px] font-semibold text-ds-accent-hover mb-1">Import from Excel</p>
+                <p className="text-[10px] text-ds-accent leading-relaxed">
                   Upload .xlsx — AI maps columns automatically
                 </p>
-                <p className="text-[10px] font-semibold text-[#0d9488] mt-3 group-hover:underline">
+                <p className="text-[10px] font-semibold text-ds-accent mt-3 group-hover:underline">
                   Import workplan →
                 </p>
               </button>
               <button
                 type="button"
                 onClick={addRow}
-                className="border border-[#dde5f5] rounded-[12px] p-4 bg-[#f8faff] text-left hover:border-[#0f1f3d] transition-colors group"
+                className="border border-ds-border rounded-ds-panel p-4 bg-ds-surface text-left hover:border-ds-text-primary transition-colors group"
               >
-                <div className="w-8 h-8 rounded-[9px] bg-white border border-[#dde5f5] flex items-center justify-center mb-3">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4a5a82" strokeWidth="2">
+                <div className="w-8 h-8 rounded-[9px] bg-white border border-ds-border flex items-center justify-center mb-3">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#646f79" strokeWidth="2">
                     <line x1="12" y1="5" x2="12" y2="19" />
                     <line x1="5" y1="12" x2="19" y2="12" />
                   </svg>
                 </div>
-                <p className="text-[12px] font-semibold text-[#0f1f3d] mb-1">Add manually</p>
-                <p className="text-[10px] text-[#8a97b8] leading-relaxed">
+                <p className="text-[12px] font-semibold text-ds-text-primary mb-1">Add manually</p>
+                <p className="text-[10px] text-ds-text-secondary leading-relaxed">
                   Enter objectives one by one using the form
                 </p>
-                <p className="text-[10px] font-semibold text-[#4a5a82] mt-3 group-hover:underline">
+                <p className="text-[10px] font-semibold text-ds-text-secondary mt-3 group-hover:underline">
                   Add objective →
                 </p>
               </button>
@@ -1286,7 +1340,7 @@ export function WorkplanSection({
           </div>
         ) : items.length === 0 ? (
           <div style={{ padding: "32px 24px", textAlign: "center" }}>
-            <p style={{ color: "#8a97b8", fontSize: "13px" }}>
+            <p style={{ color: "#646f79", fontSize: "13px" }}>
               No objectives defined yet.{" "}
               {canEditPlanningFields && "Click \"Add Objective\" to add your first objective."}
             </p>
@@ -1328,6 +1382,7 @@ export function WorkplanSection({
                         <col className="w-[7%]" />
                       </>
                     )}
+                    {showMidyearColumn && <col className="w-[8%]" />}
                     {showActualResults && <col className="w-[12%]" />}
                     {status === "MANAGER_REVIEW" && <col className="w-[10%]" />}
                     {showActualResults && <col className="w-[7%]" />}
@@ -1344,14 +1399,15 @@ export function WorkplanSection({
                     </>
                   ) : (
                     <th style={thStyle}>
-                      Objective <span style={{ fontWeight: 500, fontSize: "10px", color: "#8a97b8" }}>(click to expand)</span>
+                      Objective <span style={{ fontWeight: 500, fontSize: "10px", color: "#646f79" }}>(click to expand)</span>
                     </th>
                   )}
-                  <th style={thStyle}>Major Tasks</th>
-                  <th style={thStyle}>Key Outputs</th>
-                  <th style={thStyle}>Performance Standard</th>
+                  <th style={thStyle}>Major Tasks{canEditPlanningFields && <RequiredMark />}</th>
+                  <th style={thStyle}>Key Outputs{canEditPlanningFields && <RequiredMark />}</th>
+                  <th style={thStyle}>Performance Standard{canEditPlanningFields && <RequiredMark />}</th>
                   {showTargetColumn && <th style={thStyle}>Target</th>}
                   <th style={{ ...thStyle, textAlign: "center", paddingRight: "16px" }}>Weighting</th>
+                  {showMidyearColumn && <th style={{ ...thStyle, whiteSpace: "normal" }}>Mid-Year Result</th>}
                   {showActualResults && <th style={thStyle}>Actual YTD</th>}
                   {status === "MANAGER_REVIEW" && <th style={thStyle}>Result %</th>}
                   {showActualResults && <th style={thStyle}>Evidence</th>}
@@ -1361,7 +1417,7 @@ export function WorkplanSection({
               </thead>
               <tbody>
                 {items.map((row) => (
-                  <tr key={row.id} style={{ transition: "background 0.13s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "#f4f8ff"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
+                  <tr key={row.id} style={{ transition: "background 0.13s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "#f3f3f3"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
                     {/* Draft: Corporate and Divisional as separate columns; read-only: single Objective column with expand */}
                     {canEditPlanningFields ? (
                       <>
@@ -1369,45 +1425,45 @@ export function WorkplanSection({
                           {row.corporate ? (
                             <div
                               onClick={() => openPicker(row.id, "corporate")}
-                              className="group flex w-full cursor-pointer flex-col gap-[3px] rounded-[8px] border border-[#dde5f5] bg-white p-[5px_7px] transition-colors hover:bg-[#f8faff]"
+                              className="group flex w-full cursor-pointer flex-col gap-[3px] rounded-[8px] border border-ds-border bg-white p-[5px_7px] transition-colors hover:bg-ds-surface"
                             >
                               <div className="flex items-center justify-between gap-1">
-                                <span className="inline-flex rounded-full border border-[#bfdbfe] bg-[#eff6ff] px-[6px] py-[1px] text-[9px] font-semibold text-[#1d4ed8]">Corporate</span>
+                                <span className="inline-flex rounded-ds-button border border-ds-border-strong bg-ds-surface px-[6px] py-[1px] text-[9px] font-semibold text-ds-info">Corporate</span>
                                 <button
                                   type="button"
                                   onClick={(e) => { e.stopPropagation(); clearObjective(row.id, "corporate"); }}
-                                  className="px-[2px] text-[11px] leading-none text-[#8a97b8] opacity-0 transition-opacity hover:text-[#dc2626] group-hover:opacity-100"
+                                  className="px-[2px] text-[11px] leading-none text-ds-text-secondary opacity-0 transition-opacity hover:text-ds-error group-hover:opacity-100"
                                 >
                                   ✕
                                 </button>
                               </div>
-                              <p className="break-words text-[11px] font-medium leading-[1.35] text-[#0f1f3d] whitespace-normal">{row.corporate.title}</p>
-                              <p className="font-mono text-[9px] text-[#8a97b8]">{row.corporate.external_id}</p>
+                              <p className="break-words text-[11px] font-medium leading-[1.35] text-ds-text-primary whitespace-normal">{row.corporate.title}</p>
+                              <p className="font-mono text-[9px] text-ds-text-secondary">{row.corporate.external_id}</p>
                             </div>
                           ) : row.corporate_objective?.trim() ? (
                             <div
                               onClick={() => openPicker(row.id, "corporate")}
-                              className="group flex w-full cursor-pointer flex-col gap-[3px] rounded-[8px] border border-[#dde5f5] bg-white p-[5px_7px] transition-colors hover:bg-[#f8faff]"
+                              className="group flex w-full cursor-pointer flex-col gap-[3px] rounded-[8px] border border-ds-border bg-white p-[5px_7px] transition-colors hover:bg-ds-surface"
                             >
                               <div className="flex items-center justify-between gap-1">
-                                <span className="inline-flex rounded-full border border-[#bfdbfe] bg-[#eff6ff] px-[6px] py-[1px] text-[9px] font-semibold text-[#1d4ed8]">Corporate</span>
+                                <span className="inline-flex rounded-ds-button border border-ds-border-strong bg-ds-surface px-[6px] py-[1px] text-[9px] font-semibold text-ds-info">Corporate</span>
                                 <button
                                   type="button"
                                   onClick={(e) => { e.stopPropagation(); clearObjective(row.id, "corporate"); }}
-                                  className="px-[2px] text-[11px] leading-none text-[#8a97b8] opacity-0 transition-opacity hover:text-[#dc2626] group-hover:opacity-100"
+                                  className="px-[2px] text-[11px] leading-none text-ds-text-secondary opacity-0 transition-opacity hover:text-ds-error group-hover:opacity-100"
                                 >
                                   ✕
                                 </button>
                               </div>
-                              <p className="break-words text-[11px] font-medium leading-[1.35] text-[#0f1f3d] whitespace-normal">{row.corporate_objective}</p>
+                              <p className="break-words text-[11px] font-medium leading-[1.35] text-ds-text-primary whitespace-normal">{row.corporate_objective}</p>
                             </div>
                           ) : (
                             <button
                               type="button"
                               onClick={() => openPicker(row.id, "corporate")}
-                              className="group flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-full border-[1.5px] border-dashed border-[#dde5f5] bg-[#f8faff] transition-all hover:border-[#3b82f6] hover:bg-[#eff6ff]"
+                              className="group flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-full border-[1.5px] border-dashed border-ds-border bg-ds-surface transition-all hover:border-ds-accent hover:bg-ds-surface"
                             >
-                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8a97b8" strokeWidth="2" className="transition-colors group-hover:stroke-[#3b82f6]">
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#646f79" strokeWidth="2" className="transition-colors group-hover:stroke-ds-accent">
                                 <circle cx="12" cy="12" r="9" />
                                 <line x1="12" y1="8" x2="12" y2="16" />
                                 <line x1="8" y1="12" x2="16" y2="12" />
@@ -1419,37 +1475,37 @@ export function WorkplanSection({
                           {row.divisional ? (
                             <div
                               onClick={() => openPicker(row.id, "divisional")}
-                              className="group flex w-full cursor-pointer flex-col gap-[3px] rounded-[8px] border border-[#dde5f5] bg-white p-[5px_7px] transition-colors hover:bg-[#f8faff]"
+                              className="group flex w-full cursor-pointer flex-col gap-[3px] rounded-[8px] border border-ds-border bg-white p-[5px_7px] transition-colors hover:bg-ds-surface"
                             >
                               <div className="flex items-center justify-between gap-1">
-                                <span className="inline-flex rounded-full border border-[#99f6e4] bg-[#f0fdfa] px-[6px] py-[1px] text-[9px] font-semibold text-[#0f766e]">Divisional</span>
+                                <span className="inline-flex rounded-ds-button border border-ds-border-strong bg-ds-surface px-[6px] py-[1px] text-[9px] font-semibold text-ds-accent-hover">Divisional</span>
                                 <button
                                   type="button"
                                   onClick={(e) => { e.stopPropagation(); clearObjective(row.id, "divisional"); }}
-                                  className="px-[2px] text-[11px] leading-none text-[#8a97b8] opacity-0 transition-opacity hover:text-[#dc2626] group-hover:opacity-100"
+                                  className="px-[2px] text-[11px] leading-none text-ds-text-secondary opacity-0 transition-opacity hover:text-ds-error group-hover:opacity-100"
                                 >
                                   ✕
                                 </button>
                               </div>
-                              <p className="break-words text-[11px] font-medium leading-[1.35] text-[#0f1f3d] whitespace-normal">{row.divisional.title}</p>
-                              <p className="font-mono text-[9px] text-[#8a97b8]">{row.divisional.external_id}</p>
+                              <p className="break-words text-[11px] font-medium leading-[1.35] text-ds-text-primary whitespace-normal">{row.divisional.title}</p>
+                              <p className="font-mono text-[9px] text-ds-text-secondary">{row.divisional.external_id}</p>
                             </div>
                           ) : row.division_objective?.trim() ? (
                             <div
                               onClick={() => openPicker(row.id, "divisional")}
-                              className="group flex w-full cursor-pointer flex-col gap-[3px] rounded-[8px] border border-[#dde5f5] bg-white p-[5px_7px] transition-colors hover:bg-[#f8faff]"
+                              className="group flex w-full cursor-pointer flex-col gap-[3px] rounded-[8px] border border-ds-border bg-white p-[5px_7px] transition-colors hover:bg-ds-surface"
                             >
                               <div className="flex items-center justify-between gap-1">
-                                <span className="inline-flex rounded-full border border-[#99f6e4] bg-[#f0fdfa] px-[6px] py-[1px] text-[9px] font-semibold text-[#0f766e]">Divisional</span>
+                                <span className="inline-flex rounded-ds-button border border-ds-border-strong bg-ds-surface px-[6px] py-[1px] text-[9px] font-semibold text-ds-accent-hover">Divisional</span>
                                 <button
                                   type="button"
                                   onClick={(e) => { e.stopPropagation(); clearObjective(row.id, "divisional"); }}
-                                  className="px-[2px] text-[11px] leading-none text-[#8a97b8] opacity-0 transition-opacity hover:text-[#dc2626] group-hover:opacity-100"
+                                  className="px-[2px] text-[11px] leading-none text-ds-text-secondary opacity-0 transition-opacity hover:text-ds-error group-hover:opacity-100"
                                 >
                                   ✕
                                 </button>
                               </div>
-                              <p className="break-words text-[11px] font-medium leading-[1.35] text-[#0f1f3d] whitespace-normal">{row.division_objective}</p>
+                              <p className="break-words text-[11px] font-medium leading-[1.35] text-ds-text-primary whitespace-normal">{row.division_objective}</p>
                             </div>
                           ) : (
                             <button
@@ -1457,13 +1513,13 @@ export function WorkplanSection({
                               disabled={!row.corporate && !row.corporate_objective?.trim()}
                               onClick={() => (row.corporate || row.corporate_objective?.trim()) && openPicker(row.id, "divisional")}
                               className={cn(
-                                "group flex h-[34px] w-[34px] items-center justify-center rounded-full border-[1.5px] border-dashed border-[#dde5f5] bg-[#f8faff] transition-all",
+                                "group flex h-[34px] w-[34px] items-center justify-center rounded-full border-[1.5px] border-dashed border-ds-border bg-ds-surface transition-all",
                                 row.corporate || row.corporate_objective?.trim()
-                                  ? "cursor-pointer hover:border-[#0d9488] hover:bg-[#f0fdfa]"
+                                  ? "cursor-pointer hover:border-ds-accent hover:bg-ds-surface"
                                   : "cursor-not-allowed opacity-50"
                               )}
                             >
-                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8a97b8" strokeWidth="2" className={cn("transition-colors", (row.corporate || row.corporate_objective?.trim()) && "group-hover:stroke-[#0d9488]")}>
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#646f79" strokeWidth="2" className={cn("transition-colors", (row.corporate || row.corporate_objective?.trim()) && "group-hover:stroke-ds-accent")}>
                                 <circle cx="12" cy="12" r="9" />
                                 <line x1="12" y1="8" x2="12" y2="16" />
                                 <line x1="8" y1="12" x2="16" y2="12" />
@@ -1479,15 +1535,15 @@ export function WorkplanSection({
                           onClick={() => toggleExpand(row.id)}
                           className="flex items-start gap-1.5 text-left group w-full"
                         >
-                          <span className={cn("inline-block text-slate-400 transition-transform flex-shrink-0 mt-0.5", expandedObjective[row.id] && "rotate-90")}>
+                          <span className={cn("inline-block text-ds-text-secondary transition-transform flex-shrink-0 mt-0.5", expandedObjective[row.id] && "rotate-90")}>
                             <ChevronRightIcon />
                           </span>
                           <div className="min-w-0 flex-1">
-                            <p className="text-[12px] font-semibold text-[#0f1f3d] truncate leading-tight">
+                            <p className="text-[12px] font-semibold text-ds-text-primary truncate leading-tight">
                               {row.corporate_objective || "—"}
                             </p>
                             {expandedObjective[row.id] && (
-                              <p className="text-[11px] text-[#8a97b8] mt-1 leading-tight">
+                              <p className="text-[11px] text-ds-text-secondary mt-1 leading-tight">
                                 {row.division_objective || "—"}
                               </p>
                             )}
@@ -1497,23 +1553,26 @@ export function WorkplanSection({
                     )}
                     <td style={tdStyle}>
                       {canEditPlanningFields ? (
-                        <textarea rows={2} style={{ ...textareaStyle, minWidth: "140px" }} value={row.major_task} onChange={(e) => updateRow(row.id, "major_task", e.target.value)} placeholder="Required" onFocus={(e) => { e.target.style.borderColor = "#3b82f6"; e.target.style.boxShadow = "0 0 0 3px rgba(59,130,246,0.1)"; }} onBlur={(e) => { e.target.style.borderColor = "#dde5f5"; e.target.style.boxShadow = "none"; }} />
+                        <>
+                          <textarea rows={2} style={{ ...textareaStyle, minWidth: "140px" }} value={row.major_task} onChange={(e) => updateRow(row.id, "major_task", e.target.value)} placeholder="Required" onFocus={(e) => { e.target.style.borderColor = "#0d0e10"; e.target.style.boxShadow = "0 0 0 1px var(--ds-focus)"; }} onBlur={(e) => { e.target.style.borderColor = "#8b949e"; e.target.style.boxShadow = "none"; }} />
+                          <IncompleteRowHint row={row} />
+                        </>
                       ) : (
-                        <span style={{ fontSize: "13px", color: "#0f1f3d", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{row.major_task || "—"}</span>
+                        <span style={{ fontSize: "13px", color: "#0d0d0d", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{row.major_task || "—"}</span>
                       )}
                     </td>
                     <td style={tdStyle}>
                       {canEditPlanningFields ? (
-                        <textarea rows={2} style={textareaStyle} value={row.key_output} onChange={(e) => updateRow(row.id, "key_output", e.target.value)} onFocus={(e) => { e.target.style.borderColor = "#3b82f6"; e.target.style.boxShadow = "0 0 0 3px rgba(59,130,246,0.1)"; }} onBlur={(e) => { e.target.style.borderColor = "#dde5f5"; e.target.style.boxShadow = "none"; }} />
+                        <textarea rows={2} style={textareaStyle} value={row.key_output} onChange={(e) => updateRow(row.id, "key_output", e.target.value)} placeholder="Required" onFocus={(e) => { e.target.style.borderColor = "#0d0e10"; e.target.style.boxShadow = "0 0 0 1px var(--ds-focus)"; }} onBlur={(e) => { e.target.style.borderColor = "#8b949e"; e.target.style.boxShadow = "none"; }} />
                       ) : (
-                        <span style={{ fontSize: "13px", color: "#0f1f3d", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{row.key_output || "—"}</span>
+                        <span style={{ fontSize: "13px", color: "#0d0d0d", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{row.key_output || "—"}</span>
                       )}
                     </td>
                     <td style={tdStyle}>
                       {canEditPlanningFields ? (
-                        <textarea rows={2} style={{ ...textareaStyle, minWidth: "140px" }} value={row.performance_standard} onChange={(e) => updateRow(row.id, "performance_standard", e.target.value)} onFocus={(e) => { e.target.style.borderColor = "#3b82f6"; e.target.style.boxShadow = "0 0 0 3px rgba(59,130,246,0.1)"; }} onBlur={(e) => { e.target.style.borderColor = "#dde5f5"; e.target.style.boxShadow = "none"; }} />
+                        <textarea rows={2} style={{ ...textareaStyle, minWidth: "140px" }} value={row.performance_standard} onChange={(e) => updateRow(row.id, "performance_standard", e.target.value)} placeholder="Required" onFocus={(e) => { e.target.style.borderColor = "#0d0e10"; e.target.style.boxShadow = "0 0 0 1px var(--ds-focus)"; }} onBlur={(e) => { e.target.style.borderColor = "#8b949e"; e.target.style.boxShadow = "none"; }} />
                       ) : (
-                        <span style={{ fontSize: "13px", color: "#0f1f3d", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{row.performance_standard || "—"}</span>
+                        <span style={{ fontSize: "13px", color: "#0d0d0d", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{row.performance_standard || "—"}</span>
                       )}
                     </td>
                     {/* Target column: DRAFT = type-specific input; after DRAFT = read-only. When DRAFT, "change type" opens type picker. */}
@@ -1532,10 +1591,10 @@ export function WorkplanSection({
                                 className={cn(
                                   inputBase,
                                   "w-20 px-2 py-1.5 text-center",
-                                  "border-[#dde5f5] focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                                  "border-ds-border focus:border-ds-info-border focus:ring-2 focus:ring-ds-info-border"
                                 )}
                               />
-                              <span className="text-[10px] text-[#8a97b8]">units to achieve</span>
+                              <span className="text-[10px] text-ds-text-secondary">units to achieve</span>
                             </div>
                           ) : (row.metric_type ?? "PERCENT") === "DATE" ? (
                             <div className="flex flex-col gap-1">
@@ -1546,8 +1605,8 @@ export function WorkplanSection({
                                 className={cn(
                                   inputBase,
                                   "px-2.5 py-1.5 text-xs",
-                                  "border-purple-200 bg-purple-50 text-purple-800",
-                                  "focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
+                                  "border-ds-info-border bg-ds-info-subtle text-ds-info",
+                                  "focus:border-ds-info-border focus:ring-2 focus:ring-ds-info-border"
                                 )}
                               />
                             </div>
@@ -1565,10 +1624,10 @@ export function WorkplanSection({
                                   className={cn(
                                     inputBase,
                                     "w-20 px-2 py-1.5 pr-6 text-center",
-                                    "border-[#dde5f5] focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                                    "border-ds-border focus:border-ds-success-border focus:ring-2 focus:ring-ds-success-border"
                                   )}
                                 />
-                                <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-[#8a97b8]">%</span>
+                                <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-ds-text-secondary">%</span>
                               </div>
                             </div>
                           )}
@@ -1577,13 +1636,13 @@ export function WorkplanSection({
                               tabIndex={0}
                               onClick={() => setTypePickerItemId(row.id)}
                               onKeyDown={(e) => e.key === "Enter" && setTypePickerItemId(row.id)}
-                              className="cursor-pointer text-[9px] text-slate-400 transition-colors hover:text-blue-500 mt-1 block"
+                              className="cursor-pointer text-[9px] text-ds-text-secondary transition-colors hover:text-ds-info mt-1 block"
                             >
                               change type
                             </span>
                           </>
                         ) : (
-                          <span style={{ fontSize: "12px", color: "#4a5a82", fontWeight: 500 }}>
+                          <span style={{ fontSize: "12px", color: "#646f79", fontWeight: 500 }}>
                             {(row.metric_type ?? "PERCENT") === "NUMBER" && row.metric_target != null
                               ? `Target: ${row.metric_target}`
                               : (row.metric_type ?? "PERCENT") === "DATE" && row.metric_deadline
@@ -1597,29 +1656,29 @@ export function WorkplanSection({
                     )}
                     <td style={{ ...tdStyle, textAlign: "center", paddingRight: "16px" }}>
                       {canEditPlanningFields ? (
-                        <input type="number" min={0} max={100} style={{ ...inputStyle, width: "22px" }} value={row.weight === 0 ? "" : row.weight} onChange={(e) => updateRow(row.id, "weight", e.target.value === "" ? 0 : Number(e.target.value))} onFocus={(e) => { e.target.style.borderColor = "#3b82f6"; e.target.style.boxShadow = "0 0 0 3px rgba(59,130,246,0.1)"; }} onBlur={(e) => { e.target.style.borderColor = "#dde5f5"; e.target.style.boxShadow = "none"; }} />
+                        <input type="number" min={0} max={100} style={{ ...inputStyle, width: "22px" }} value={row.weight === 0 ? "" : row.weight} onChange={(e) => updateRow(row.id, "weight", e.target.value === "" ? 0 : Number(e.target.value))} onFocus={(e) => { e.target.style.borderColor = "#0d0e10"; e.target.style.boxShadow = "0 0 0 1px var(--ds-focus)"; }} onBlur={(e) => { e.target.style.borderColor = "#8b949e"; e.target.style.boxShadow = "none"; }} />
                       ) : (
                         <div className="flex justify-center">
                           {showActualResults ? (
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full bg-[#0f1f3d] text-white text-[11px] font-bold cursor-default">
+                                <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-ds-badge bg-ds-text-primary text-white text-[11px] font-semibold cursor-default">
                                   {row.weight}%
                                 </span>
                               </TooltipTrigger>
-                              <TooltipContent side="top" sideOffset={8} className="border-0 bg-[#0f1f3d] px-3 py-2.5 text-white shadow-lg">
-                                <div className="font-bold text-[11px] mb-1.5 text-white/70 uppercase tracking-wide">
+                              <TooltipContent side="top" sideOffset={8} className="border-0 bg-ds-text-primary px-3 py-2.5 text-white shadow-ds-popover">
+                                <div className="font-semibold text-[11px] mb-1.5 text-white/70 uppercase tracking-wide">
                                   Grade Thresholds
                                 </div>
                                 {[
-                                  { g: "A", mult: 1.0, color: "#34d399" },
-                                  { g: "B", mult: 0.8, color: "#60a5fa" },
-                                  { g: "C", mult: 0.6, color: "#38bdf8" },
-                                  { g: "D", mult: 0.4, color: "#fbbf24" },
-                                  { g: "E", mult: 0.2, color: "#f87171" },
+                                  { g: "A", mult: 1.0, color: "#2e7d4f" },
+                                  { g: "B", mult: 0.8, color: "#8b949e" },
+                                  { g: "C", mult: 0.6, color: "#3d5a78" },
+                                  { g: "D", mult: 0.4, color: "#8a5a00" },
+                                  { g: "E", mult: 0.2, color: "#b42318" },
                                 ].map(({ g, mult, color }) => (
                                   <div key={g} className="flex items-center gap-2 py-0.5 text-[10px] whitespace-nowrap">
-                                    <span className="font-bold w-3" style={{ color }}>{g}</span>
+                                    <span className="font-semibold w-3" style={{ color }}>{g}</span>
                                     <span className="text-white/60">×{mult}</span>
                                     <span className="text-white font-semibold ml-auto">
                                       {(row.weight * mult).toFixed(1)} pts
@@ -1629,13 +1688,18 @@ export function WorkplanSection({
                               </TooltipContent>
                             </Tooltip>
                           ) : (
-                            <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full bg-[#0f1f3d] text-white text-[11px] font-bold cursor-default">
+                            <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-ds-badge bg-ds-text-primary text-white text-[11px] font-semibold cursor-default">
                               {row.weight}%
                             </span>
                           )}
                         </div>
                       )}
                     </td>
+                    {showMidyearColumn && (
+                      <td style={tdStyle} data-midyear-cell>
+                        <MidyearResultValue value={midyearContext.results[row.id]} />
+                      </td>
+                    )}
                     {showActualResults && (
                       <td style={tdStyle}>
                         {status === "MANAGER_REVIEW" && canEditManagerWorkplanRatings ? (
@@ -1651,10 +1715,10 @@ export function WorkplanSection({
                             return (
                               <div className="flex flex-col gap-[6px]">
                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50/80 flex-shrink-0">EMP</span>
+                                  <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-ds-info bg-ds-info-subtle flex-shrink-0">EMP</span>
                                   <span
                                     className={cn(
-                                      "text-[11px] font-bold px-2 py-0.5 rounded-md border bg-blue-50 border-blue-200 text-blue-700",
+                                      "text-[11px] font-semibold px-2 py-0.5 rounded-md border bg-ds-info-subtle border-ds-info-border text-ds-info",
                                       mgrChanged && "line-through opacity-50"
                                     )}
                                   >
@@ -1663,7 +1727,7 @@ export function WorkplanSection({
                                   {mgrChanged && <VarianceBadge emp={empActual} mgr={mgrActual} type={type} />}
                                 </div>
                                 <div className="flex items-center gap-1.5">
-                                  <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-violet-600 bg-violet-50/80 flex-shrink-0">MGR</span>
+                                  <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-ds-info bg-ds-info-subtle flex-shrink-0">MGR</span>
                                   <MgrActualInput
                                     item={row}
                                     value={mgrValue ?? null}
@@ -1680,17 +1744,18 @@ export function WorkplanSection({
                           (row.metric_type ?? "PERCENT") === "NUMBER" ? (
                             <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                               <div style={{ display: "flex", alignItems: "center", gap: "4px", flexWrap: "wrap" }}>
-                                <input
-                                  type="number"
+                                <NumericDraftInput
                                   min={0}
+                                  aria-label="Actual YTD"
+                                  data-actual-ytd
                                   style={{ ...inputStyle, width: "52px", textAlign: "center" }}
-                                  value={row.metric_actual_raw ?? ""}
-                                  onChange={(e) => updateRow(row.id, "metric_actual_raw", e.target.value === "" ? null : Number(e.target.value))}
-                                  onFocus={(e) => { e.target.style.borderColor = "#3b82f6"; e.target.style.boxShadow = "0 0 0 3px rgba(59,130,246,0.1)"; }}
-                                  onBlur={(e) => { e.target.style.borderColor = "#dde5f5"; e.target.style.boxShadow = "none"; }}
+                                  value={row.metric_actual_raw}
+                                  onValueChange={(v) => updateRow(row.id, "metric_actual_raw", v)}
+                                  onFocus={(e) => { e.target.style.borderColor = "#0d0e10"; e.target.style.boxShadow = "0 0 0 1px var(--ds-focus)"; }}
+                                  onBlur={(e) => { e.target.style.borderColor = "#8b949e"; e.target.style.boxShadow = "none"; }}
                                 />
-                                <span style={{ fontSize: "13px", fontWeight: 600, color: "#0f1f3d" }}>/</span>
-                                <span style={{ fontSize: "13px", fontWeight: 600, color: "#4a5a82" }}>{row.metric_target ?? "—"}</span>
+                                <span style={{ fontSize: "13px", fontWeight: 600, color: "#0d0d0d" }}>/</span>
+                                <span style={{ fontSize: "13px", fontWeight: 600, color: "#646f79" }}>{row.metric_target ?? "—"}</span>
                               </div>
                             </div>
                           ) : (row.metric_type ?? "PERCENT") === "DATE" ? (
@@ -1701,8 +1766,8 @@ export function WorkplanSection({
                                   ...inputStyle,
                                   width: "100%",
                                   minWidth: "100px",
-                                  borderColor: row.metric_completion_date ? (getDateVariance(row)?.isLate ? "#f59e0b" : "#10b981") : "#dde5f5",
-                                  background: row.metric_completion_date ? (getDateVariance(row)?.isLate ? "#fffbeb" : "#f0fdf4") : "white",
+                                  borderColor: row.metric_completion_date ? (getDateVariance(row)?.isLate ? "#8a5a00" : "#2e7d4f") : "#e7e7e7",
+                                  background: row.metric_completion_date ? (getDateVariance(row)?.isLate ? "#fffbeb" : "#ecfdf5") : "white",
                                 }}
                                 value={row.metric_completion_date ?? ""}
                                 onChange={(e) => updateRow(row.id, "metric_completion_date", e.target.value || null)}
@@ -1710,24 +1775,23 @@ export function WorkplanSection({
                                 onBlur={(e) => { e.target.style.boxShadow = "none"; }}
                               />
                               {getDateVariance(row) && (
-                                <span style={{ fontSize: "11px", fontWeight: 600, color: getDateVariance(row)?.isLate ? "#d97706" : "#059669" }}>
+                                <span style={{ fontSize: "11px", fontWeight: 600, color: getDateVariance(row)?.isLate ? "#8a5a00" : "#2e7d4f" }}>
                                   {getDateVariance(row)?.isLate ? "⚠️ " : "✅ "}{getDateVariance(row)?.label}
                                 </span>
                               )}
                             </div>
                           ) : (
-                            <input
-                              type="number"
+                            <NumericDraftInput
                               min={0}
                               max={100}
+                              clamp
+                              aria-label="Actual YTD"
+                              data-actual-ytd
                               style={{ ...inputStyle, width: "70px" }}
-                              value={row.actual_result ?? row.metric_actual_raw ?? ""}
-                              onChange={(e) => {
-                                const v = e.target.value === "" ? null : Math.min(100, Math.max(0, Number(e.target.value)));
-                                updateRow(row.id, "actual_result", v);
-                              }}
-                              onFocus={(e) => { e.target.style.borderColor = "#3b82f6"; e.target.style.boxShadow = "0 0 0 3px rgba(59,130,246,0.1)"; }}
-                              onBlur={(e) => { e.target.style.borderColor = "#dde5f5"; e.target.style.boxShadow = "none"; }}
+                              value={row.actual_result ?? row.metric_actual_raw}
+                              onValueChange={(v) => updateRow(row.id, "actual_result", v)}
+                              onFocus={(e) => { e.target.style.borderColor = "#0d0e10"; e.target.style.boxShadow = "0 0 0 1px var(--ds-focus)"; }}
+                              onBlur={(e) => { e.target.style.borderColor = "#8b949e"; e.target.style.boxShadow = "none"; }}
                             />
                           )
                         ) : (
@@ -1739,10 +1803,10 @@ export function WorkplanSection({
                                 justifyContent: "center",
                                 minWidth: "44px",
                                 padding: "4px 10px",
-                                borderRadius: "9999px",
-                                fontFamily: "Sora, sans-serif",
+                                borderRadius: "4px",
+                                fontFamily: "var(--ds-font-sans)",
                                 fontSize: "12px",
-                                fontWeight: 700,
+                                fontWeight: 600,
                                 ...getResultPillStyle(row.actual_result),
                               }}
                             >
@@ -1750,8 +1814,8 @@ export function WorkplanSection({
                             </span>
                             {row.mgr_result != null && row.mgr_result !== row.actual_result && status !== "MANAGER_REVIEW" && (
                               <div className="flex flex-col gap-0.5 mt-1">
-                                <span className="text-[9px] font-bold uppercase text-violet-600">Mgr.</span>
-                                <span style={{ display: "inline-flex", alignItems: "center", minWidth: "44px", padding: "4px 10px", borderRadius: "9999px", fontFamily: "Sora, sans-serif", fontSize: "12px", fontWeight: 700, ...getResultPillStyle(row.mgr_result) }}>
+                                <span className="text-[9px] font-semibold uppercase text-ds-info">Mgr.</span>
+                                <span style={{ display: "inline-flex", alignItems: "center", minWidth: "44px", padding: "4px 10px", borderRadius: "4px", fontFamily: "var(--ds-font-sans)", fontSize: "12px", fontWeight: 600, ...getResultPillStyle(row.mgr_result) }}>
                                   {row.mgr_result}
                                 </span>
                                 <VarianceBadge emp={row.actual_result ?? 0} mgr={row.mgr_result} type={row.metric_type ?? "PERCENT"} />
@@ -1764,16 +1828,16 @@ export function WorkplanSection({
                     {status === "MANAGER_REVIEW" && (
                       <td style={tdStyle}>
                         <div className="flex flex-col items-center gap-0">
-                          <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: "44px", padding: "4px 10px", borderRadius: "9999px", fontFamily: "Sora, sans-serif", fontSize: "12px", fontWeight: 700, ...getResultPillStyle(row.actual_result) }}>
+                          <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: "44px", padding: "4px 10px", borderRadius: "4px", fontFamily: "var(--ds-font-sans)", fontSize: "12px", fontWeight: 600, ...getResultPillStyle(row.actual_result) }}>
                             {row.actual_result != null ? row.actual_result : "—"}
                           </span>
-                          <div className="w-full border-t border-slate-200 my-1.5" style={{ minWidth: "44px" }} />
+                          <div className="w-full border-t border-ds-border my-1.5" style={{ minWidth: "44px" }} />
                           {(row.mgr_result ?? calcMgrResult(row)) != null ? (
-                            <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: "44px", padding: "4px 10px", borderRadius: "9999px", fontFamily: "Sora, sans-serif", fontSize: "12px", fontWeight: 700, ...getResultPillStyle(row.mgr_result ?? calcMgrResult(row)) }}>
+                            <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: "44px", padding: "4px 10px", borderRadius: "4px", fontFamily: "var(--ds-font-sans)", fontSize: "12px", fontWeight: 600, ...getResultPillStyle(row.mgr_result ?? calcMgrResult(row)) }}>
                               {row.mgr_result ?? calcMgrResult(row)}
                             </span>
                           ) : (
-                            <span className="text-[10px] text-slate-400 italic">pending</span>
+                            <span className="text-[10px] text-ds-text-secondary italic">pending</span>
                           )}
                         </div>
                       </td>
@@ -1798,15 +1862,15 @@ export function WorkplanSection({
                           return (
                             <div className="flex flex-col items-center gap-0.5">
                               {mgrPts !== empPts && (
-                                <span className="text-[10px] text-slate-400 line-through">{empPts.toFixed(1)}</span>
+                                <span className="text-[10px] text-ds-text-secondary line-through">{empPts.toFixed(1)}</span>
                               )}
-                              <span className={cn("font-['Sora'] text-[14px] font-bold", mgrPts !== empPts ? "text-violet-600" : "text-[#0f1f3d]")}>
+                              <span className={cn("font-sans text-[14px] font-semibold", mgrPts !== empPts ? "text-ds-info" : "text-ds-text-primary")}>
                                 {mgrPts.toFixed(1)}
                               </span>
                             </div>
                           );
                         })() : (
-                          <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "3px 10px", borderRadius: "6px", background: "#eff6ff", border: "1px solid #bfdbfe", color: "#1d4ed8", fontSize: "12px", fontWeight: 700 }}>
+                          <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "3px 10px", borderRadius: "6px", background: "#f3f3f3", border: "1px solid #d0d4d8", color: "#3d5a78", fontSize: "12px", fontWeight: 600 }}>
                             {(row.points ?? calculatePoints(row.weight, row.actual_result)) ?? "—"}
                           </span>
                         )}
@@ -1826,23 +1890,23 @@ export function WorkplanSection({
                                   height: "30px",
                                   padding: 0,
                                   borderRadius: "8px",
-                                  background: "#f0fdfa",
-                                  border: "1px solid #99f6e4",
+                                  background: "#f3f3f3",
+                                  border: "1px solid #d0d4d8",
                                   display: "flex",
                                   alignItems: "center",
                                   justifyContent: "center",
-                                  color: "#0F8A6E",
+                                  color: "#2b2d31",
                                   cursor: "pointer",
                                   transition: "all 0.15s",
                                 }}
-                                onMouseEnter={(e) => { e.currentTarget.style.background = "#0F8A6E"; e.currentTarget.style.color = "white"; e.currentTarget.style.borderColor = "#0F8A6E"; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.background = "#f0fdfa"; e.currentTarget.style.color = "#0F8A6E"; e.currentTarget.style.borderColor = "#99f6e4"; }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = "#2b2d31"; e.currentTarget.style.color = "white"; e.currentTarget.style.borderColor = "#2b2d31"; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = "#f3f3f3"; e.currentTarget.style.color = "#2b2d31"; e.currentTarget.style.borderColor = "#d0d4d8"; }}
                                 aria-label="Duplicate objective"
                               >
                                 <Copy size={14} />
                               </button>
                             </TooltipTrigger>
-                            <TooltipContent side="top" sideOffset={8} className="border-0 bg-[#0f1f3d] px-3 py-2.5 text-white shadow-lg">
+                            <TooltipContent side="top" sideOffset={8} className="border-0 bg-ds-text-primary px-3 py-2.5 text-white shadow-ds-popover">
                               Duplicate objective
                             </TooltipContent>
                           </Tooltip>
@@ -1853,17 +1917,17 @@ export function WorkplanSection({
                               height: "30px",
                               padding: 0,
                               borderRadius: "8px",
-                              background: "#fff1f2",
-                              border: "1px solid #fecdd3",
+                              background: "#fef2f2",
+                              border: "1px solid #fbd5d5",
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
-                              color: "#e11d48",
+                              color: "#b42318",
                               cursor: "pointer",
                               transition: "all 0.15s",
                             }}
-                            onMouseEnter={(e) => { e.currentTarget.style.background = "#e11d48"; e.currentTarget.style.color = "white"; e.currentTarget.style.borderColor = "#e11d48"; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.background = "#fff1f2"; e.currentTarget.style.color = "#e11d48"; e.currentTarget.style.borderColor = "#fecdd3"; }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = "#b42318"; e.currentTarget.style.color = "white"; e.currentTarget.style.borderColor = "#b42318"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = "#fef2f2"; e.currentTarget.style.color = "#b42318"; e.currentTarget.style.borderColor = "#fbd5d5"; }}
                           >
                             <TrashIcon />
                           </button>
@@ -1874,20 +1938,21 @@ export function WorkplanSection({
                 ))}
               </tbody>
               <tfoot>
-                <tr style={{ background: "#f8faff" }}>
+                <tr style={{ background: "#f3f3f3" }}>
                   <td colSpan={canEditPlanningFields ? 6 : !showTargetColumn ? 4 : showActualResults ? 6 : 5} style={{ ...tdStyle, textAlign: "right", border: "none" }}>
-                    <span style={{ fontSize: "11.5px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "#8a97b8" }}>TOTAL</span>
+                    <span style={{ fontSize: "11.5px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#646f79" }}>TOTAL</span>
                   </td>
                   <td style={{ ...tdStyle, border: "none", textAlign: "center" }}>
-                    <span style={{ fontFamily: "Sora, sans-serif", fontSize: "15px", fontWeight: 700, color: totalWeight === 100 ? "#059669" : "#e11d48" }}>{totalWeight.toFixed(1)}%</span>
+                    <span style={{ fontFamily: "var(--ds-font-sans)", fontSize: "15px", fontWeight: 600, color: totalWeight === 100 ? "#2e7d4f" : "#b42318" }}>{totalWeight.toFixed(1)}%</span>
                   </td>
+                  {showMidyearColumn && <td style={{ ...tdStyle, border: "none" }} />}
                   {showActualResults && (
                     <>
                       <td style={{ ...tdStyle, border: "none" }} />
                       {status === "MANAGER_REVIEW" && <td style={{ ...tdStyle, border: "none" }} />}
                       <td style={{ ...tdStyle, border: "none" }} />
                       <td style={{ ...tdStyle, border: "none", textAlign: "right" }}>
-                        <span style={{ fontFamily: "Sora, sans-serif", fontSize: "15px", fontWeight: 700, color: "#1d4ed8" }}>{getTotalPoints(items).toFixed(1)}</span>
+                        <span style={{ fontFamily: "var(--ds-font-sans)", fontSize: "15px", fontWeight: 600, color: "#3d5a78" }}>{getTotalPoints(items).toFixed(1)}</span>
                       </td>
                     </>
                   )}
@@ -1902,7 +1967,7 @@ export function WorkplanSection({
                   justifyContent: "flex-start",
                   alignItems: "center",
                   padding: "12px 16px",
-                  borderTop: "1px solid #dde5f5",
+                  borderTop: "1px solid #e7e7e7",
                   background: "white",
                 }}
               >
@@ -1916,7 +1981,7 @@ export function WorkplanSection({
                     gap: "7px",
                     padding: "10px 20px",
                     borderRadius: "8px",
-                    background: "#0B1F45",
+                    background: "#0d0d0d",
                     border: "none",
                     fontSize: "13px",
                     fontWeight: 500,
@@ -1927,10 +1992,10 @@ export function WorkplanSection({
                   }}
                   onMouseEnter={(e) => {
                     if (!workplan?.id) return;
-                    e.currentTarget.style.background = "#162d5e";
+                    e.currentTarget.style.background = "#0d0d0d";
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "#0B1F45";
+                    e.currentTarget.style.background = "#0d0d0d";
                     e.currentTarget.style.transform = "scale(1)";
                   }}
                   onMouseDown={(e) => {
@@ -2000,13 +2065,13 @@ export function WorkplanSection({
       {/* Reject Modal */}
       {rejectModalOpen && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-          <div style={{ background: "white", borderRadius: "14px", width: "100%", maxWidth: "480px", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)" }}>
-            <div style={{ padding: "20px 24px", borderBottom: "1px solid #dde5f5" }}>
-              <h3 style={{ fontFamily: "Sora, sans-serif", fontSize: "18px", fontWeight: 600, color: "#0f1f3d", margin: 0 }}>Return Workplan for Revision</h3>
-              <p style={{ fontSize: "13px", color: "#8a97b8", marginTop: "4px", marginBottom: 0 }}>Please provide feedback for the employee</p>
+          <div style={{ background: "white", borderRadius: "8px", width: "100%", maxWidth: "480px", boxShadow: "var(--ds-shadow-dialog)" }}>
+            <div style={{ padding: "20px 24px", borderBottom: "1px solid #e7e7e7" }}>
+              <h3 style={{ fontFamily: "var(--ds-font-sans)", fontSize: "18px", fontWeight: 600, color: "#0d0d0d", margin: 0 }}>Return Workplan for Revision</h3>
+              <p style={{ fontSize: "13px", color: "#646f79", marginTop: "4px", marginBottom: 0 }}>Please provide feedback for the employee</p>
             </div>
             <div style={{ padding: "20px 24px" }}>
-              <label style={{ display: "block", fontSize: "11.5px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#8a97b8", marginBottom: "8px" }}>
+              <label style={{ display: "block", fontSize: "11.5px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#646f79", marginBottom: "8px" }}>
                 Feedback / Reason for Revision
               </label>
               <textarea
@@ -2017,29 +2082,29 @@ export function WorkplanSection({
                   width: "100%",
                   padding: "12px 14px",
                   borderRadius: "8px",
-                  border: "1px solid #dde5f5",
+                  border: "1px solid #e7e7e7",
                   fontSize: "13.5px",
-                  color: "#0f1f3d",
-                  background: "#f8faff",
+                  color: "#0d0d0d",
+                  background: "#f3f3f3",
                   resize: "vertical",
                   minHeight: "100px",
                   outline: "none",
-                  fontFamily: "DM Sans, sans-serif",
+                  fontFamily: "var(--ds-font-sans)",
                   lineHeight: 1.6,
                 }}
               />
             </div>
-            <div style={{ padding: "16px 24px", borderTop: "1px solid #dde5f5", display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+            <div style={{ padding: "16px 24px", borderTop: "1px solid #e7e7e7", display: "flex", justifyContent: "flex-end", gap: "10px" }}>
               <button
                 onClick={() => { setRejectModalOpen(false); setRejectReason(""); }}
                 style={{
                   padding: "9px 20px",
                   borderRadius: "8px",
                   background: "white",
-                  border: "1px solid #dde5f5",
+                  border: "1px solid #e7e7e7",
                   fontSize: "13px",
                   fontWeight: 500,
-                  color: "#4a5a82",
+                  color: "#646f79",
                   cursor: "pointer",
                 }}
               >
@@ -2051,11 +2116,11 @@ export function WorkplanSection({
                 style={{
                   padding: "9px 20px",
                   borderRadius: "8px",
-                  background: rejectReason.trim() && !approving ? "#e11d48" : "#e2e8f0",
+                  background: rejectReason.trim() && !approving ? "#b42318" : "#e7e7e7",
                   border: "none",
                   fontSize: "13px",
                   fontWeight: 600,
-                  color: rejectReason.trim() && !approving ? "white" : "#94a3b8",
+                  color: rejectReason.trim() && !approving ? "white" : "#646f79",
                   cursor: rejectReason.trim() && !approving ? "pointer" : "not-allowed",
                 }}
               >
@@ -2074,7 +2139,7 @@ export function WorkplanSection({
             aria-hidden
           />
           <div
-            className="fixed left-1/2 top-1/2 z-[9999] flex max-h-[75vh] w-[560px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[14px] border border-[#dde5f5] bg-white shadow-[0_8px_40px_rgba(15,31,61,0.18),0_0_0_1px_rgba(15,31,61,0.06)]"
+            className="fixed left-1/2 top-1/2 z-[9999] flex max-h-[75vh] w-[560px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-ds-panel border border-ds-border bg-white shadow-ds-dialog"
             role="dialog"
             aria-modal="true"
             aria-labelledby="picker-title"
@@ -2082,36 +2147,36 @@ export function WorkplanSection({
           >
             <div
               className={cn(
-                "flex items-center gap-3 border-b border-[#dde5f5] px-4 py-3.5",
-                picker.field === "corporate" ? "bg-[#eff6ff]" : "bg-[#f0fdfa]"
+                "flex items-center gap-3 border-b border-ds-border px-4 py-3.5",
+                picker.field === "corporate" ? "bg-ds-surface" : "bg-ds-surface"
               )}
             >
               <div
                 className={cn(
                   "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[8px] border",
                   picker.field === "corporate"
-                    ? "border-[#93c5fd] bg-[#dbeafe]"
-                    : "border-[#5eead4] bg-[#ccfbf1]"
+                    ? "border-ds-text-muted bg-ds-surface-hover"
+                    : "border-ds-border-strong bg-ds-surface"
                 )}
               >
                 {picker.field === "corporate" ? (
-                  <Briefcase className="h-4 w-4 text-[#1d4ed8]" />
+                  <Briefcase className="h-4 w-4 text-ds-info" />
                 ) : (
-                  <Layers className="h-4 w-4 text-[#0f766e]" />
+                  <Layers className="h-4 w-4 text-ds-accent-hover" />
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <p id="picker-title" className="font-['Sora'] text-[13px] font-bold text-[#0f1f3d]">
+                <p id="picker-title" className="font-sans text-[13px] font-semibold text-ds-text-primary">
                   {picker.field === "corporate" ? "Select corporate objective" : "Select divisional objective"}
                 </p>
-                <p className="text-[11px] text-[#8a97b8]">From the active operational plan</p>
+                <p className="text-[11px] text-ds-text-secondary">From the active operational plan</p>
               </div>
               <span
                 className={cn(
-                  "inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold",
+                  "inline-flex items-center rounded-ds-badge border px-3 py-1 text-[11px] font-semibold",
                   picker.field === "corporate"
-                    ? "border-[#93c5fd] bg-[#dbeafe] text-[#1d4ed8]"
-                    : "border-[#5eead4] bg-[#ccfbf1] text-[#0f766e]"
+                    ? "border-ds-text-muted bg-ds-surface-hover text-ds-info"
+                    : "border-ds-border-strong bg-ds-surface text-ds-accent-hover"
                 )}
               >
                 {picker.field === "corporate" ? "Corporate only" : "Divisional only"}
@@ -2119,56 +2184,56 @@ export function WorkplanSection({
               <button
                 type="button"
                 onClick={closePicker}
-                className="ml-2 text-[16px] text-[#8a97b8] transition-colors hover:text-[#0f1f3d]"
+                className="ml-2 text-[16px] text-ds-text-secondary transition-colors hover:text-ds-text-primary"
                 aria-label="Close"
               >
                 ✕
               </button>
             </div>
-            <div className="flex items-center gap-2 border-b border-[#dde5f5] bg-[#f8faff] px-4 py-2.5">
+            <div className="flex items-center gap-2 border-b border-ds-border bg-ds-surface px-4 py-2.5">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#8a97b8]" />
+                <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ds-text-secondary" />
                 <input
                   autoFocus
                   value={pickerSearch}
                   onChange={(e) => setPickerSearch(e.target.value)}
                   placeholder="Search by title, division, or ID…"
-                  className="w-full rounded-[8px] border border-[#dde5f5] bg-white py-2 pl-8 pr-3 text-[12px] outline-none focus:border-[#3b82f6]"
+                  className="w-full rounded-[8px] border border-ds-border bg-white py-2 pl-8 pr-3 text-[12px] outline-none focus:border-ds-accent"
                 />
               </div>
             </div>
-            <div className="border-b border-[#dde5f5] px-4 py-1.5">
-              <p className="text-[10px] font-semibold uppercase tracking-[.06em] text-[#8a97b8]">
+            <div className="border-b border-ds-border px-4 py-1.5">
+              <p className="text-[10px] font-semibold uppercase tracking-[.06em] text-ds-text-secondary">
                 {filtered.length} {picker.field} objective{filtered.length !== 1 ? "s" : ""}
                 {pickerSearch && ` matching "${pickerSearch}"`}
               </p>
             </div>
-            <div className="flex-1 divide-y divide-[#dde5f5] overflow-y-auto">
+            <div className="flex-1 divide-y divide-ds-border overflow-y-auto">
               {filtered.map((obj) => {
                 return (
                   <button
                     key={obj.id}
                     type="button"
                     onClick={() => selectObjective(obj)}
-                    className="flex w-full cursor-pointer items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-[#f8faff]"
+                    className="flex w-full cursor-pointer items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-ds-surface"
                   >
                     {obj.type === "CORPORATE" ? (
-                      <span className="mt-0.5 flex-shrink-0 inline-flex rounded-full border border-[#bfdbfe] bg-[#eff6ff] px-2 py-0.5 text-[9px] font-semibold text-[#1d4ed8]">Corp</span>
+                      <span className="mt-0.5 flex-shrink-0 inline-flex rounded-ds-badge border border-ds-border-strong bg-ds-surface px-2 py-0.5 text-[9px] font-semibold text-ds-info">Corp</span>
                     ) : (
-                      <span className="mt-0.5 flex-shrink-0 inline-flex rounded-full border border-[#99f6e4] bg-[#f0fdfa] px-2 py-0.5 text-[9px] font-semibold text-[#0f766e]">Div</span>
+                      <span className="mt-0.5 flex-shrink-0 inline-flex rounded-ds-badge border border-ds-border-strong bg-ds-surface px-2 py-0.5 text-[9px] font-semibold text-ds-accent-hover">Div</span>
                     )}
                     <div className="min-w-0 flex-1">
-                      <p className="text-[12px] font-semibold leading-snug text-[#0f1f3d]">{obj.title}</p>
+                      <p className="text-[12px] font-semibold leading-snug text-ds-text-primary">{obj.title}</p>
                       <div className="mt-1 flex items-center gap-2">
                         {obj.division && (
-                          <span className="text-[11px] text-[#4a5a82]">{obj.division}</span>
+                          <span className="text-[11px] text-ds-text-secondary">{obj.division}</span>
                         )}
-                        <span className="rounded-[4px] border border-[#dde5f5] bg-[#eef2fb] px-1.5 py-0.5 font-mono text-[10px] text-[#8a97b8]">
+                        <span className="rounded-[4px] border border-ds-border bg-ds-surface px-1.5 py-0.5 font-mono text-[10px] text-ds-text-secondary">
                           {obj.external_id}
                         </span>
                       </div>
                     </div>
-                    <ChevronRight className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#dde5f5]" />
+                    <ChevronRight className="mt-0.5 h-4 w-4 flex-shrink-0 text-ds-border" />
                   </button>
                 );
               })}

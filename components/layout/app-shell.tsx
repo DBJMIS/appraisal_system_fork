@@ -13,7 +13,7 @@ export function AppShell({ children }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex h-screen w-full overflow-hidden" style={{ backgroundColor: "var(--surface)" }}>
+    <div className="flex h-screen w-full overflow-hidden bg-ds-background">
       {/* Desktop sidebar */}
       <div className="hidden lg:block">
         <Sidebar />
@@ -22,7 +22,7 @@ export function AppShell({ children }: AppShellProps) {
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-40 bg-ds-overlay lg:hidden"
           aria-hidden
           onClick={() => setSidebarOpen(false)}
         />
@@ -40,7 +40,7 @@ export function AppShell({ children }: AppShellProps) {
       {/* Main content */}
       <div className="flex flex-1 flex-col min-w-0">
         <TopNav onMenuClick={() => setSidebarOpen((o) => !o)} />
-        <main className="flex-1 overflow-auto p-6 md:p-8" style={{ backgroundColor: "var(--surface)" }}>
+        <main className="flex-1 overflow-auto bg-ds-background p-6 md:p-8">
           {children}
         </main>
       </div>

@@ -211,45 +211,45 @@ export default function Admin360QuestionBankPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f0f4ff]">
+    <div className="min-h-screen bg-ds-surface">
       <div className="mx-auto max-w-7xl px-5 pb-12 pt-8 sm:px-6 lg:px-8">
         <div className="mb-5 flex items-start justify-between gap-3">
           <div>
-            <h1 className="text-[22px] font-semibold text-[#0f2044]">360 Question Bank</h1>
-            <p className="mt-1 text-[13px] text-[#64748b]">Manage feedback questions by reviewer type</p>
+            <h1 className="text-ds-page-title text-ds-text-primary">360 Question Bank</h1>
+            <p className="mt-1 text-[13px] text-ds-text-secondary">Manage feedback questions by reviewer type</p>
           </div>
           <div className="flex items-center gap-2">
             <Link
               href="/admin"
-              className="rounded-lg border border-[#dde5f5] bg-white px-3 py-2 text-xs font-semibold text-[#4a5a82] hover:bg-[#f8fafc]"
+              className="rounded-lg border border-ds-border bg-white px-3 py-2 text-xs font-semibold text-ds-text-secondary hover:bg-ds-surface"
             >
               Back to HR Administration
             </Link>
             <button
               type="button"
               onClick={() => setShowAddModal(true)}
-              className="rounded-lg bg-[#0d9488] px-3 py-2 text-xs font-semibold text-white hover:bg-[#0f766e]"
+              className="rounded-lg bg-ds-accent px-3 py-2 text-xs font-semibold text-white hover:bg-ds-accent-hover"
             >
               + Add question
             </button>
           </div>
         </div>
 
-        {error && <div className="mb-4 rounded-lg border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-sm text-[#b91c1c]">{error}</div>}
-        {success && <div className="mb-4 rounded-lg border border-[#bbf7d0] bg-[#f0fdf4] px-4 py-3 text-sm text-[#166534]">{success}</div>}
+        {error && <div className="mb-4 rounded-lg border border-ds-error-border bg-ds-error-subtle px-4 py-3 text-sm text-ds-error">{error}</div>}
+        {success && <div className="mb-4 rounded-lg border border-ds-success-border bg-ds-success-subtle px-4 py-3 text-sm text-ds-success">{success}</div>}
 
-        <div className="mb-4 rounded-2xl border border-[#e8edf8] bg-white p-4 shadow-sm">
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#8a97b8]">Rating scale</p>
+        <div className="mb-4 rounded-ds-panel border border-ds-border bg-white p-4">
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-ds-text-secondary">Rating scale</p>
           <div className="flex flex-wrap gap-2">
             {scale.map((s) => (
               <span
                 key={s.id}
-                className="inline-flex items-center rounded-full border border-[#dbeafe] bg-[#eff6ff] px-3 py-1 text-xs font-semibold text-[#1d4ed8]"
+                className="inline-flex items-center rounded-ds-badge border border-ds-surface-hover bg-ds-surface px-3 py-1 text-xs font-semibold text-ds-info"
               >
                 {s.value} {s.label}
               </span>
             ))}
-            {scale.length === 0 && <span className="text-xs text-[#94a3b8]">No rating scale configured.</span>}
+            {scale.length === 0 && <span className="text-xs text-ds-text-secondary">No rating scale configured.</span>}
           </div>
         </div>
 
@@ -260,10 +260,10 @@ export default function Admin360QuestionBankPage() {
               type="button"
               onClick={() => setActiveType(t)}
               className={cn(
-                "rounded-full border px-3 py-1.5 text-xs font-semibold",
+                "rounded-ds-badge border px-3 py-1.5 text-xs font-semibold",
                 activeType === t
-                  ? "border-[#0d9488] bg-[#ecfdf5] text-[#065f46]"
-                  : "border-[#dde5f5] bg-white text-[#64748b] hover:bg-[#f8fafc]"
+                  ? "border-ds-accent bg-ds-success-subtle text-ds-success"
+                  : "border-ds-border bg-white text-ds-text-secondary hover:bg-ds-surface"
               )}
             >
               {prettyType(t)}
@@ -273,16 +273,16 @@ export default function Admin360QuestionBankPage() {
 
         <div className="space-y-4">
           {loading ? (
-            <div className="rounded-2xl border border-[#e8edf8] bg-white p-4 text-sm text-[#8a97b8]">Loading questions…</div>
+            <div className="rounded-ds-panel border border-ds-border bg-white p-4 text-sm text-ds-text-secondary">Loading questions…</div>
           ) : grouped.length === 0 ? (
-            <div className="rounded-2xl border border-[#e8edf8] bg-white p-6 text-sm text-[#8a97b8]">
+            <div className="rounded-ds-panel border border-ds-border bg-white p-6 text-sm text-ds-text-secondary">
               No questions for this reviewer type.
             </div>
           ) : (
             grouped.map(([category, list]) => (
-              <section key={category} className="rounded-2xl border border-[#e8edf8] bg-white shadow-sm">
-                <div className="flex items-center justify-between border-b border-[#eef2fb] px-4 py-3">
-                  <h2 className="text-sm font-semibold text-[#0f2044]">Category: {category}</h2>
+              <section key={category} className="rounded-ds-panel border border-ds-border bg-white">
+                <div className="flex items-center justify-between border-b border-ds-surface px-4 py-3">
+                  <h2 className="text-sm font-semibold text-ds-text-primary">Category: {category}</h2>
                   <button
                     type="button"
                     onClick={() => {
@@ -290,12 +290,12 @@ export default function Admin360QuestionBankPage() {
                       setAddCategoryMode("existing");
                       setAddCategory(category);
                     }}
-                    className="text-xs font-semibold text-[#0d9488] hover:text-[#0f766e]"
+                    className="text-xs font-semibold text-ds-accent hover:text-ds-accent-hover"
                   >
                     + Add to category
                   </button>
                 </div>
-                <div className="divide-y divide-[#eef2fb]">
+                <div className="divide-y divide-ds-surface">
                   {list.map((q) => {
                     const isEditing = editingId === q.id;
                     return (
@@ -313,15 +313,15 @@ export default function Admin360QuestionBankPage() {
                         className="flex items-center justify-between gap-3 px-4 py-3"
                       >
                         <div className="min-w-0 flex-1">
-                          <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[#8a97b8]">#{q.sort_order}</div>
+                          <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-ds-text-secondary">#{q.sort_order}</div>
                           {isEditing ? (
                             <input
                               value={draftText[q.id] ?? q.question_text}
                               onChange={(e) => setDraftText((prev) => ({ ...prev, [q.id]: e.target.value }))}
-                              className="w-full rounded-lg border border-[#dde5f5] px-3 py-2 text-sm text-[#0f2044]"
+                              className="w-full rounded-lg border border-ds-border px-3 py-2 text-sm text-ds-text-primary"
                             />
                           ) : (
-                            <p className="text-sm text-[#0f2044]">{q.question_text}</p>
+                            <p className="text-sm text-ds-text-primary">{q.question_text}</p>
                           )}
                         </div>
                         <div className="flex items-center gap-2">
@@ -331,7 +331,7 @@ export default function Admin360QuestionBankPage() {
                                 type="button"
                                 disabled={saving}
                                 onClick={() => void onSaveInline(q.id)}
-                                className="rounded-lg bg-[#0d9488] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#0f766e] disabled:opacity-60"
+                                className="rounded-lg bg-ds-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-ds-accent-hover disabled:opacity-60"
                               >
                                 Save
                               </button>
@@ -341,7 +341,7 @@ export default function Admin360QuestionBankPage() {
                                   setEditingId(null);
                                   setDraftText((prev) => ({ ...prev, [q.id]: q.question_text }));
                                 }}
-                                className="rounded-lg border border-[#dde5f5] bg-white px-3 py-1.5 text-xs font-semibold text-[#4a5a82]"
+                                className="rounded-lg border border-ds-border bg-white px-3 py-1.5 text-xs font-semibold text-ds-text-secondary"
                               >
                                 Cancel
                               </button>
@@ -354,7 +354,7 @@ export default function Admin360QuestionBankPage() {
                                   setEditingId(q.id);
                                   setDraftText((prev) => ({ ...prev, [q.id]: q.question_text }));
                                 }}
-                                className="rounded-lg border border-[#dde5f5] bg-white px-3 py-1.5 text-xs font-semibold text-[#4a5a82]"
+                                className="rounded-lg border border-ds-border bg-white px-3 py-1.5 text-xs font-semibold text-ds-text-secondary"
                               >
                                 Edit
                               </button>
@@ -362,7 +362,7 @@ export default function Admin360QuestionBankPage() {
                                 type="button"
                                 disabled={saving}
                                 onClick={() => void onDelete(q.id)}
-                                className="rounded-lg border border-[#fecaca] bg-[#fff1f2] px-3 py-1.5 text-xs font-semibold text-[#b91c1c] disabled:opacity-60"
+                                className="rounded-lg border border-ds-error-border bg-ds-error-subtle px-3 py-1.5 text-xs font-semibold text-ds-error disabled:opacity-60"
                               >
                                 Delete
                               </button>
@@ -380,13 +380,13 @@ export default function Admin360QuestionBankPage() {
 
         {showAddModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4" onClick={() => setShowAddModal(false)}>
-            <div className="w-full max-w-lg rounded-2xl border border-[#dde5f5] bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
-              <h3 className="text-base font-semibold text-[#0f2044]">Add question</h3>
-              <p className="mt-1 text-xs text-[#8a97b8]">Reviewer type is locked to {prettyType(activeType)}.</p>
+            <div className="w-full max-w-lg rounded-ds-panel border border-ds-border bg-white p-5 shadow-ds-popover" onClick={(e) => e.stopPropagation()}>
+              <h3 className="text-base font-semibold text-ds-text-primary">Add question</h3>
+              <p className="mt-1 text-xs text-ds-text-secondary">Reviewer type is locked to {prettyType(activeType)}.</p>
 
               <div className="mt-4 space-y-3">
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-[#64748b]">Category mode</label>
+                  <label className="mb-1 block text-xs font-semibold text-ds-text-secondary">Category mode</label>
                   <div className="flex gap-2">
                     <button
                       type="button"
@@ -394,8 +394,8 @@ export default function Admin360QuestionBankPage() {
                       className={cn(
                         "rounded-lg border px-3 py-1.5 text-xs font-semibold",
                         addCategoryMode === "existing"
-                          ? "border-[#0d9488] bg-[#ecfdf5] text-[#065f46]"
-                          : "border-[#dde5f5] bg-white text-[#64748b]"
+                          ? "border-ds-accent bg-ds-success-subtle text-ds-success"
+                          : "border-ds-border bg-white text-ds-text-secondary"
                       )}
                     >
                       Existing
@@ -406,8 +406,8 @@ export default function Admin360QuestionBankPage() {
                       className={cn(
                         "rounded-lg border px-3 py-1.5 text-xs font-semibold",
                         addCategoryMode === "new"
-                          ? "border-[#0d9488] bg-[#ecfdf5] text-[#065f46]"
-                          : "border-[#dde5f5] bg-white text-[#64748b]"
+                          ? "border-ds-accent bg-ds-success-subtle text-ds-success"
+                          : "border-ds-border bg-white text-ds-text-secondary"
                       )}
                     >
                       New category
@@ -417,11 +417,11 @@ export default function Admin360QuestionBankPage() {
 
                 {addCategoryMode === "existing" ? (
                   <div>
-                    <label className="mb-1 block text-xs font-semibold text-[#64748b]">Category</label>
+                    <label className="mb-1 block text-xs font-semibold text-ds-text-secondary">Category</label>
                     <select
                       value={addCategory}
                       onChange={(e) => setAddCategory(e.target.value)}
-                      className="w-full rounded-lg border border-[#dde5f5] px-3 py-2 text-sm"
+                      className="w-full rounded-lg border border-ds-border px-3 py-2 text-sm"
                     >
                       <option value="">Select category…</option>
                       {categories.map((c) => (
@@ -433,23 +433,23 @@ export default function Admin360QuestionBankPage() {
                   </div>
                 ) : (
                   <div>
-                    <label className="mb-1 block text-xs font-semibold text-[#64748b]">New category</label>
+                    <label className="mb-1 block text-xs font-semibold text-ds-text-secondary">New category</label>
                     <input
                       value={addNewCategory}
                       onChange={(e) => setAddNewCategory(e.target.value)}
                       placeholder="e.g. Reliability"
-                      className="w-full rounded-lg border border-[#dde5f5] px-3 py-2 text-sm"
+                      className="w-full rounded-lg border border-ds-border px-3 py-2 text-sm"
                     />
                   </div>
                 )}
 
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-[#64748b]">Question text</label>
+                  <label className="mb-1 block text-xs font-semibold text-ds-text-secondary">Question text</label>
                   <textarea
                     value={addQuestionText}
                     onChange={(e) => setAddQuestionText(e.target.value)}
                     rows={4}
-                    className="w-full rounded-lg border border-[#dde5f5] px-3 py-2 text-sm"
+                    className="w-full rounded-lg border border-ds-border px-3 py-2 text-sm"
                   />
                 </div>
               </div>
@@ -458,7 +458,7 @@ export default function Admin360QuestionBankPage() {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="rounded-lg border border-[#dde5f5] bg-white px-3 py-2 text-xs font-semibold text-[#4a5a82]"
+                  className="rounded-lg border border-ds-border bg-white px-3 py-2 text-xs font-semibold text-ds-text-secondary"
                 >
                   Cancel
                 </button>
@@ -466,7 +466,7 @@ export default function Admin360QuestionBankPage() {
                   type="button"
                   onClick={() => void onCreate()}
                   disabled={saving}
-                  className="rounded-lg bg-[#0d9488] px-3 py-2 text-xs font-semibold text-white hover:bg-[#0f766e] disabled:opacity-60"
+                  className="rounded-lg bg-ds-accent px-3 py-2 text-xs font-semibold text-white hover:bg-ds-accent-hover disabled:opacity-60"
                 >
                   {saving ? "Saving…" : "Add question"}
                 </button>

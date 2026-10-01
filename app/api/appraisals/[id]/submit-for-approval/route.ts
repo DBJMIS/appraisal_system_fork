@@ -4,7 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { transitionStatus } from "@/lib/appraisal-workflow";
 import { allowAppraisalTestBypass } from "@/lib/appraisal-test-bypass";
 import { isAppraisalStatus } from "@/types/appraisal";
-import { fetchCompletionReport } from "@/lib/appraisal-completion";
+import { fetchCompletionReport } from "@/lib/appraisal-completion-report";
 import { notifyEmployee, notifyManager } from "@/lib/notifications";
 import { resolveManagerAccessForAppraisal } from "@/lib/appraisal-manager-access";
 

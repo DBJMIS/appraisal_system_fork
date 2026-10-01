@@ -56,12 +56,12 @@ export function SelectTrigger({ children, className, id }: SelectTriggerProps) {
       type="button"
       onClick={() => setOpen(!open)}
       className={cn(
-        "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+        "flex h-10 w-full items-center justify-between rounded-ds-control border border-ds-border-control bg-ds-background px-3 py-2 text-sm text-ds-text-primary ring-offset-ds-background transition-colors duration-100 placeholder:text-ds-text-muted hover:border-ds-text-secondary focus:outline-none focus-visible:border-ds-focus focus-visible:ring-1 focus-visible:ring-ds-focus disabled:cursor-not-allowed disabled:bg-ds-surface disabled:opacity-60",
         className
       )}
     >
       {children}
-      <ChevronDown className="h-4 w-4 opacity-50" />
+      <ChevronDown className="h-4 w-4 text-ds-text-secondary" aria-hidden="true" />
     </button>
   );
 }
@@ -148,7 +148,7 @@ export function SelectContent({ children, className }: SelectContentProps) {
         minWidth: "8rem",
       }}
       className={cn(
-        "z-[9999] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95",
+        "z-[9999] overflow-hidden rounded-ds-popover border border-ds-border bg-ds-surface-elevated text-ds-text-primary shadow-ds-popover animate-in fade-in-0 zoom-in-95 duration-150",
         className
       )}
     >
@@ -178,8 +178,8 @@ export function SelectItem({ value, children, className }: SelectItemProps) {
         setOpen(false);
       }}
       className={cn(
-        "relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-        isSelected && "bg-accent text-accent-foreground",
+        "relative flex w-full cursor-pointer select-none items-center rounded-[4px] py-1.5 pl-8 pr-2 text-sm text-ds-text-primary outline-none transition-colors duration-100 hover:bg-ds-surface focus:bg-ds-surface",
+        isSelected && "bg-ds-surface font-medium",
         className
       )}
     >

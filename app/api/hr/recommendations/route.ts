@@ -1,21 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { getCurrentUser } from "@/lib/auth";
+import { requireHrOrAdmin } from "@/lib/route-guards";
 
 /**
  * PATCH /api/hr/recommendations
  * Body: { appraisalId: string, hrFinalDecision: string }
  * Updates appraisal_recommendations with HR decision. hr_decided_by from current user.
+ * HR or admin only.
  */
 export async function PATCH(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
-    if (!user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+    const guard = await requireHrOrAdmin();
+    if (!guard.ok) return guard.response;
+    const user = guard.user;
 
     const body = await request.json();
     const appraisalId = body?.appraisalId;
@@ -32,7 +29,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!url || !key) {
       return NextResponse.json(
         { error: "Server configuration error" },

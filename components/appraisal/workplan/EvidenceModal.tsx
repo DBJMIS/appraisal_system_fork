@@ -255,19 +255,19 @@ export function EvidenceModal({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {subtitle && (
-            <p className="text-sm text-[#8a97b8]">{subtitle}</p>
+            <p className="text-sm text-ds-text-secondary">{subtitle}</p>
           )}
         </DialogHeader>
 
         {error && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+          <div className="rounded-lg border border-ds-error-border bg-ds-error-subtle px-3 py-2 text-sm text-ds-error">
             {error}
           </div>
         )}
 
         {isEmployee ? (
           <>
-            <div className="flex gap-1 border-b border-[#dde5f5]">
+            <div className="flex gap-1 border-b border-ds-border">
               {(["file", "link", "note"] as const).map((tab) => (
                 <button
                   key={tab}
@@ -275,8 +275,8 @@ export function EvidenceModal({
                   onClick={() => setActiveTab(tab)}
                   className={`rounded-t px-3 py-2 text-xs font-semibold capitalize ${
                     activeTab === tab
-                      ? "border border-b-0 border-[#dde5f5] bg-white text-[#0f1f3d]"
-                      : "text-[#8a97b8] hover:text-[#0f1f3d]"
+                      ? "border border-b-0 border-ds-border bg-white text-ds-text-primary"
+                      : "text-ds-text-secondary hover:text-ds-text-primary"
                   }`}
                 >
                   {tab === "file" ? "Upload file" : tab === "link" ? "Add link" : "Add note"}
@@ -289,7 +289,7 @@ export function EvidenceModal({
                 <div
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={handleDrop}
-                  className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-[#dde5f5] bg-[#f8faff] py-8 text-center"
+                  className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-ds-border bg-ds-surface py-8 text-center"
                 >
                   <input
                     type="file"
@@ -301,15 +301,15 @@ export function EvidenceModal({
                   />
                   <label
                     htmlFor="evidence-file-input"
-                    className="cursor-pointer text-sm text-[#0d9488] font-medium hover:underline"
+                    className="cursor-pointer text-sm text-ds-accent font-medium hover:underline"
                   >
                     Drop files or click to browse
                   </label>
-                  <p className="mt-1 text-[10px] text-[#8a97b8]">
+                  <p className="mt-1 text-[10px] text-ds-text-secondary">
                     PDF, Word, Excel, images, ZIP, TXT, CSV. Max 20MB each.
                   </p>
                   {fileError && (
-                    <p className="mt-1 text-xs text-red-600">{fileError}</p>
+                    <p className="mt-1 text-xs text-ds-error">{fileError}</p>
                   )}
                 </div>
                 {pendingFiles.length > 0 && (
@@ -317,16 +317,16 @@ export function EvidenceModal({
                     {pendingFiles.map((f, i) => (
                       <li
                         key={i}
-                        className="flex items-center justify-between rounded bg-[#f0fdfa] px-2 py-1.5 text-xs"
+                        className="flex items-center justify-between rounded bg-ds-surface px-2 py-1.5 text-xs"
                       >
                         <span className="truncate">{f.name}</span>
-                        <span className="text-[#8a97b8]">
+                        <span className="text-ds-text-secondary">
                           {(f.size / 1024).toFixed(1)} KB
                         </span>
                         <button
                           type="button"
                           onClick={() => removePending(i)}
-                          className="text-red-600 hover:underline"
+                          className="text-ds-error hover:underline"
                         >
                           Remove
                         </button>
@@ -336,7 +336,7 @@ export function EvidenceModal({
                 )}
                 {evidence.filter((e) => e.evidence_type === "FILE").length > 0 && (
                   <div>
-                    <p className="text-[10px] font-semibold uppercase text-[#8a97b8] mb-1">
+                    <p className="text-[10px] font-semibold uppercase text-ds-text-secondary mb-1">
                       Saved files
                     </p>
                     <ul className="space-y-1">
@@ -345,10 +345,10 @@ export function EvidenceModal({
                         .map((e) => (
                           <li
                             key={e.id}
-                            className="flex items-center justify-between rounded border border-[#dde5f5] px-2 py-1.5 text-xs"
+                            className="flex items-center justify-between rounded border border-ds-border px-2 py-1.5 text-xs"
                           >
                             <span className="truncate">{e.file_name ?? "File"}</span>
-                            <span className="text-[#8a97b8]">
+                            <span className="text-ds-text-secondary">
                               {e.file_size != null
                                 ? `${(e.file_size / 1024).toFixed(1)} KB`
                                 : ""}
@@ -357,7 +357,7 @@ export function EvidenceModal({
                               <button
                                 type="button"
                                 onClick={() => openItem(e)}
-                                className="text-[#0d9488] hover:opacity-80 p-0.5"
+                                className="text-ds-accent hover:opacity-80 p-0.5"
                                 title="Open"
                                 aria-label="Open"
                               >
@@ -367,7 +367,7 @@ export function EvidenceModal({
                                 <button
                                   type="button"
                                   onClick={() => deleteEvidence(e.id)}
-                                  className="text-red-600 hover:opacity-80 p-0.5"
+                                  className="text-ds-error hover:opacity-80 p-0.5"
                                   title="Delete"
                                   aria-label="Delete"
                                 >
@@ -415,13 +415,13 @@ export function EvidenceModal({
                       .map((e) => (
                         <li
                           key={e.id}
-                          className="flex items-center justify-between rounded border border-[#dde5f5] px-2 py-1.5 text-xs"
+                          className="flex items-center justify-between rounded border border-ds-border px-2 py-1.5 text-xs"
                         >
                           <a
                             href={e.link_url ?? "#"}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-[#0d9488] hover:underline truncate"
+                            className="text-ds-accent hover:underline truncate"
                           >
                             {e.link_title || e.link_url || "Link"}
                           </a>
@@ -429,7 +429,7 @@ export function EvidenceModal({
                             <button
                               type="button"
                               onClick={() => deleteEvidence(e.id)}
-                              className="text-red-600 hover:opacity-80 shrink-0 p-0.5"
+                              className="text-ds-error hover:opacity-80 shrink-0 p-0.5"
                               title="Delete"
                               aria-label="Delete"
                             >
@@ -451,7 +451,7 @@ export function EvidenceModal({
                     id="note-text"
                     value={noteText}
                     onChange={(e) => setNoteText(e.target.value)}
-                    className="mt-1 w-full rounded border border-[#dde5f5] px-2 py-1.5 text-sm min-h-[80px]"
+                    className="mt-1 w-full rounded border border-ds-border px-2 py-1.5 text-sm min-h-[80px]"
                     placeholder="Add a note..."
                   />
                   <Button
@@ -470,14 +470,14 @@ export function EvidenceModal({
                       .map((e) => (
                         <li
                           key={e.id}
-                          className="rounded border border-[#dde5f5] px-2 py-1.5 text-xs"
+                          className="rounded border border-ds-border px-2 py-1.5 text-xs"
                         >
                           <p className="whitespace-pre-wrap">{e.note_text}</p>
                           {e.can_delete && (
                             <button
                               type="button"
                               onClick={() => deleteEvidence(e.id)}
-                              className="mt-1 text-red-600 hover:opacity-80 p-0.5 inline-flex"
+                              className="mt-1 text-ds-error hover:opacity-80 p-0.5 inline-flex"
                               title="Delete"
                               aria-label="Delete"
                             >
@@ -491,8 +491,8 @@ export function EvidenceModal({
               </div>
             )}
 
-            <div className="flex items-center justify-between border-t border-[#dde5f5] pt-3">
-              <span className="text-[10px] text-[#8a97b8]">
+            <div className="flex items-center justify-between border-t border-ds-border pt-3">
+              <span className="text-[10px] text-ds-text-secondary">
                 Files are linked to this objective only
               </span>
               <div className="flex gap-2">
@@ -511,7 +511,7 @@ export function EvidenceModal({
         ) : (
           <>
             {evidence.length === 0 ? (
-              <p className="py-4 text-sm text-[#8a97b8]">No evidence attached</p>
+              <p className="py-4 text-sm text-ds-text-secondary">No evidence attached</p>
             ) : (
               <ul className="space-y-2 py-2">
                 {evidence.map((e) => {
@@ -528,11 +528,11 @@ export function EvidenceModal({
                   return (
                     <li
                       key={e.id}
-                      className="flex items-center justify-between rounded border border-[#dde5f5] px-3 py-2 text-sm"
+                      className="flex items-center justify-between rounded border border-ds-border px-3 py-2 text-sm"
                     >
                       <div className="flex items-center gap-2 min-w-0 flex-1">
                         <span
-                          className="h-8 w-8 shrink-0 rounded flex items-center justify-center text-xs font-bold"
+                          className="h-8 w-8 shrink-0 rounded flex items-center justify-center text-xs font-semibold"
                           style={{
                             background: icon.bg,
                             border: `1px solid ${icon.border}`,
@@ -556,7 +556,7 @@ export function EvidenceModal({
                           }
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="shrink-0 text-[#0d9488] hover:underline ml-2"
+                          className="shrink-0 text-ds-accent hover:underline ml-2"
                         >
                           <span className="sr-only">Open</span>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -571,7 +571,7 @@ export function EvidenceModal({
                 })}
               </ul>
             )}
-            <div className="flex justify-end border-t border-[#dde5f5] pt-3">
+            <div className="flex justify-end border-t border-ds-border pt-3">
               <Button onClick={onClose}>Close</Button>
             </div>
           </>

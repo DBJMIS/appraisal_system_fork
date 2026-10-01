@@ -38,7 +38,7 @@ export function CheckInsLink({ appraisalId, isManager, isEmployee, isHR }: Check
     <Link href={`/appraisals/${appraisalId}/checkins`}>
       <button
         type="button"
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-[8px] border border-[#dde5f5] text-[11px] font-semibold text-[#4a5a82] hover:border-[#0d9488] hover:text-[#0d9488] transition-colors"
+        className="inline-flex items-center gap-2 px-4 py-2 rounded-[8px] border border-ds-border text-[11px] font-semibold text-ds-text-secondary hover:border-ds-accent hover:text-ds-accent transition-colors"
       >
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M9 11l3 3L22 4" />
@@ -46,7 +46,7 @@ export function CheckInsLink({ appraisalId, isManager, isEmployee, isHR }: Check
         </svg>
         Check-ins
         {openCheckInCount > 0 && (
-          <span className="w-4 h-4 rounded-full bg-[#d97706] text-white text-[9px] font-bold flex items-center justify-center flex-shrink-0">
+          <span className="w-4 h-4 rounded-full bg-ds-warning text-white text-[9px] font-semibold flex items-center justify-center flex-shrink-0">
             {openCheckInCount}
           </span>
         )}

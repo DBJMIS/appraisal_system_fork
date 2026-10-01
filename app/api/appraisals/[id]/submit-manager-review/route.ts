@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { getCurrentUser } from "@/lib/auth";
 import { isAppraisalStatus } from "@/types/appraisal";
 import { allowAppraisalTestBypass } from "@/lib/appraisal-test-bypass";
-import { fetchCompletionReport } from "@/lib/appraisal-completion";
+import { fetchCompletionReport } from "@/lib/appraisal-completion-report";
 import { notifyEmployee } from "@/lib/notifications";
 import { resolveManagerAccessForAppraisal } from "@/lib/appraisal-manager-access";
 

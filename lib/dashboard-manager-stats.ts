@@ -3,6 +3,7 @@ import type { AuthUser } from "@/lib/auth";
 import { getDirectReports } from "@/lib/dynamics-org-service";
 import type { ReportingStructure } from "@/lib/reporting-structure";
 import { getReportingStructureFromDynamics } from "@/lib/reporting-structure";
+import { loadOfficialScoreTotals } from "@/lib/official-scores";
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -130,16 +131,7 @@ export async function fetchManagerDashboardStats(
     .map((a) => a.id)
     .filter(Boolean) as string[];
 
-  const scores = new Map<string, number>();
-  if (appIds.length > 0) {
-    const { data: sc } = await supabase
-      .from("appraisal_section_scores")
-      .select("appraisal_id, total_score")
-      .in("appraisal_id", appIds);
-    for (const row of sc ?? []) {
-      if (row.total_score != null) scores.set(row.appraisal_id, Number(row.total_score));
-    }
-  }
+  const scores = await loadOfficialScoreTotals(supabase, appIds);
 
   const direct_reports: ManagerDirectReportRow[] = reportIds.map((rid) => {
     const emp = empById.get(rid);

@@ -101,8 +101,8 @@ export default function EQTakePage() {
     return (
       <main className="flex-1 overflow-auto p-6 md:p-8" style={{ backgroundColor: "var(--surface)" }}>
         <div className="mx-auto max-w-3xl pt-20 flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-[#0d9488] border-t-transparent rounded-full animate-spin" />
-          <p className="text-[13px] text-[#8a97b8]">Loading your progress...</p>
+          <div className="w-8 h-8 border-2 border-ds-accent border-t-transparent rounded-full animate-spin" />
+          <p className="text-[13px] text-ds-text-secondary">Loading your progress...</p>
         </div>
       </main>
     );
@@ -113,7 +113,7 @@ export default function EQTakePage() {
       <div className="space-y-5">
         <Link
           href="/development"
-          className="inline-flex items-center gap-1.5 text-[13px] text-[#8a97b8] hover:text-[#0f1f3d] transition-colors"
+          className="inline-flex items-center gap-1.5 text-[13px] text-ds-text-secondary hover:text-ds-text-primary transition-colors"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
             <polyline points="15 18 9 12 15 6" />
@@ -123,52 +123,52 @@ export default function EQTakePage() {
 
         <div className="flex items-start gap-4">
           <div
-            className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl"
-            style={{ background: "linear-gradient(135deg, #eff6ff, #dbeafe)" }}
+            className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-ds-panel"
+            style={{ background: "#f3f3f3" }}
           >
-            <svg className="h-6 w-6 text-[#3b82f6]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <svg className="h-6 w-6 text-ds-accent" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <circle cx="12" cy="12" r="10" />
               <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
               <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
           </div>
           <div className="pt-0.5">
-            <h1 className="font-['Sora'] text-[22px] font-extrabold text-[#0f1f3d]">EQ Assessment</h1>
-            <p className="text-[13px] text-[#8a97b8] mt-1">
+            <h1 className="text-ds-page-title text-ds-text-primary">EQ Assessment</h1>
+            <p className="text-[13px] text-ds-text-secondary mt-1">
               {totalAnswered}/50 answered · Page {page + 1} of {PAGES}
             </p>
           </div>
         </div>
 
-        <div className="rounded-[14px] border border-[#dde5f5] shadow-[0_2px_12px_rgba(15,31,61,.07),0_0_1px_rgba(15,31,61,.1)] bg-white overflow-hidden">
-          <div className="px-6 py-3 bg-[#f8faff] border-b border-[#dde5f5] flex flex-wrap items-center gap-x-4 gap-y-1">
-            <span className="text-[10px] font-bold uppercase tracking-[.07em] text-[#8a97b8]">Scale:</span>
+        <div className="rounded-ds-panel border border-ds-border bg-white overflow-hidden">
+          <div className="px-6 py-3 bg-ds-surface border-b border-ds-border flex flex-wrap items-center gap-x-4 gap-y-1">
+            <span className="text-[10px] font-semibold uppercase tracking-[.07em] text-ds-text-secondary">Scale:</span>
             {[1, 2, 3, 4, 5].map((n) => (
-              <span key={n} className="text-[11px] text-[#8a97b8]">
-                <strong className="text-[#0f1f3d] font-semibold">{n}</strong> = {SCALE_LABELS[n]}
+              <span key={n} className="text-[11px] text-ds-text-secondary">
+                <strong className="text-ds-text-primary font-semibold">{n}</strong> = {SCALE_LABELS[n]}
               </span>
             ))}
           </div>
 
           <div className="px-6 pt-4 pb-2">
             <div className="flex justify-between items-center mb-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-[.07em] text-[#8a97b8]">Overall progress</span>
-              <span className="text-[11px] font-semibold text-[#0f1f3d]">{totalAnswered}/50</span>
+              <span className="text-[10px] font-semibold uppercase tracking-[.07em] text-ds-text-secondary">Overall progress</span>
+              <span className="text-[11px] font-semibold text-ds-text-primary">{totalAnswered}/50</span>
             </div>
-            <div className="h-[4px] bg-[#f0f4ff] rounded-full overflow-hidden">
-              <div className="h-full bg-[#0d9488] rounded-full transition-all" style={{ width: `${(totalAnswered / 50) * 100}%` }} />
+            <div className="h-[4px] bg-ds-surface rounded-full overflow-hidden">
+              <div className="h-full bg-ds-accent rounded-full transition-all" style={{ width: `${(totalAnswered / 50) * 100}%` }} />
             </div>
           </div>
 
-          <div className="divide-y divide-[#f0f4ff] px-6">
+          <div className="divide-y divide-ds-surface px-6">
             {pageQs.map((q) => (
               <div key={q.id} className="py-4">
                 <div className="flex items-start gap-3 mb-3">
-                  <span className="text-[11px] text-[#c0cce0] font-mono mt-0.5 w-5 shrink-0 text-right">{q.id}</span>
-                  <p className="text-[13.5px] text-[#0f1f3d] leading-relaxed flex-1">{q.text}</p>
+                  <span className="text-[11px] text-ds-border-strong font-mono mt-0.5 w-5 shrink-0 text-right">{q.id}</span>
+                  <p className="text-[13.5px] text-ds-text-primary leading-relaxed flex-1">{q.text}</p>
                   <span
                     title={COMPETENCY_LABELS[q.competency]}
-                    className="text-[9px] font-bold uppercase tracking-wider text-[#8a97b8] shrink-0 mt-0.5 w-5 text-right"
+                    className="text-[9px] font-semibold uppercase tracking-wider text-ds-text-secondary shrink-0 mt-0.5 w-5 text-right"
                   >
                     {q.competency}
                   </span>
@@ -178,26 +178,26 @@ export default function EQTakePage() {
                     <button
                       key={val}
                       onClick={() => setResponses((prev) => ({ ...prev, [q.id]: val }))}
-                      className={`w-9 h-9 rounded-full border-2 text-[12px] font-bold transition-all ${
+                      className={`w-9 h-9 rounded-full border-2 text-[12px] font-semibold transition-all ${
                         responses[q.id] === val
-                          ? "bg-[#0d9488] border-[#0d9488] text-white"
-                          : "border-[#dde5f5] text-[#8a97b8] hover:border-[#0d9488] hover:text-[#0d9488] bg-white"
+                          ? "bg-ds-accent border-ds-accent text-white"
+                          : "border-ds-border text-ds-text-secondary hover:border-ds-accent hover:text-ds-accent bg-white"
                       }`}
                     >
                       {val}
                     </button>
                   ))}
-                  {responses[q.id] && <span className="text-[11px] text-[#8a97b8] ml-1">{SCALE_LABELS[responses[q.id]]}</span>}
+                  {responses[q.id] && <span className="text-[11px] text-ds-text-secondary ml-1">{SCALE_LABELS[responses[q.id]]}</span>}
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="px-6 py-4 bg-[#f8faff] border-t border-[#dde5f5] flex items-center justify-between">
+          <div className="px-6 py-4 bg-ds-surface border-t border-ds-border flex items-center justify-between">
             <button
               onClick={() => setPage((p) => p - 1)}
               disabled={page === 0}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-[8px] border border-[#dde5f5] text-[12px] font-semibold text-[#8a97b8] hover:text-[#0f1f3d] hover:border-[#8a97b8] transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-white"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-[8px] border border-ds-border text-[12px] font-semibold text-ds-text-secondary hover:text-ds-text-primary hover:border-ds-text-secondary transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-white"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <polyline points="15 18 9 12 15 6" />
@@ -205,14 +205,14 @@ export default function EQTakePage() {
               Previous
             </button>
 
-            <span className="text-[10px] text-[#8a97b8]">{totalAnswered > 0 ? "Progress saved automatically" : ""}</span>
+            <span className="text-[10px] text-ds-text-secondary">{totalAnswered > 0 ? "Progress saved automatically" : ""}</span>
 
             <div className="flex gap-1.5 items-center">
               {Array.from({ length: PAGES }).map((_, i) => (
                 <div
                   key={i}
                   className={`rounded-full transition-all ${
-                    i < page ? "w-5 h-1.5 bg-[#0d9488]" : i === page ? "w-5 h-1.5 bg-[#0f1f3d]" : "w-1.5 h-1.5 bg-[#dde5f5]"
+                    i < page ? "w-5 h-1.5 bg-ds-accent" : i === page ? "w-5 h-1.5 bg-ds-text-primary" : "w-1.5 h-1.5 bg-ds-border"
                   }`}
                 />
               ))}
@@ -222,8 +222,8 @@ export default function EQTakePage() {
               <button
                 onClick={() => setPage((p) => p + 1)}
                 disabled={!pageComplete}
-                className={`flex items-center gap-1.5 px-5 py-2 rounded-[8px] text-[12px] font-['Sora'] font-semibold transition-colors ${
-                  pageComplete ? "bg-[#0d9488] text-white hover:bg-[#0f766e]" : "bg-[#e8edf8] text-[#8a97b8] cursor-not-allowed"
+                className={`flex items-center gap-1.5 px-5 py-2 rounded-[8px] text-[12px] font-sans font-semibold transition-colors ${
+                  pageComplete ? "bg-ds-accent text-white hover:bg-ds-accent-hover" : "bg-ds-border text-ds-text-secondary cursor-not-allowed"
                 }`}
               >
                 Next
@@ -235,10 +235,10 @@ export default function EQTakePage() {
               <button
                 onClick={handleSubmit}
                 disabled={totalAnswered < 50 || submitting}
-                className={`flex items-center gap-2 px-5 py-2 rounded-[8px] text-[12px] font-['Sora'] font-semibold transition-colors ${
+                className={`flex items-center gap-2 px-5 py-2 rounded-[8px] text-[12px] font-sans font-semibold transition-colors ${
                   totalAnswered === 50 && !submitting
-                    ? "bg-[#0d9488] text-white hover:bg-[#0f766e]"
-                    : "bg-[#e8edf8] text-[#8a97b8] cursor-not-allowed"
+                    ? "bg-ds-accent text-white hover:bg-ds-accent-hover"
+                    : "bg-ds-border text-ds-text-secondary cursor-not-allowed"
                 }`}
               >
                 {submitting ? "Submitting…" : "Submit assessment"}
@@ -246,7 +246,7 @@ export default function EQTakePage() {
             )}
           </div>
 
-          {error && <p className="px-6 pb-4 text-[12px] text-red-500 text-center">{error}</p>}
+          {error && <p className="px-6 pb-4 text-[12px] text-ds-error text-center">{error}</p>}
         </div>
       </div>
     </main>

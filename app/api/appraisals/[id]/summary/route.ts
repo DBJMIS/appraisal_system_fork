@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getCurrentUser } from "@/lib/auth";
+import { hasOversightReadAccess } from "@/lib/appraisal-oversight";
 import { buildSummaryInput } from "@/lib/appraisal-summary-input";
 import { calcSummary } from "@/lib/summary-calc";
 
@@ -48,7 +49,7 @@ export async function GET(
     if (appErr || !appraisal) {
       return NextResponse.json({ error: "Appraisal not found" }, { status: 404 });
     }
-    if (!canAccessAppraisal(user, appraisal)) {
+    if (!canAccessAppraisal(user, appraisal) && !(await hasOversightReadAccess(user, appraisal))) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

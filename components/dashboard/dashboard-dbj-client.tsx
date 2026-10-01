@@ -8,16 +8,18 @@ import type { HrDashboardStats } from "@/lib/dashboard-hr-stats";
 import type { ManagerDashboardStats } from "@/lib/dashboard-manager-stats";
 import type { EmployeeDashboardStrip } from "@/lib/dashboard-employee-strip";
 import { DASHBOARD_WORKFLOW_ORDER } from "@/lib/dashboard-employee-strip";
+import { statusToneStyle, type StatusTone } from "@/lib/appraisal-status-display";
+import { avatarAccent } from "@/lib/avatar-accent";
 
-const NAVY = "#0f1f3d";
-const TEAL = "#0d9488";
-const SURFACE = "#f8faff";
-const BORDER = "#dde5f5";
-const MUTED = "#8a97b8";
+const NAVY = "#0d0d0d";
+const TEAL = "#0d0e10";
+const SURFACE = "#f3f3f3";
+const BORDER = "#e7e7e7";
+const MUTED = "#646f79";
 
 /** Accent left borders for insight cards (cycle); recommended-actions section uses red. */
-const AI_INSIGHT_ACCENTS = ["#0d9488", "#3b82f6", "#8b5cf6", "#f59e0b"] as const;
-const AI_RECOMMENDED_ACTION_ACCENT = "#ef4444";
+const AI_INSIGHT_ACCENTS = ["#0d0e10", "#0d0e10", "#3d5a78", "#8a5a00"] as const;
+const AI_RECOMMENDED_ACTION_ACCENT = "#b42318";
 
 type ParsedAiInsight = { title: string; body: string };
 
@@ -125,99 +127,57 @@ function parseHRAiInsights(raw: string | null): { insights: ParsedAiInsight[]; a
 
 type TopBarTone = "teal" | "navy" | "amber" | "green" | "red" | "blue" | "purple";
 
+type StatAccent = "coral" | "mint" | "lavender" | "amber";
+
+const STAT_ACCENT_DOT: Record<StatAccent, string> = {
+  coral: "bg-ds-coral",
+  mint: "bg-ds-mint",
+  lavender: "bg-ds-lavender",
+  amber: "bg-ds-amber",
+};
+
 function StatCardDbj(props: {
   label: string;
   value: React.ReactNode;
   sub: string;
   tone: TopBarTone;
+  accent?: StatAccent;
   valueSize?: "lg" | "md";
 }) {
-  const bar: Record<TopBarTone, string> = {
-    teal: TEAL,
-    navy: NAVY,
-    amber: "#f59e0b",
-    green: "#10b981",
-    red: "#ef4444",
-    blue: "#3b82f6",
-    purple: "#8b5cf6",
-  };
   return (
-    <div
-      style={{
-        background: "#fff",
-        border: `1px solid ${BORDER}`,
-        borderRadius: 14,
-        padding: "18px 20px",
-        position: "relative",
-        overflow: "hidden",
-      }}
-    >
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 3,
-          background: bar[props.tone],
-        }}
-      />
-      <div
-        style={{
-          fontSize: 10,
-          fontWeight: 700,
-          letterSpacing: "0.12em",
-          textTransform: "uppercase",
-          color: MUTED,
-          fontFamily: "'DM Sans', sans-serif",
-          marginBottom: 8,
-        }}
-      >
+    <div data-tone={props.tone} className="bg-ds-background px-5 py-4">
+      <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-ds-text-secondary">
+        {props.accent && <span aria-hidden="true" className={`h-1.5 w-1.5 shrink-0 rounded-full ${STAT_ACCENT_DOT[props.accent]}`} />}
         {props.label}
       </div>
       <div
-        className="font-display"
-        style={{
-          fontSize: props.valueSize === "md" ? 18 : 28,
-          fontWeight: 700,
-          color: NAVY,
-          lineHeight: 1.2,
-        }}
+        className={`font-semibold leading-[1.2] tabular-nums text-ds-text-primary ${props.valueSize === "md" ? "text-[18px]" : "text-[26px] tracking-[-0.01em]"}`}
       >
         {props.value}
       </div>
-      <div
-        style={{
-          fontSize: 11,
-          color: MUTED,
-          marginTop: 6,
-          fontFamily: "'DM Sans', sans-serif",
-        }}
-      >
-        {props.sub}
-      </div>
+      <div className="mt-1 text-xs text-ds-text-secondary">{props.sub}</div>
     </div>
   );
 }
 
-const STATUS_PILL_STYLES: Record<string, { bg: string; border: string; color: string }> = {
-  DRAFT: { bg: "#f8faff", border: BORDER, color: MUTED },
-  PENDING_APPROVAL: { bg: "#fff7ed", border: "#fed7aa", color: "#c2410c" },
-  SELF_ASSESSMENT: { bg: "#eff6ff", border: "#bfdbfe", color: "#1d4ed8" },
-  SUBMITTED: { bg: "#f0fdf4", border: "#bbf7d0", color: "#166534" },
-  MANAGER_REVIEW: { bg: "#fff7ed", border: "#fed7aa", color: "#c2410c" },
-  PENDING_SIGNOFF: { bg: "#fdf4ff", border: "#e9d5ff", color: "#7e22ce" },
-  HOD_REVIEW: { bg: "#ecfdf5", border: "#6ee7b7", color: "#065f46" },
-  HR_REVIEW: { bg: "#ecfdf5", border: "#6ee7b7", color: "#065f46" },
-  COMPLETE: { bg: "#f8faff", border: BORDER, color: MUTED },
+const STATUS_PILL_STYLES: Record<string, (typeof statusToneStyle)[StatusTone]> = {
+  DRAFT: statusToneStyle.neutral,
+  PENDING_APPROVAL: statusToneStyle.warning,
+  SELF_ASSESSMENT: statusToneStyle.progress,
+  SUBMITTED: statusToneStyle.success,
+  MANAGER_REVIEW: statusToneStyle.warning,
+  PENDING_SIGNOFF: statusToneStyle.warning,
+  HOD_REVIEW: statusToneStyle.warning,
+  HR_REVIEW: statusToneStyle.warning,
+  COMPLETE: statusToneStyle.success,
 };
 
+function PillDot({ color }: { color: string }) {
+  return <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: 9999, background: color, marginRight: 6, flexShrink: 0 }} />;
+}
+
 function StatusPill({ status }: { status: string }) {
-  const cfg = STATUS_PILL_STYLES[status] ?? {
-    bg: "#f0fdf4",
-    border: "#bbf7d0",
-    color: "#166534",
-  };
+  const cfg = STATUS_PILL_STYLES[status] ?? statusToneStyle.neutral;
   const label =
     status === "MANAGER_REVIEW"
       ? "Manager review"
@@ -232,15 +192,16 @@ function StatusPill({ status }: { status: string }) {
         display: "inline-flex",
         alignItems: "center",
         padding: "4px 10px",
-        borderRadius: 20,
+        borderRadius: 4,
         fontSize: 11,
         fontWeight: 600,
         background: cfg.bg,
         border: `1px solid ${cfg.border}`,
         color: cfg.color,
-        fontFamily: "'DM Sans', sans-serif",
+        fontFamily: "var(--ds-font-sans)",
       }}
     >
+      <PillDot color={cfg.dot} />
       {label}
     </span>
   );
@@ -275,34 +236,38 @@ function teamWorkflowStageNumber(status: string): number {
 
 const TEAM_STAGE_PILL: Record<
   string,
-  { bg: string; border: string; color: string; label: string }
+  (typeof statusToneStyle)[StatusTone] & { label: string }
 > = {
-  IN_PROGRESS: { bg: "#f0fdf4", border: "#bbf7d0", color: "#166534", label: "In progress" },
-  MANAGER_REVIEW: { bg: "#fff7ed", border: "#fed7aa", color: "#c2410c", label: "Manager review" },
-  SELF_ASSESSMENT: { bg: "#eff6ff", border: "#bfdbfe", color: "#1d4ed8", label: "Self assessment" },
-  PENDING_SIGNOFF: { bg: "#fdf4ff", border: "#e9d5ff", color: "#7e22ce", label: "Pending sign-off" },
-  HR_REVIEW: { bg: "#ecfdf5", border: "#6ee7b7", color: "#065f46", label: "HR review" },
-  COMPLETE: { bg: "#f8faff", border: BORDER, color: MUTED, label: "Complete" },
-  DRAFT: { bg: "#f8faff", border: BORDER, color: MUTED, label: "Draft" },
+  IN_PROGRESS: { ...statusToneStyle.progress, label: "In progress" },
+  PENDING_APPROVAL: { ...statusToneStyle.warning, label: "Pending approval" },
+  MANAGER_REVIEW: { ...statusToneStyle.warning, label: "Manager review" },
+  SELF_ASSESSMENT: { ...statusToneStyle.progress, label: "Self assessment" },
+  PENDING_SIGNOFF: { ...statusToneStyle.warning, label: "Pending sign-off" },
+  HR_REVIEW: { ...statusToneStyle.warning, label: "HR review" },
+  COMPLETE: { ...statusToneStyle.success, label: "Complete" },
+  DRAFT: { ...statusToneStyle.neutral, label: "Draft" },
 };
 
 function teamOverviewStagePill(status: string) {
   if (status === "PENDING_APPROVAL") {
-    const m = TEAM_STAGE_PILL.IN_PROGRESS;
+    const m = TEAM_STAGE_PILL.PENDING_APPROVAL;
     return (
       <span
         style={{
+          display: "inline-flex",
+          alignItems: "center",
           padding: "4px 12px",
-          borderRadius: 20,
+          borderRadius: 4,
           fontSize: 11,
           fontWeight: 600,
           background: m.bg,
           border: `1px solid ${m.border}`,
           color: m.color,
-          fontFamily: "'DM Sans', sans-serif",
+          fontFamily: "var(--ds-font-sans)",
           flexShrink: 0,
         }}
       >
+        <PillDot color={m.dot} />
         Pending approval
       </span>
     );
@@ -312,17 +277,20 @@ function teamOverviewStagePill(status: string) {
     return (
       <span
         style={{
+          display: "inline-flex",
+          alignItems: "center",
           padding: "4px 12px",
-          borderRadius: 20,
+          borderRadius: 4,
           fontSize: 11,
           fontWeight: 600,
           background: m.bg,
           border: `1px solid ${m.border}`,
           color: m.color,
-          fontFamily: "'DM Sans', sans-serif",
+          fontFamily: "var(--ds-font-sans)",
           flexShrink: 0,
         }}
       >
+        <PillDot color={m.dot} />
         {m.label}
       </span>
     );
@@ -332,17 +300,20 @@ function teamOverviewStagePill(status: string) {
     return (
       <span
         style={{
+          display: "inline-flex",
+          alignItems: "center",
           padding: "4px 12px",
-          borderRadius: 20,
+          borderRadius: 4,
           fontSize: 11,
           fontWeight: 600,
           background: m.bg,
           border: `1px solid ${m.border}`,
           color: m.color,
-          fontFamily: "'DM Sans', sans-serif",
+          fontFamily: "var(--ds-font-sans)",
           flexShrink: 0,
         }}
       >
+        <PillDot color={m.dot} />
         {m.label}
       </span>
     );
@@ -351,17 +322,20 @@ function teamOverviewStagePill(status: string) {
   return (
     <span
       style={{
+        display: "inline-flex",
+        alignItems: "center",
         padding: "4px 12px",
-        borderRadius: 20,
+        borderRadius: 4,
         fontSize: 11,
         fontWeight: 600,
         background: m.bg,
         border: `1px solid ${m.border}`,
         color: m.color,
-        fontFamily: "'DM Sans', sans-serif",
+        fontFamily: "var(--ds-font-sans)",
         flexShrink: 0,
       }}
     >
+      <PillDot color={m.dot} />
       {m.label}
     </span>
   );
@@ -390,17 +364,17 @@ function divisionScorePill(score: number | null) {
     return (
       <span style={{ fontSize: 12, color: MUTED }}>—</span>
     );
-  let bg = "#fff1f2";
-  let border = "#fecaca";
-  let color = "#dc2626";
+  let bg = "#fef2f2";
+  let border = "#fbd5d5";
+  let color = "#b42318";
   if (score >= 70) {
     bg = "#ecfdf5";
-    border = "#6ee7b7";
-    color = "#065f46";
+    border = "#bbf0d9";
+    color = "#2e7d4f";
   } else if (score >= 50) {
     bg = "#fffbeb";
-    border = "#fcd34d";
-    color = "#92400e";
+    border = "#fbe3a1";
+    color = "#8a5a00";
   }
   return (
     <span
@@ -434,8 +408,8 @@ function QuickActionsGrid({ pending360 }: { pending360: number }) {
       href: "/appraisals",
       title: "My Appraisals",
       subtitle: "View and complete your appraisals",
-      iconBg: "#e8f0fe",
-      iconColor: "#1a56cc",
+      iconBg: "#f1f4f7",
+      iconColor: "#0d0e10",
       icon: (
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -449,8 +423,8 @@ function QuickActionsGrid({ pending360 }: { pending360: number }) {
       href: "/feedback",
       title: "360 Feedback",
       subtitle: pending360 > 0 ? `${pending360} review(s) waiting` : "Peer and upward feedback",
-      iconBg: "#fdf4ff",
-      iconColor: "#7e22ce",
+      iconBg: "#f1f4f7",
+      iconColor: "#3d5a78",
       badge: pending360 > 0,
       icon: (
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -465,8 +439,8 @@ function QuickActionsGrid({ pending360 }: { pending360: number }) {
       href: "/workplans",
       title: "My Workplan",
       subtitle: "Goals and objectives",
-      iconBg: "#f0fdf4",
-      iconColor: "#166534",
+      iconBg: "#ecfdf5",
+      iconColor: "#2e7d4f",
       icon: (
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M9 11l3 3L22 4" />
@@ -478,8 +452,8 @@ function QuickActionsGrid({ pending360 }: { pending360: number }) {
       href: "/development",
       title: "Development Profile",
       subtitle: "Skills and career planning",
-      iconBg: "#fff7ed",
-      iconColor: "#c2410c",
+      iconBg: "#fffbeb",
+      iconColor: "#8a5a00",
       icon: (
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
@@ -494,7 +468,7 @@ function QuickActionsGrid({ pending360 }: { pending360: number }) {
       style={{
         background: "#fff",
         border: `1px solid ${BORDER}`,
-        borderRadius: 14,
+        borderRadius: 8,
         overflow: "hidden",
       }}
     >
@@ -508,14 +482,14 @@ function QuickActionsGrid({ pending360 }: { pending360: number }) {
           <Link
             key={t.href}
             href={t.href}
-            className="group flex items-center gap-[14px] rounded-[12px] border border-[#dde5f5] bg-white px-[18px] py-4 no-underline transition-all duration-150 hover:-translate-y-px hover:border-[#0d9488]"
+            className="group flex items-center gap-[14px] rounded-ds-panel border border-ds-border bg-white px-[18px] py-4 no-underline transition-all duration-150 hover:border-ds-accent"
           >
             <div style={{ position: "relative", flexShrink: 0 }}>
               <div
                 style={{
                   width: 36,
                   height: 36,
-                  borderRadius: 10,
+                  borderRadius: 8,
                   background: t.iconBg,
                   display: "flex",
                   alignItems: "center",
@@ -534,22 +508,22 @@ function QuickActionsGrid({ pending360 }: { pending360: number }) {
                     width: 8,
                     height: 8,
                     borderRadius: "50%",
-                    background: "#f59e0b",
+                    background: "#8a5a00",
                     border: "2px solid #fff",
                   }}
                 />
               )}
             </div>
             <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 500, color: NAVY, fontFamily: "'DM Sans', sans-serif" }}>
+              <div style={{ fontSize: 13, fontWeight: 500, color: NAVY, fontFamily: "var(--ds-font-sans)" }}>
                 {t.title}
               </div>
-              <div style={{ fontSize: 11, fontWeight: 400, color: MUTED, marginTop: 2, fontFamily: "'DM Sans', sans-serif" }}>
+              <div style={{ fontSize: 11, fontWeight: 400, color: MUTED, marginTop: 2, fontFamily: "var(--ds-font-sans)" }}>
                 {t.subtitle}
               </div>
             </div>
             <span
-              className="ml-auto shrink-0 text-base text-[#dde5f5] transition-colors group-hover:text-[#0d9488]"
+              className="ml-auto shrink-0 text-base text-ds-border transition-colors group-hover:text-ds-accent"
             >
               →
             </span>
@@ -561,10 +535,10 @@ function QuickActionsGrid({ pending360 }: { pending360: number }) {
 }
 
 function scoreBandColor(score: number): string {
-  if (score >= 80) return "#10b981";
-  if (score >= 70) return "#0d9488";
-  if (score >= 50) return "#f59e0b";
-  return "#ef4444";
+  if (score >= 80) return "#2e7d4f";
+  if (score >= 70) return "#0d0e10";
+  if (score >= 50) return "#8a5a00";
+  return "#b42318";
 }
 
 function RecentScoresCard({
@@ -577,7 +551,7 @@ function RecentScoresCard({
       style={{
         background: "#fff",
         border: `1px solid ${BORDER}`,
-        borderRadius: 14,
+        borderRadius: 8,
         overflow: "hidden",
       }}
     >
@@ -599,14 +573,14 @@ function RecentScoresCard({
           <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
             {rows.map((r) => {
               const pct = r.total_score != null ? Math.min(100, Math.max(0, r.total_score)) : 0;
-              const fill = r.total_score != null ? scoreBandColor(r.total_score) : "#e2e8f0";
+              const fill = r.total_score != null ? scoreBandColor(r.total_score) : "#e7e7e7";
               return (
                 <li
                   key={r.appraisal_id}
                   style={{
                     background: SURFACE,
                     border: `1px solid ${BORDER}`,
-                    borderRadius: 10,
+                    borderRadius: 8,
                     padding: "14px 16px",
                     marginBottom: 8,
                     display: "flex",
@@ -615,7 +589,7 @@ function RecentScoresCard({
                   }}
                 >
                   <div style={{ width: 140, flexShrink: 0 }}>
-                    <div className="font-display" style={{ fontSize: 13, fontWeight: 700, color: NAVY }}>
+                    <div className="font-display" style={{ fontSize: 13, fontWeight: 600, color: NAVY }}>
                       {r.cycle_name}
                     </div>
                     <div style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>
@@ -626,7 +600,7 @@ function RecentScoresCard({
                     <div
                       style={{
                         height: 6,
-                        background: "#f0f4fa",
+                        background: "#f3f3f3",
                         borderRadius: 3,
                         overflow: "hidden",
                       }}
@@ -645,7 +619,7 @@ function RecentScoresCard({
                     className="font-display"
                     style={{
                       fontSize: 22,
-                      fontWeight: 700,
+                      fontWeight: 600,
                       color: r.total_score != null ? fill : MUTED,
                       flexShrink: 0,
                       minWidth: 56,
@@ -681,7 +655,7 @@ function TeamOverviewDirectReports({
             style={{
               background: "#fff",
               border: `1px solid ${BORDER}`,
-              borderLeft: isMgrRev ? "3px solid #f59e0b" : `1px solid ${BORDER}`,
+              borderLeft: isMgrRev ? "3px solid #8a5a00" : `1px solid ${BORDER}`,
               borderRadius: isMgrRev ? "0 12px 12px 0" : 12,
               padding: "14px 20px",
               display: "flex",
@@ -696,23 +670,22 @@ function TeamOverviewDirectReports({
                 width: 40,
                 height: 40,
                 borderRadius: "50%",
-                background: NAVY,
+                ...avatarAccent(r.full_name).style,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 fontSize: 13,
-                fontWeight: 700,
-                color: "#5eead4",
+                fontWeight: 600,
                 flexShrink: 0,
               }}
             >
               {initialsFromName(r.full_name)}
             </div>
             <div style={{ width: 200, flexShrink: 0, display: "flex", flexDirection: "column", gap: 2 }}>
-              <span className="font-display" style={{ fontSize: 14, fontWeight: 700, color: NAVY }}>
+              <span className="font-display" style={{ fontSize: 14, fontWeight: 600, color: NAVY }}>
                 {r.full_name}
               </span>
-              <span style={{ fontSize: 11, fontWeight: 400, color: MUTED, fontFamily: "'DM Sans', sans-serif" }}>
+              <span style={{ fontSize: 11, fontWeight: 400, color: MUTED, fontFamily: "var(--ds-font-sans)" }}>
                 {r.division_name ?? "—"}
               </span>
             </div>
@@ -721,10 +694,10 @@ function TeamOverviewDirectReports({
               style={{
                 flex: 1,
                 textAlign: "center",
-                fontFamily: "'Sora', sans-serif",
+                fontFamily: "var(--ds-font-sans)",
                 fontSize: 16,
-                fontWeight: 700,
-                color: r.total_score != null ? NAVY : "#dde5f5",
+                fontWeight: 600,
+                color: r.total_score != null ? NAVY : "#e7e7e7",
               }}
             >
               {r.total_score != null ? `${r.total_score}%` : "—"}
@@ -733,7 +706,7 @@ function TeamOverviewDirectReports({
               <div
                 style={{
                   height: 4,
-                  background: "#f0f4fa",
+                  background: "#f3f3f3",
                   borderRadius: 2,
                   overflow: "hidden",
                 }}
@@ -755,7 +728,7 @@ function TeamOverviewDirectReports({
                 fontSize: 11,
                 color: MUTED,
                 textAlign: "right",
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "var(--ds-font-sans)",
               }}
             >
               {formatRelativeTime(r.updated_at)}
@@ -774,7 +747,7 @@ function TeamOverviewDirectReports({
                     fontSize: 12,
                     fontWeight: 500,
                     textDecoration: "none",
-                    fontFamily: "'DM Sans', sans-serif",
+                    fontFamily: "var(--ds-font-sans)",
                   }}
                 >
                   {isMgrRev ? "Review" : "View"}
@@ -859,7 +832,7 @@ export function DashboardDbjClient({
       style={{
         background: "#fff",
         border: `1px solid ${BORDER}`,
-        borderRadius: 10,
+        borderRadius: 8,
         padding: "12px 20px",
         display: "flex",
         alignItems: "center",
@@ -873,26 +846,26 @@ export function DashboardDbjClient({
         <span
           style={{
             fontSize: 10,
-            fontWeight: 700,
+            fontWeight: 600,
             letterSpacing: "0.07em",
             textTransform: "uppercase",
             color: MUTED,
-            fontFamily: "'DM Sans', sans-serif",
+            fontFamily: "var(--ds-font-sans)",
           }}
         >
           My appraisal
         </span>
-        <span className="font-display" style={{ fontSize: 14, fontWeight: 700, color: NAVY }}>
+        <span className="font-display" style={{ fontSize: 14, fontWeight: 600, color: NAVY }}>
           {strip.full_name ?? "—"}
         </span>
         <StatusPill status={strip.status} />
-        <span className="font-display" style={{ fontSize: 20, fontWeight: 700, color: TEAL }}>
+        <span className="font-display" style={{ fontSize: 20, fontWeight: 600, color: TEAL }}>
           {strip.latestScore != null ? `${strip.latestScore}%` : "—"}
         </span>
       </div>
       <Link
         href="/appraisals"
-        style={{ fontSize: 12, color: TEAL, fontWeight: 500, fontFamily: "'DM Sans', sans-serif" }}
+        style={{ fontSize: 12, color: TEAL, fontWeight: 500, fontFamily: "var(--ds-font-sans)" }}
       >
         Go to my appraisal →
       </Link>
@@ -900,7 +873,7 @@ export function DashboardDbjClient({
   );
 
   return (
-    <div className="mx-auto max-w-7xl" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="mx-auto max-w-7xl" style={{ fontFamily: "var(--ds-font-sans)" }}>
       <div
         style={{
           display: "flex",
@@ -912,35 +885,11 @@ export function DashboardDbjClient({
         }}
       >
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
-            <div
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 10,
-                background: "#f5f3ff",
-                border: "1px solid #ddd6fe",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#7c3aed",
-              }}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="3" width="7" height="7" rx="1" />
-                <rect x="14" y="3" width="7" height="7" rx="1" />
-                <rect x="3" y="14" width="7" height="7" rx="1" />
-                <rect x="14" y="14" width="7" height="7" rx="1" />
-              </svg>
-            </div>
-            <div>
-              <h1 className="font-display" style={{ fontSize: 22, fontWeight: 700, color: NAVY }}>
-                Dashboard
-              </h1>
-              <p style={{ fontSize: 13, color: MUTED, marginTop: 2 }}>
-                DBJ Performance Appraisal Portal — overview
-              </p>
-            </div>
+          <div style={{ marginBottom: 6 }}>
+            <h1 className="m-0 text-ds-page-title text-ds-text-primary">Dashboard</h1>
+            <p className="m-0 mt-1 text-[13px] text-ds-text-secondary">
+              DBJ Performance Appraisal Portal — overview
+            </p>
           </div>
         </div>
         {isBoth && (
@@ -949,7 +898,7 @@ export function DashboardDbjClient({
               display: "flex",
               background: SURFACE,
               border: `1px solid ${BORDER}`,
-              borderRadius: 10,
+              borderRadius: 8,
               padding: 3,
               gap: 3,
             }}
@@ -962,7 +911,7 @@ export function DashboardDbjClient({
                 borderRadius: 8,
                 border: "none",
                 cursor: "pointer",
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "var(--ds-font-sans)",
                 fontSize: 13,
                 fontWeight: 500,
                 background: view === "org" ? NAVY : "transparent",
@@ -979,7 +928,7 @@ export function DashboardDbjClient({
                 borderRadius: 8,
                 border: "none",
                 cursor: "pointer",
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "var(--ds-font-sans)",
                 fontSize: 13,
                 fontWeight: 500,
                 background: view === "team" ? NAVY : "transparent",
@@ -997,7 +946,7 @@ export function DashboardDbjClient({
       {/* Employee */}
       {showEmployee && (
         <>
-          <div className="mb-5 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="mb-5 grid grid-cols-1 gap-px overflow-hidden rounded-ds-panel border border-ds-border bg-ds-border md:grid-cols-2 lg:grid-cols-4">
             <StatCardDbj
               label="My appraisal status"
               value={strip.stageLabel}
@@ -1013,12 +962,14 @@ export function DashboardDbjClient({
             />
             <StatCardDbj
               label="360 reviews pending"
+              accent="amber"
               value={strip.feedback_pending_count}
               sub="Reviews to complete"
               tone="amber"
             />
             <StatCardDbj
               label="Development profile"
+              accent="mint"
               value={`${strip.development_profile_percent}%`}
               sub="Complete profile"
               tone="purple"
@@ -1034,7 +985,7 @@ export function DashboardDbjClient({
       {/* Manager (team view only when isBoth + team; or pure manager) */}
       {showTeam && (
         <>
-          <div className="mb-5 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="mb-5 grid grid-cols-1 gap-px overflow-hidden rounded-ds-panel border border-ds-border bg-ds-border md:grid-cols-2 lg:grid-cols-4">
             <StatCardDbj
               label="My appraisal"
               value={strip.stageLabel}
@@ -1044,12 +995,14 @@ export function DashboardDbjClient({
             />
             <StatCardDbj
               label="Pending reviews"
+              accent="amber"
               value={mgr.pending_reviews}
               sub="Awaiting your review"
               tone="amber"
             />
             <StatCardDbj
               label="Team in progress"
+              accent="lavender"
               value={mgr.team_in_progress}
               sub="Active appraisals"
               tone="navy"
@@ -1066,7 +1019,7 @@ export function DashboardDbjClient({
             style={{
               background: "#fff",
               border: `1px solid ${BORDER}`,
-              borderRadius: 14,
+              borderRadius: 8,
               marginBottom: 20,
               overflow: "hidden",
             }}
@@ -1089,8 +1042,8 @@ export function DashboardDbjClient({
       {/* HR org */}
       {showOrg && isHR && !hrStats && (
         <div
-          className="mb-6 rounded-[14px] px-5 py-4"
-          style={{ background: "#fff1f2", border: "1px solid #fecaca", color: "#991b1b", fontSize: 13 }}
+          className="mb-6 rounded-ds-panel px-5 py-4"
+          style={{ background: "#fef2f2", border: "1px solid #fbd5d5", color: "#b42318", fontSize: 13 }}
         >
           Unable to load organisation metrics. Refresh the page or try again later.
         </div>
@@ -1098,7 +1051,7 @@ export function DashboardDbjClient({
 
       {showOrg && hrStats && (
         <>
-          <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="mb-4 grid grid-cols-1 gap-px overflow-hidden rounded-ds-panel border border-ds-border bg-ds-border md:grid-cols-2 lg:grid-cols-3">
             <StatCardDbj
               label="Total employees"
               value={hrStats.total_employees}
@@ -1107,20 +1060,23 @@ export function DashboardDbjClient({
             />
             <StatCardDbj
               label="Appraisals completed"
+              accent="mint"
               value={hrStats.appraisals_complete}
               sub="Status complete"
               tone="green"
             />
             <StatCardDbj
               label="Pending manager reviews"
+              accent="amber"
               value={hrStats.pending_manager_reviews}
               sub="Awaiting manager action"
               tone="amber"
             />
           </div>
-          <div className="mb-5 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="mb-5 grid grid-cols-1 gap-px overflow-hidden rounded-ds-panel border border-ds-border bg-ds-border md:grid-cols-2 lg:grid-cols-3">
             <StatCardDbj
               label="In progress"
+              accent="lavender"
               value={hrStats.in_progress_appraisals}
               sub="Non-draft, not complete"
               tone="navy"
@@ -1133,6 +1089,7 @@ export function DashboardDbjClient({
             />
             <StatCardDbj
               label="360 reviews active"
+              accent="lavender"
               value={hrStats.active_360_cycles}
               sub="Active feedback cycles"
               tone="red"
@@ -1143,7 +1100,7 @@ export function DashboardDbjClient({
             style={{
               background: "#fff",
               border: `1px solid ${BORDER}`,
-              borderRadius: 14,
+              borderRadius: 8,
               padding: "16px 20px",
               marginBottom: 20,
             }}
@@ -1171,7 +1128,7 @@ export function DashboardDbjClient({
                       padding: "10px 8px",
                       textAlign: "center",
                       cursor: "pointer",
-                      fontFamily: "'DM Sans', sans-serif",
+                      fontFamily: "var(--ds-font-sans)",
                     }}
                     className="pipeline-box"
                     onMouseEnter={(e) => {
@@ -1191,7 +1148,7 @@ export function DashboardDbjClient({
                   >
                     <div
                       className="pc font-display"
-                      style={{ fontSize: 16, fontWeight: 700, color: NAVY, lineHeight: 1.2 }}
+                      style={{ fontSize: 16, fontWeight: 600, color: NAVY, lineHeight: 1.2 }}
                     >
                       {count}
                     </div>
@@ -1219,7 +1176,7 @@ export function DashboardDbjClient({
               style={{
                 background: "#fff",
                 border: `1px solid ${BORDER}`,
-                borderRadius: 14,
+                borderRadius: 8,
                 padding: "18px 20px",
               }}
             >
@@ -1232,12 +1189,12 @@ export function DashboardDbjClient({
               />
               <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 14 }}>
                 {[
-                  { c: "#10b981", t: "Exceptional (90+)" },
-                  { c: "#0d9488", t: "Meets/exceeds (70–89)" },
-                  { c: "#f59e0b", t: "Approaching (40–69)" },
-                  { c: "#ef4444", t: "Below (0–39)" },
+                  { c: "#2e7d4f", t: "Exceptional (90+)" },
+                  { c: "#0d0e10", t: "Meets/exceeds (70–89)" },
+                  { c: "#8a5a00", t: "Approaching (40–69)" },
+                  { c: "#b42318", t: "Below (0–39)" },
                 ].map((x) => (
-                  <div key={x.t} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#374151" }}>
+                  <div key={x.t} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#0d0d0d" }}>
                     <span style={{ width: 10, height: 10, borderRadius: 2, background: x.c }} />
                     {x.t}
                   </div>
@@ -1249,7 +1206,7 @@ export function DashboardDbjClient({
               style={{
                 background: "#fff",
                 border: `1px solid ${BORDER}`,
-                borderRadius: 14,
+                borderRadius: 8,
                 padding: "18px 20px",
               }}
             >
@@ -1267,18 +1224,18 @@ export function DashboardDbjClient({
                       width: 28,
                       height: 28,
                       background: "#fffbeb",
-                      border: "1px solid #fcd34d",
+                      border: "1px solid #fbe3a1",
                       borderRadius: 8,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                     }}
                   >
-                    <span style={{ fontSize: 14, color: "#f59e0b", lineHeight: 1 }} aria-hidden>
+                    <span style={{ fontSize: 14, color: "#8a5a00", lineHeight: 1 }} aria-hidden>
                       ★
                     </span>
                   </div>
-                  <span className="font-display" style={{ fontFamily: "Sora, sans-serif", fontSize: 13, fontWeight: 700, color: NAVY }}>
+                  <span className="font-display" style={{ fontFamily: "var(--ds-font-sans)", fontSize: 13, fontWeight: 600, color: NAVY }}>
                     AI insights
                   </span>
                 </div>
@@ -1301,7 +1258,7 @@ export function DashboardDbjClient({
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 8,
-                    fontFamily: "'DM Sans', sans-serif",
+                    fontFamily: "var(--ds-font-sans)",
                   }}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1310,7 +1267,7 @@ export function DashboardDbjClient({
                   {aiLoading ? "Analysing…" : "Generate insights"}
                 </button>
               )}
-              {aiError && <p style={{ color: "#b91c1c", fontSize: 12, marginTop: 8 }}>{aiError}</p>}
+              {aiError && <p style={{ color: "#b42318", fontSize: 12, marginTop: 8 }}>{aiError}</p>}
               {aiLoading && (
                 <div style={{ marginTop: 12 }}>
                   {[0, 1, 2].map((i) => (
@@ -1319,8 +1276,8 @@ export function DashboardDbjClient({
                       className="hr-ai-insights-skeleton"
                       style={{
                         height: 60,
-                        background: "#f0f4fa",
-                        borderRadius: 10,
+                        background: "#f3f3f3",
+                        borderRadius: 8,
                         marginBottom: 8,
                       }}
                     />
@@ -1347,7 +1304,7 @@ export function DashboardDbjClient({
                           <div
                             style={{
                               fontSize: 12,
-                              fontWeight: 700,
+                              fontWeight: 600,
                               color: NAVY,
                               marginBottom: 3,
                             }}
@@ -1355,7 +1312,7 @@ export function DashboardDbjClient({
                             {ins.title}
                           </div>
                         ) : null}
-                        <div style={{ fontSize: 12, color: "#4b5563", lineHeight: 1.6 }}>{ins.body}</div>
+                        <div style={{ fontSize: 12, color: "#646f79", lineHeight: 1.6 }}>{ins.body}</div>
                       </div>
                     );
                   })}
@@ -1366,7 +1323,7 @@ export function DashboardDbjClient({
                   <div
                     style={{
                       fontSize: 10,
-                      fontWeight: 700,
+                      fontWeight: 600,
                       textTransform: "uppercase",
                       color: MUTED,
                       marginTop: 16,
@@ -1383,7 +1340,7 @@ export function DashboardDbjClient({
                         background: "#fff",
                         border: `1px solid ${BORDER}`,
                         borderLeft: `3px solid ${AI_RECOMMENDED_ACTION_ACCENT}`,
-                        borderRadius: 10,
+                        borderRadius: 8,
                         padding: "10px 14px",
                         display: "flex",
                         gap: 12,
@@ -1400,7 +1357,7 @@ export function DashboardDbjClient({
                           color: "#fff",
                           borderRadius: "50%",
                           fontSize: 10,
-                          fontWeight: 700,
+                          fontWeight: 600,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -1409,7 +1366,7 @@ export function DashboardDbjClient({
                       >
                         {i + 1}
                       </div>
-                      <div style={{ fontSize: 12, color: "#374151", lineHeight: 1.5 }}>{action}</div>
+                      <div style={{ fontSize: 12, color: "#0d0d0d", lineHeight: 1.5 }}>{action}</div>
                     </div>
                   ))}
                 </div>
@@ -1428,7 +1385,7 @@ export function DashboardDbjClient({
                       borderRadius: "0 10px 10px 0",
                       padding: "12px 16px",
                       fontSize: 12,
-                      color: "#4b5563",
+                      color: "#646f79",
                       lineHeight: 1.6,
                     }}
                   >
@@ -1443,7 +1400,7 @@ export function DashboardDbjClient({
               style={{
                 background: "#fff",
                 border: `1px solid ${BORDER}`,
-                borderRadius: 14,
+                borderRadius: 8,
                 overflow: "hidden",
               }}
             >
@@ -1463,7 +1420,7 @@ export function DashboardDbjClient({
                             textAlign: "left",
                             padding: "10px 16px",
                             fontSize: 10,
-                            fontWeight: 700,
+                            fontWeight: 600,
                             textTransform: "uppercase",
                             letterSpacing: "0.06em",
                             color: MUTED,
@@ -1479,15 +1436,15 @@ export function DashboardDbjClient({
                   <tbody>
                     {hrStats.division_breakdown.map((row) => (
                       <tr key={row.rowKey}>
-                        <td style={{ padding: "10px 16px", fontSize: 12, color: NAVY, borderTop: "1px solid #f0f4fa" }}>
+                        <td style={{ padding: "10px 16px", fontSize: 12, color: NAVY, borderTop: "1px solid #f3f3f3" }}>
                           {row.division}
                         </td>
-                        <td style={{ padding: "10px 16px", fontSize: 12, borderTop: "1px solid #f0f4fa" }}>{row.employees}</td>
-                        <td style={{ padding: "10px 16px", borderTop: "1px solid #f0f4fa" }}>
+                        <td style={{ padding: "10px 16px", fontSize: 12, borderTop: "1px solid #f3f3f3" }}>{row.employees}</td>
+                        <td style={{ padding: "10px 16px", borderTop: "1px solid #f3f3f3" }}>
                           {divisionScorePill(row.avgScore)}
                         </td>
-                        <td style={{ padding: "10px 16px", fontSize: 12, borderTop: "1px solid #f0f4fa" }}>{row.completed}</td>
-                        <td style={{ padding: "10px 16px", fontSize: 12, borderTop: "1px solid #f0f4fa" }}>
+                        <td style={{ padding: "10px 16px", fontSize: 12, borderTop: "1px solid #f3f3f3" }}>{row.completed}</td>
+                        <td style={{ padding: "10px 16px", fontSize: 12, borderTop: "1px solid #f3f3f3" }}>
                           {row.inProgress}
                         </td>
                       </tr>
@@ -1501,7 +1458,7 @@ export function DashboardDbjClient({
               style={{
                 background: "#fff",
                 border: `1px solid ${BORDER}`,
-                borderRadius: 14,
+                borderRadius: 8,
                 overflow: "hidden",
               }}
             >
@@ -1519,7 +1476,7 @@ export function DashboardDbjClient({
                       alignItems: "center",
                       gap: 12,
                       padding: "12px 16px",
-                      borderBottom: idx === hrStats.recent_activity.length - 1 ? "none" : "1px solid #f0f4fa",
+                      borderBottom: idx === hrStats.recent_activity.length - 1 ? "none" : "1px solid #f3f3f3",
                     }}
                   >
                     <div
@@ -1527,10 +1484,9 @@ export function DashboardDbjClient({
                         width: 30,
                         height: 30,
                         borderRadius: "50%",
-                        background: "#e8f0fe",
-                        color: "#1a56cc",
+                        ...avatarAccent(item.employeeName).style,
                         fontSize: 11,
-                        fontWeight: 700,
+                        fontWeight: 600,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",

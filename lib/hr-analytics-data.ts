@@ -1,9 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
+import { loadOfficialScoreTotals } from "@/lib/official-scores";
 
 /**
  * HR Analytics: aggregates for score distribution, division performance,
  * top performers, and improvement candidates. Uses closed/HR-completed appraisals
- * with section scores.
+ * with their official score (FINAL snapshot, else the legacy section score).
  */
 
 function getSupabase() {
@@ -77,14 +78,7 @@ export async function getHRAnalyticsData(
   }
 
   const appraisalIds = appraisals.map((a) => a.id);
-  const { data: scores } = await supabase
-    .from("appraisal_section_scores")
-    .select("appraisal_id, total_score")
-    .in("appraisal_id", appraisalIds);
-
-  const scoreByAppraisal = new Map(
-    (scores ?? []).map((s) => [s.appraisal_id, s.total_score != null ? Number(s.total_score) : null])
-  );
+  const scoreByAppraisal = await loadOfficialScoreTotals(supabase, appraisalIds);
 
   const employeeIds = [...new Set(appraisals.map((a) => a.employee_id))];
   const cycleIds = [...new Set(appraisals.map((a) => a.cycle_id))];

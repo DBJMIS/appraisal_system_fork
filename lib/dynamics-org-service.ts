@@ -151,6 +151,64 @@ export async function getDirectReports(employeeId: string): Promise<Xrm1Employee
   return results;
 }
 
+/**
+ * System user ids of the managers above an employee, nearest first, following the same
+ * _xrm1_manager_employee_id_value link as getManager. Stops at maxDepth, at a missing
+ * manager, or when a record repeats (circular reporting data).
+ */
+export async function getManagerChainSystemUserIds(
+  employeeSystemUserId: string,
+  maxDepth: number
+): Promise<string[]> {
+  if (!employeeSystemUserId?.trim() || maxDepth <= 0) return [];
+  const client = await createDataverseApiClient();
+  const fetchOne = async (filter: string): Promise<Xrm1Employee | null> => {
+    const res = await client.get<{ value?: Xrm1Employee[] }>(
+      `/${XRM_EMPLOYEES_ENTITY}?$filter=${encodeURIComponent(filter)}&$select=${encodeURIComponent(SELECT_FIELDS)}&$top=1`
+    );
+    return (res.data as { value?: Xrm1Employee[] } | undefined)?.value?.[0] ?? null;
+  };
+
+  let current = await fetchOne(`_xrm1_employee_user_id_value eq ${guidFilter(employeeSystemUserId)}`);
+  const seen = new Set<string>();
+  if (current?.xrm1_employeeid) seen.add(guidFilter(current.xrm1_employeeid).toLowerCase());
+  const chain: string[] = [];
+  for (let depth = 0; current && depth < maxDepth; depth++) {
+    const managerId: string | null = current._xrm1_manager_employee_id_value;
+    if (!managerId) break;
+    const key = guidFilter(managerId).toLowerCase();
+    if (seen.has(key)) break;
+    seen.add(key);
+    current = await fetchOne(`xrm1_employeeid eq ${guidFilter(managerId)}`);
+    if (!current) break;
+    if (current._xrm1_employee_user_id_value) chain.push(current._xrm1_employee_user_id_value);
+  }
+  return chain;
+}
+
+/** Direct reports for several managers in batched requests (same filter as getDirectReports). */
+export async function getDirectReportsForManagers(managerEmployeeIds: string[]): Promise<Xrm1Employee[]> {
+  const ids = [...new Set(managerEmployeeIds.map(guidFilter).filter(Boolean))];
+  if (ids.length === 0) return [];
+  const client = await createDataverseApiClient();
+  const results: Xrm1Employee[] = [];
+  const CHUNK = 20;
+  for (let i = 0; i < ids.length; i += CHUNK) {
+    const filter = ids
+      .slice(i, i + CHUNK)
+      .map((id) => `_xrm1_manager_employee_id_value eq ${id}`)
+      .join(" or ");
+    let nextUrl: string | null = `/${XRM_EMPLOYEES_ENTITY}?$filter=${encodeURIComponent(filter)}&$select=${encodeURIComponent(SELECT_FIELDS)}&$top=5000`;
+    while (nextUrl) {
+      const res = await client.get<{ value?: Xrm1Employee[]; "@odata.nextLink"?: string }>(nextUrl);
+      const data = res.data as { value?: Xrm1Employee[]; "@odata.nextLink"?: string } | undefined;
+      results.push(...(data?.value ?? []));
+      nextUrl = data?.["@odata.nextLink"] ?? null;
+    }
+  }
+  return results;
+}
+
 const XRM_DEPARTMENTS_ENTITY = process.env.DYNAMICS_XRM_DEPARTMENT_ENTITY ?? "xrm1_departments";
 const DEPARTMENT_SELECT = "xrm1_departmentid,_xrm1_department_manager_employee_id_value";
 

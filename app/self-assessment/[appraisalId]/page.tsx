@@ -271,7 +271,7 @@ export default function SelfAssessmentPage({
               Back to Appraisals
             </Link>
           </Button>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight">
+          <h1 className="mt-2 text-ds-page-title text-ds-text-primary">
             Self Assessment
           </h1>
           <p className="text-muted-foreground">
@@ -301,14 +301,14 @@ export default function SelfAssessmentPage({
       )}
 
       {saveSuccess && (
-        <Alert className="border-green-200 bg-green-50 text-green-900 dark:border-green-900 dark:bg-green-950/30 dark:text-green-100">
+        <Alert className="border-ds-success-border bg-ds-success-subtle text-ds-success dark:border-green-900 dark:bg-green-950/30 dark:text-green-100">
           <AlertTitle>Saved</AlertTitle>
           <AlertDescription>Your ratings have been saved.</AlertDescription>
         </Alert>
       )}
 
       {isSubmitted && (
-        <Alert className="border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-100">
+        <Alert className="border-ds-info-border bg-ds-info-subtle text-ds-info dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-100">
           <CheckCircle2 className="h-4 w-4" />
           <AlertTitle>Assessment submitted</AlertTitle>
           <AlertDescription>

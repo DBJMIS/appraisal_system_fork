@@ -36,18 +36,18 @@ export function CreateMissingClient({ employeeIds }: { employeeIds: string[] }) 
         onClick={run}
         disabled={running || employeeIds.length === 0}
         className="rounded-[8px] px-4 py-2 text-[13px] font-semibold text-white disabled:opacity-60"
-        style={{ background: "#d97706" }}
+        style={{ background: "#8a5a00" }}
       >
         {running ? "Creating…" : `Create missing appraisals (${employeeIds.length})`}
       </button>
 
       {result && (
-        <p className="text-[13px]" style={{ color: "#14532d" }}>
+        <p className="text-[13px]" style={{ color: "#2e7d4f" }}>
           Completed. Created {result.created}, skipped {result.skipped}.
         </p>
       )}
       {error && (
-        <p className="text-[13px]" style={{ color: "#991b1b" }}>
+        <p className="text-[13px]" style={{ color: "#b42318" }}>
           {error}
         </p>
       )}

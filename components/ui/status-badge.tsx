@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { statusToneClasses, type StatusTone } from "@/lib/appraisal-status-display";
 
 type Status = 
   | "draft" 
@@ -19,113 +20,46 @@ interface StatusBadgeProps {
   className?: string;
 }
 
-const statusConfig: Record<string, { bg: string; text: string; border: string; dot: string; label: string }> = {
-  DRAFT: { bg: "#f1f5f9", text: "#64748b", border: "#e2e8f0", dot: "#94a3b8", label: "Draft" },
-  PENDING_APPROVAL: { bg: "#fffbeb", text: "#92400e", border: "#fde68a", dot: "#f59e0b", label: "Pending Approval" },
-  SELF_ASSESSMENT: { bg: "#eff6ff", text: "#1d4ed8", border: "#bfdbfe", dot: "#3b82f6", label: "Self Assessment" },
-  SUBMITTED: { bg: "#f0fdf4", text: "#166534", border: "#bbf7d0", dot: "#22c55e", label: "Submitted" },
-  MANAGER_REVIEW: { bg: "#f3e8ff", text: "#6d28d9", border: "#ddd6fe", dot: "#7c3aed", label: "Manager Review" },
-  PENDING_SIGNOFF: { bg: "#fffbeb", text: "#92400e", border: "#fde68a", dot: "#f59e0b", label: "Pending Sign-off" },
-  HOD_REVIEW: { bg: "#fdf2f8", text: "#9d174d", border: "#fbcfe8", dot: "#ec4899", label: "HOD Review" },
-  HR_REVIEW: { bg: "#f0fdfa", text: "#0f766e", border: "#99f6e4", dot: "#0d9488", label: "HR Review" },
-  COMPLETE: { bg: "#f0fdf4", text: "#166534", border: "#bbf7d0", dot: "#22c55e", label: "Complete" },
-  draft: {
-    bg: "#f1f5f9",
-    text: "#64748b",
-    border: "#e2e8f0",
-    dot: "#94a3b8",
-    label: "Draft",
-  },
-  pending: {
-    bg: "#fffbeb",
-    text: "#92400e",
-    border: "#fde68a",
-    dot: "#f59e0b",
-    label: "Pending",
-  },
-  self_submitted: {
-    bg: "#fffbeb",
-    text: "#92400e",
-    border: "#fde68a",
-    dot: "#f59e0b",
-    label: "Self Submitted",
-  },
-  manager_in_review: {
-    bg: "#eff6ff",
-    text: "#1d4ed8",
-    border: "#bfdbfe",
-    dot: "#3b82f6",
-    label: "In Review",
-  },
-  manager_completed: {
-    bg: "#f0fdf4",
-    text: "#166534",
-    border: "#bbf7d0",
-    dot: "#22c55e",
-    label: "Manager Completed",
-  },
-  employee_acknowledged: {
-    bg: "#f0fdf4",
-    text: "#166534",
-    border: "#bbf7d0",
-    dot: "#22c55e",
-    label: "Acknowledged",
-  },
-  hr_in_review: {
-    bg: "#f5f3ff",
-    text: "#6d28d9",
-    border: "#ddd6fe",
-    dot: "#7c3aed",
-    label: "HR Review",
-  },
-  complete: {
-    bg: "#f0fdf4",
-    text: "#166534",
-    border: "#bbf7d0",
-    dot: "#22c55e",
-    label: "Complete",
-  },
-  closed: {
-    bg: "#f1f5f9",
-    text: "#64748b",
-    border: "#e2e8f0",
-    dot: "#94a3b8",
-    label: "Closed",
-  },
-  open: {
-    bg: "#f0fdf4",
-    text: "#166534",
-    border: "#bbf7d0",
-    dot: "#22c55e",
-    label: "Open",
-  },
+const toneClasses = statusToneClasses;
+
+const statusConfig: Record<string, { tone: StatusTone; label: string }> = {
+  DRAFT: { tone: "neutral", label: "Draft" },
+  PENDING_APPROVAL: { tone: "warning", label: "Pending Approval" },
+  SELF_ASSESSMENT: { tone: "progress", label: "Self Assessment" },
+  SUBMITTED: { tone: "success", label: "Submitted" },
+  MANAGER_REVIEW: { tone: "warning", label: "Manager Review" },
+  PENDING_SIGNOFF: { tone: "warning", label: "Pending Sign-off" },
+  HOD_REVIEW: { tone: "warning", label: "HOD Review" },
+  HR_REVIEW: { tone: "warning", label: "HR Review" },
+  COMPLETE: { tone: "success", label: "Complete" },
+  draft: { tone: "neutral", label: "Draft" },
+  pending: { tone: "warning", label: "Pending" },
+  self_submitted: { tone: "warning", label: "Self Submitted" },
+  manager_in_review: { tone: "warning", label: "In Review" },
+  manager_completed: { tone: "success", label: "Manager Completed" },
+  employee_acknowledged: { tone: "success", label: "Acknowledged" },
+  hr_in_review: { tone: "warning", label: "HR Review" },
+  complete: { tone: "success", label: "Complete" },
+  closed: { tone: "neutral", label: "Closed" },
+  open: { tone: "success", label: "Open" },
 };
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
   const config = statusConfig[status] ?? {
-    bg: "#f1f5f9",
-    text: "#64748b",
-    border: "#e2e8f0",
-    dot: "#94a3b8",
+    tone: "neutral" as const,
     label: status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
   };
+  const tone = toneClasses[config.tone];
 
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-semibold",
+        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-ds-badge border px-1.5 py-0.5 text-xs font-medium leading-4",
+        tone.badge,
         className
       )}
-      style={{
-        backgroundColor: config.bg,
-        color: config.text,
-        border: `1px solid ${config.border}`,
-      }}
     >
-      <span
-        className="h-[5px] w-[5px] rounded-full"
-        style={{ backgroundColor: config.dot }}
-      />
+      <span className={cn("h-1.5 w-1.5 rounded-full", tone.dot)} aria-hidden="true" />
       {config.label}
     </span>
   );

@@ -44,23 +44,23 @@ export default async function WorkplanApprovalsPage() {
             style={{
               width: "42px",
               height: "42px",
-              borderRadius: "12px",
-              background: "linear-gradient(135deg, #eff6ff, #dbeafe)",
+              borderRadius: "8px",
+              background: "#f3f3f3",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               flexShrink: 0,
-              color: "#3b82f6",
+              color: "#0d0e10",
             }}
           >
             <ClipboardCheckIcon />
           </div>
           <h1
             style={{
-              fontFamily: "Sora, sans-serif",
+              fontFamily: "var(--ds-font-sans)",
               fontSize: "24px",
-              fontWeight: 700,
-              color: "#0f1f3d",
+              fontWeight: 600,
+              color: "#0d0d0d",
               letterSpacing: "-0.02em",
               margin: 0,
             }}
@@ -71,7 +71,7 @@ export default async function WorkplanApprovalsPage() {
         <p
           style={{
             fontSize: "13.5px",
-            color: "#8a97b8",
+            color: "#646f79",
             marginTop: "2px",
             paddingLeft: "56px",
             margin: 0,
@@ -89,21 +89,21 @@ export default async function WorkplanApprovalsPage() {
           gap: "10px",
           marginBottom: "24px",
           padding: "16px 20px",
-          background: pending.length > 0 ? "#fffbeb" : "#f0fdf4",
-          border: `1px solid ${pending.length > 0 ? "#fde68a" : "#bbf7d0"}`,
-          borderRadius: "12px",
+          background: pending.length > 0 ? "#fffbeb" : "#ecfdf5",
+          border: `1px solid ${pending.length > 0 ? "#fbe3a1" : "#bbf0d9"}`,
+          borderRadius: "8px",
         }}
       >
         <div
           style={{
             width: "40px",
             height: "40px",
-            borderRadius: "10px",
-            background: pending.length > 0 ? "#fef3c7" : "#dcfce7",
+            borderRadius: "8px",
+            background: pending.length > 0 ? "#fffbeb" : "#ecfdf5",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            color: pending.length > 0 ? "#f59e0b" : "#22c55e",
+            color: pending.length > 0 ? "#8a5a00" : "#2e7d4f",
           }}
         >
           {pending.length > 0 ? (
@@ -118,10 +118,10 @@ export default async function WorkplanApprovalsPage() {
           )}
         </div>
         <div>
-          <div style={{ fontFamily: "Sora, sans-serif", fontSize: "20px", fontWeight: 700, color: "#0f1f3d" }}>
+          <div style={{ fontFamily: "var(--ds-font-sans)", fontSize: "20px", fontWeight: 600, color: "#0d0d0d" }}>
             {pending.length}
           </div>
-          <div style={{ fontSize: "13px", color: pending.length > 0 ? "#92400e" : "#166534" }}>
+          <div style={{ fontSize: "13px", color: pending.length > 0 ? "#8a5a00" : "#2e7d4f" }}>
             {pending.length === 1 ? "Workplan" : "Workplans"} awaiting your approval
           </div>
         </div>

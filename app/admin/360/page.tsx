@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { AssignReviewerModal } from "@/components/feedback/AssignReviewerModal";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
+import { avatarAccent } from "@/lib/avatar-accent";
 
 const ListIcon = () => (
   <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -81,14 +82,6 @@ interface EligibleEmployee {
   department_name?: string | null;
 }
 
-/** Deterministic soft background from string (e.g. employee id or name) */
-function avatarColor(id: string): string {
-  let n = 0;
-  for (let i = 0; i < id.length; i++) n += id.charCodeAt(i);
-  const hues = ["#e9d5ff", "#c7d2fe", "#bbf7d0", "#fde68a", "#fed7aa", "#fbcfe8"];
-  return hues[n % hues.length];
-}
-
 function getInitials(name: string, fallbackId?: string): string {
   const parts = name.trim().split(/\s+/);
   if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
@@ -110,33 +103,32 @@ function formatDueDate(date: string | null | undefined): string {
 function statusPillStyle(status: string, isCycle = false): React.CSSProperties {
   const s = (status || "").toLowerCase();
   if (isCycle) {
-    if (s === "active") return { background: "#f0fdf4", color: "#166534", border: "1px solid #bbf7d0" };
-    return { background: "#f1f5f9", color: "#64748b", border: "1px solid #e2e8f0" };
+    if (s === "active") return { background: "#ecfdf5", color: "#2e7d4f", border: "1px solid #bbf0d9" };
+    return { background: "#f3f3f3", color: "#646f79", border: "1px solid #e7e7e7" };
   }
-  if (s === "completed") return { background: "#f0fdf4", color: "#166534", border: "1px solid #bbf7d0" };
-  if (s === "in progress") return { background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe" };
-  if (s === "pending") return { background: "#fffbeb", color: "#b45309", border: "1px solid #fde68a" };
-  return { background: "#f1f5f9", color: "#64748b", border: "1px solid #e2e8f0" };
+  if (s === "completed") return { background: "#ecfdf5", color: "#2e7d4f", border: "1px solid #bbf0d9" };
+  if (s === "in progress") return { background: "#f5f3ff", color: "#6d28d9", border: "1px solid #e2d9fd" };
+  if (s === "pending") return { background: "#fffbeb", color: "#8a5a00", border: "1px solid #fbe3a1" };
+  return { background: "#f3f3f3", color: "#646f79", border: "1px solid #e7e7e7" };
 }
 
 function typePillStyle(type: string): React.CSSProperties {
   const t = (type || "").toUpperCase();
-  if (t === "SELF") return { background: "#f3e8ff", color: "#6b21a8", border: "1px solid #e9d5ff" };
-  if (t === "PEER") return { background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe" };
-  if (t === "DIRECT_REPORT") return { background: "#fce7f3", color: "#9d174d", border: "1px solid #fbcfe8" };
-  if (t === "MANAGER") return { background: "#ecfccb", color: "#365314", border: "1px solid #bef264" };
-  return { background: "#f1f5f9", color: "#64748b", border: "1px solid #e2e8f0" };
+  if (t === "SELF") return { background: "#f3f3f3", color: "#2b2d31", border: "1px solid #e7e7e7" };
+  if (t === "PEER") return { background: "#f3f3f3", color: "#2b2d31", border: "1px solid #e7e7e7" };
+  if (t === "DIRECT_REPORT") return { background: "#f3f3f3", color: "#2b2d31", border: "1px solid #e7e7e7" };
+  if (t === "MANAGER") return { background: "#f3f3f3", color: "#2b2d31", border: "1px solid #e7e7e7" };
+  return { background: "#f3f3f3", color: "#646f79", border: "1px solid #e7e7e7" };
 }
 
 function reviewerChipColor(status: string): string {
   const s = (status || "").toLowerCase();
-  if (s === "completed") return "#22c55e";
-  if (s === "in progress") return "#3b82f6";
-  if (s === "pending") return "#f59e0b";
-  return "#94a3b8";
+  if (s === "completed") return "#2e7d4f";
+  if (s === "in progress") return "#0d0e10";
+  if (s === "pending") return "#8a5a00";
+  return "#646f79";
 }
 
-const AVATAR_COLORS = ["#4f46e5", "#f59e0b", "#ef4444", "#10b981", "#3b82f6", "#8b5cf6"];
 
 /** Row-level aggregate from reviewer rows */
 function aggregateParticipantStatus(p: ParticipantAssignment): "Completed" | "In Progress" | "Pending" {
@@ -159,14 +151,14 @@ function aggregateParticipantStatus(p: ParticipantAssignment): "Completed" | "In
 function ParticipantRowStatusPill({ status }: { status: "Completed" | "In Progress" | "Pending" }) {
   const cfg =
     status === "Completed"
-      ? { dot: "bg-[#16a34a]", cls: "bg-[#dcfce7] text-[#16a34a]" }
+      ? { dot: "bg-ds-mint", cls: "bg-ds-success-subtle text-ds-success" }
       : status === "In Progress"
-        ? { dot: "bg-[#2563eb]", cls: "bg-[#dbeafe] text-[#2563eb]" }
-        : { dot: "bg-[#d97706]", cls: "bg-[#fef3c7] text-[#d97706]" };
+        ? { dot: "bg-ds-lavender", cls: "bg-ds-lavender-subtle text-ds-lavender-text" }
+        : { dot: "bg-ds-amber", cls: "bg-ds-warning-subtle text-ds-warning" };
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold",
+        "inline-flex items-center gap-1.5 rounded-ds-badge px-2.5 py-0.5 text-xs font-semibold",
         cfg.cls
       )}
     >
@@ -179,36 +171,36 @@ function ParticipantRowStatusPill({ status }: { status: "Completed" | "In Progre
 function StatusPill({ status }: { status: string }) {
   const normalized = (status || "").toUpperCase().replace(/\s+/g, "_");
   const map: Record<string, { label: string; className: string }> = {
-    SUBMITTED: { label: "Submitted", className: "bg-[#eff6ff] border-[#bfdbfe] text-[#1d4ed8]" },
-    IN_PROGRESS: { label: "In progress", className: "bg-[#fffbeb] border-[#fcd34d] text-[#92400e]" },
-    COMPLETED: { label: "Completed", className: "bg-[#ecfdf5] border-[#6ee7b7] text-[#065f46]" },
-    PENDING: { label: "Pending", className: "bg-[#f8faff] border-[#dde5f5] text-[#8a97b8]" },
-    NOT_STARTED: { label: "Not started", className: "bg-[#f8faff] border-[#dde5f5] text-[#8a97b8]" },
+    SUBMITTED: { label: "Submitted", className: "bg-ds-success-subtle border-ds-success-border text-ds-success" },
+    IN_PROGRESS: { label: "In progress", className: "bg-ds-lavender-subtle border-ds-lavender-border text-ds-lavender-text" },
+    COMPLETED: { label: "Completed", className: "bg-ds-success-subtle border-ds-success-border text-ds-success" },
+    PENDING: { label: "Pending", className: "bg-ds-surface border-ds-border text-ds-text-secondary" },
+    NOT_STARTED: { label: "Not started", className: "bg-ds-surface border-ds-border text-ds-text-secondary" },
   };
   const s = map[normalized] ?? map.PENDING;
   return (
-    <span className={cn("inline-flex items-center px-2.5 py-1 rounded-full border text-[10px] font-semibold", s.className)}>
+    <span className={cn("inline-flex items-center px-2.5 py-1 rounded-ds-badge border text-[10px] font-semibold", s.className)}>
       {s.label}
     </span>
   );
 }
 
 function scoreBarColor(score: number): string {
-  if (score >= 4) return "#22c55e";
-  if (score >= 3) return "#3b82f6";
-  return "#f59e0b";
+  if (score >= 4) return "#2e7d4f";
+  if (score >= 3) return "#0d0e10";
+  return "#8a5a00";
 }
 
 const thStyle: React.CSSProperties = {
   padding: "10px 16px",
   textAlign: "left",
   fontSize: "10.5px",
-  fontWeight: 700,
+  fontWeight: 600,
   letterSpacing: "0.07em",
   textTransform: "uppercase",
-  color: "#8a97b8",
-  background: "#f8faff",
-  borderBottom: "1px solid #dde5f5",
+  color: "#646f79",
+  background: "#f3f3f3",
+  borderBottom: "1px solid #e7e7e7",
   whiteSpace: "nowrap",
 };
 
@@ -216,7 +208,7 @@ const tdStyle: React.CSSProperties = {
   padding: "12px 16px",
   fontSize: "13.5px",
   verticalAlign: "middle",
-  borderBottom: "1px solid #dde5f5",
+  borderBottom: "1px solid #e7e7e7",
 };
 
 export default function Admin360Page() {
@@ -687,13 +679,13 @@ export default function Admin360Page() {
 
       <div className="animate-fade-up-delay-1 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
         <div className="relative w-full min-w-[260px] max-w-[320px] sm:w-80">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" aria-hidden />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ds-text-secondary" aria-hidden />
           <input
             type="search"
             placeholder="Search participants by name or department..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-xl border border-[#dde5f5] bg-white py-2.5 pl-10 pr-4 text-sm text-[#0f2044] outline-none transition focus:border-[#4ecca3] focus:ring-2 focus:ring-[#4ecca3]/20"
+            className="w-full rounded-ds-panel border border-ds-border bg-white py-2.5 pl-10 pr-4 text-sm text-ds-text-primary outline-none transition focus:border-ds-success focus:ring-2 focus:ring-[#2e7d4f]/20"
           />
         </div>
       </div>
@@ -705,15 +697,15 @@ export default function Admin360Page() {
             alignItems: "flex-start",
             gap: "12px",
             padding: "14px 16px",
-            borderRadius: "10px",
+            borderRadius: "8px",
             background: "#fef2f2",
-            border: "1px solid #fecaca",
+            border: "1px solid #fbd5d5",
             marginBottom: 0,
           }}
         >
           <div>
-            <div style={{ fontWeight: 600, fontSize: "13px", color: "#991b1b" }}>Error</div>
-            <div style={{ fontSize: "13px", color: "#b91c1b" }}>{error}</div>
+            <div style={{ fontWeight: 600, fontSize: "13px", color: "#b42318" }}>Error</div>
+            <div style={{ fontSize: "13px", color: "#b42318" }}>{error}</div>
           </div>
         </div>
       )}
@@ -724,15 +716,15 @@ export default function Admin360Page() {
             alignItems: "flex-start",
             gap: "12px",
             padding: "14px 16px",
-            borderRadius: "10px",
-            background: "#f0fdf4",
-            border: "1px solid #bbf7d0",
+            borderRadius: "8px",
+            background: "#ecfdf5",
+            border: "1px solid #bbf0d9",
             marginBottom: 0,
           }}
         >
           <div>
-            <div style={{ fontWeight: 600, fontSize: "13px", color: "#166534" }}>Success</div>
-            <div style={{ fontSize: "13px", color: "#15803d" }}>{success}</div>
+            <div style={{ fontWeight: 600, fontSize: "13px", color: "#2e7d4f" }}>Success</div>
+            <div style={{ fontSize: "13px", color: "#2e7d4f" }}>{success}</div>
           </div>
         </div>
       )}
@@ -740,11 +732,11 @@ export default function Admin360Page() {
       {loading ? (
         <div className="animate-fade-up-delay-2 flex flex-col gap-6">
             {[1, 2].map((card) => (
-              <div key={card} className="overflow-hidden rounded-2xl border border-[#e8edf8] bg-white shadow-sm">
-                <div className="h-16 animate-pulse bg-[#e2e8f0]" />
+              <div key={card} className="overflow-hidden rounded-ds-panel border border-ds-border bg-white">
+                <div className="h-16 animate-pulse bg-ds-border" />
                 <div className="flex flex-col gap-2 p-5">
                   {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-14 animate-pulse rounded-lg bg-[#e2e8f0]" />
+                    <div key={i} className="h-14 animate-pulse rounded-lg bg-ds-border" />
                   ))}
                 </div>
               </div>
@@ -753,7 +745,7 @@ export default function Admin360Page() {
         ) : cycles.length === 0 ? (
           <div className="animate-fade-up-delay-2">
             <div
-              className="rounded-[14px] bg-white"
+              className="rounded-ds-panel bg-white"
               style={{
                 boxShadow: "var(--shadow-card)",
                 border: "1px solid var(--border-color)",
@@ -793,46 +785,46 @@ export default function Admin360Page() {
               return (
                 <div
                   key={c.id}
-                  className="overflow-hidden rounded-2xl border border-[#e8edf8] bg-white shadow-sm"
+                  className="overflow-hidden rounded-ds-panel border border-ds-border bg-white"
                 >
-                  <div className="flex flex-col gap-3 border-b border-[#e8edf8] bg-[#f8faff] px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="flex flex-col gap-3 border-b border-ds-border bg-ds-surface px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-[15px] font-semibold text-[#0f2044]">
-                          <span className="mr-1 text-[#4ecca3]">●</span>
+                        <span className="text-[15px] font-semibold text-ds-text-primary">
+                          <span className="mr-1 text-ds-success">●</span>
                           {c.cycle_name}
                         </span>
                         {c.status === "Active" ? (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#dcfce7] px-2 py-0.5 text-xs font-semibold text-[#16a34a]">
-                            <span className="h-1.5 w-1.5 rounded-full bg-[#16a34a]" />
+                          <span className="inline-flex items-center gap-1.5 rounded-ds-badge bg-ds-success-subtle px-2 py-0.5 text-xs font-semibold text-ds-success">
+                            <span className="h-1.5 w-1.5 rounded-full bg-ds-mint" />
                             Active
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f1f5f9] px-2 py-0.5 text-xs font-semibold text-[#64748b]">
+                          <span className="inline-flex items-center gap-1.5 rounded-ds-badge bg-ds-surface px-2 py-0.5 text-xs font-semibold text-ds-text-secondary">
                             {c.status}
                           </span>
                         )}
                       </div>
-                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[#94a3b8]">
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-ds-text-secondary">
                         <span className="inline-flex items-center gap-1">
                           <Calendar className="h-3.5 w-3.5 shrink-0" aria-hidden />
                           Due {formatDueDate(c.end_date)}
                         </span>
                         {assignments != null && (
-                          <span className="text-[#94a3b8]">
+                          <span className="text-ds-text-secondary">
                             · {participantCount} participant{participantCount !== 1 ? "s" : ""}
                           </span>
                         )}
                       </div>
                       {!isCardLoading && assignments != null && (
                         <div className="mt-2 flex flex-wrap items-center gap-2">
-                          <span className="rounded-full bg-[#ccfbf1] px-2 py-0.5 text-xs font-semibold text-[#0f766e]">
+                          <span className="rounded-ds-badge bg-ds-surface px-2 py-0.5 text-xs font-semibold text-ds-accent-hover">
                             {completed} completed
                           </span>
-                          <span className="rounded-full bg-[#dbeafe] px-2 py-0.5 text-xs font-semibold text-[#2563eb]">
+                          <span className="rounded-ds-badge bg-ds-surface-hover px-2 py-0.5 text-xs font-semibold text-ds-accent">
                             {inProgress} in progress
                           </span>
-                          <span className="rounded-full bg-[#fef3c7] px-2 py-0.5 text-xs font-semibold text-[#d97706]">
+                          <span className="rounded-ds-badge bg-ds-warning-subtle px-2 py-0.5 text-xs font-semibold text-ds-warning">
                             {pending + notStarted} pending
                           </span>
                         </div>
@@ -845,7 +837,7 @@ export default function Admin360Page() {
                             <button
                               type="button"
                               disabled
-                              className="flex h-8 cursor-not-allowed items-center gap-2 rounded-lg border border-[#1D9E75] bg-white px-3 text-xs font-medium text-[#1D9E75] opacity-80"
+                              className="flex h-8 cursor-not-allowed items-center gap-2 rounded-lg border border-ds-accent bg-white px-3 text-xs font-medium text-ds-accent opacity-80"
                               aria-busy
                             >
                               <svg className="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -865,8 +857,8 @@ export default function Admin360Page() {
                               </svg>
                               Initializing…
                             </button>
-                            <div className="h-1 w-[140px] overflow-hidden rounded-full bg-[#e8edf8]">
-                              <div className="h-full w-full rounded-full bg-[#1D9E75] animate-[indeterminate_1.5s_ease-in-out_infinite]" />
+                            <div className="h-1 w-[140px] overflow-hidden rounded-full bg-ds-border">
+                              <div className="h-full w-full rounded-full bg-ds-accent animate-[indeterminate_1.5s_ease-in-out_infinite]" />
                             </div>
                           </div>
                         ) : (
@@ -879,10 +871,10 @@ export default function Admin360Page() {
                                 : "Seed participants from managers in appraisals"
                             }
                             className={cn(
-                              "rounded-lg px-3 py-2 text-xs font-semibold shadow-sm transition",
+                              "rounded-lg px-3 py-2 text-xs font-semibold transition",
                               hasParticipants
-                                ? "border-2 border-[#4ecca3] bg-white text-[#4ecca3] hover:bg-[#4ecca3] hover:text-white"
-                                : "bg-[#4ecca3] text-white hover:bg-[#3db892]"
+                                ? "border-2 border-ds-success bg-white text-ds-success hover:bg-ds-success hover:text-white"
+                                : "bg-ds-success text-white hover:bg-ds-success"
                             )}
                           >
                             {hasParticipants ? "Re-seed participants" : "Initialize 360"}
@@ -893,7 +885,7 @@ export default function Admin360Page() {
                           type="button"
                           onClick={() => closeCycle(c.id)}
                           disabled={closeCycleLoading === c.id}
-                          className="rounded-lg border border-[#dde5f5] bg-white px-3 py-2 text-xs font-semibold text-[#0f2044] transition hover:bg-[#f8fafc] disabled:opacity-50"
+                          className="rounded-lg border border-ds-border bg-white px-3 py-2 text-xs font-semibold text-ds-text-primary transition hover:bg-ds-surface disabled:opacity-50"
                         >
                           {closeCycleLoading === c.id ? "Closing…" : "Close cycle"}
                         </button>
@@ -905,17 +897,17 @@ export default function Admin360Page() {
                     {isCardLoading ? (
                       <div className="flex flex-col gap-2 p-5">
                         {[1, 2, 3].map((i) => (
-                          <div key={i} className="h-14 animate-pulse rounded-lg bg-[#e2e8f0]" />
+                          <div key={i} className="h-14 animate-pulse rounded-lg bg-ds-border" />
                         ))}
                       </div>
                     ) : filteredParticipants.length === 0 ? (
-                      <p className="py-10 text-center text-sm text-[#94a3b8]">
+                      <p className="py-10 text-center text-sm text-ds-text-secondary">
                         {searchQuery.trim() ? "No participants match your search." : "No participants in this cycle yet."}
                       </p>
                     ) : (
                       <table className="w-full min-w-[720px] border-collapse">
                         <thead>
-                          <tr className="bg-[#f1f5fd]">
+                          <tr className="bg-ds-surface">
                             {(
                               [
                                 ["participant", "Participant"],
@@ -929,7 +921,7 @@ export default function Admin360Page() {
                               <th
                                 key={key}
                                 className={cn(
-                                  "px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-[#64748b]",
+                                  "px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-ds-text-secondary",
                                   key === "actions" && "text-right"
                                 )}
                               >
@@ -949,18 +941,18 @@ export default function Admin360Page() {
                               <tr
                                 key={p.participant_employee_id}
                                 className={cn(
-                                  "h-14 border-b border-[#f0f4ff] transition-colors hover:bg-[#f0f6ff]",
-                                  rowIdx % 2 === 0 ? "bg-white" : "bg-[#fafbff]"
+                                  "h-14 border-b border-ds-surface transition-colors hover:bg-ds-info-subtle",
+                                  rowIdx % 2 === 0 ? "bg-white" : "bg-ds-surface"
                                 )}
                               >
                                 <td className="px-4 py-2 align-middle">
                                   <div className="flex items-center gap-3">
-                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#0f2044] to-[#1e3a6e] text-[13px] font-semibold text-white">
+                                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-[13px] font-semibold ${avatarAccent(p.participant_name || p.participant_employee_id).className}`}>
                                       {getInitials(p.participant_name, p.participant_employee_id)}
                                     </div>
                                     <div className="min-w-0">
-                                      <p className="truncate text-sm font-medium text-[#0f2044]">{p.participant_name}</p>
-                                      <p className="truncate text-[11px] text-[#94a3b8]">
+                                      <p className="truncate text-sm font-medium text-ds-text-primary">{p.participant_name}</p>
+                                      <p className="truncate text-[11px] text-ds-text-secondary">
                                         {p.participant_department_name ?? "—"}
                                       </p>
                                     </div>
@@ -968,15 +960,16 @@ export default function Admin360Page() {
                                 </td>
                                 <td className="px-4 py-2 align-middle">
                                   {p.reviewers.length === 0 ? (
-                                    <span className="text-sm text-[#94a3b8]">—</span>
+                                    <span className="text-sm text-ds-text-secondary">—</span>
                                   ) : (
                                     <div className="flex items-center">
                                       {p.reviewers.slice(0, 3).map((r, i) => (
                                         <div
                                           key={r.id}
-                                          className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white text-[10px] font-semibold text-white"
+                                          className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white text-[10px] font-semibold"
                                           style={{
-                                            background: AVATAR_COLORS[i % AVATAR_COLORS.length],
+                                            background: avatarAccent(r.reviewer_name || r.reviewer_employee_id).style.background,
+                                            color: avatarAccent(r.reviewer_name || r.reviewer_employee_id).style.color,
                                             marginLeft: i === 0 ? 0 : -8,
                                             zIndex: 3 - i,
                                           }}
@@ -986,32 +979,32 @@ export default function Admin360Page() {
                                         </div>
                                       ))}
                                       {p.reviewers.length > 3 && (
-                                        <span className="ml-1 rounded-full bg-[#f1f5f9] px-2 py-0.5 text-xs font-medium text-[#64748b]">
+                                        <span className="ml-1 rounded-ds-badge bg-ds-surface px-2 py-0.5 text-xs font-medium text-ds-text-secondary">
                                           +{p.reviewers.length - 3}
                                         </span>
                                       )}
-                                      <span className="ml-2 text-xs text-[#64748b]">{p.reviewers.length} people</span>
+                                      <span className="ml-2 text-xs text-ds-text-secondary">{p.reviewers.length} people</span>
                                     </div>
                                   )}
                                 </td>
                                 <td className="px-4 py-2 align-middle">
                                   {selfScore != null ? (
-                                    <span className="text-[15px] font-semibold text-[#0f2044]">
+                                    <span className="text-[15px] font-semibold text-ds-text-primary">
                                       {selfScore.toFixed(1)}
-                                      <span className="text-[11px] font-normal text-[#94a3b8]"> /10</span>
+                                      <span className="text-[11px] font-normal text-ds-text-secondary"> /10</span>
                                     </span>
                                   ) : (
-                                    <span className="text-sm text-[#94a3b8]">—</span>
+                                    <span className="text-sm text-ds-text-secondary">—</span>
                                   )}
                                 </td>
                                 <td className="px-4 py-2 align-middle">
                                   {peerScore != null ? (
-                                    <span className="text-[15px] font-semibold text-[#0f2044]">
+                                    <span className="text-[15px] font-semibold text-ds-text-primary">
                                       {peerScore.toFixed(1)}
-                                      <span className="text-[11px] font-normal text-[#94a3b8]"> /10</span>
+                                      <span className="text-[11px] font-normal text-ds-text-secondary"> /10</span>
                                     </span>
                                   ) : (
-                                    <span className="text-sm text-[#94a3b8]">—</span>
+                                    <span className="text-sm text-ds-text-secondary">—</span>
                                   )}
                                 </td>
                                 <td className="px-4 py-2 align-middle">
@@ -1023,7 +1016,7 @@ export default function Admin360Page() {
                                       <button
                                         type="button"
                                         onClick={() => setAssignTarget({ participant: p, cycleId: c.id })}
-                                        className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[#4ecca3] transition hover:bg-[#f0fdf9]"
+                                        className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-ds-success transition hover:bg-ds-success-subtle"
                                       >
                                         + Assign reviewer
                                       </button>
@@ -1031,7 +1024,7 @@ export default function Admin360Page() {
                                     <button
                                       type="button"
                                       onClick={() => openDetailModal(c.id, p)}
-                                      className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[#64748b] transition hover:bg-[#f1f5f9]"
+                                      className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-ds-text-secondary transition hover:bg-ds-surface"
                                     >
                                       Details
                                     </button>
@@ -1081,7 +1074,7 @@ export default function Admin360Page() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            background: "rgba(15,31,61,0.35)",
+            background: "rgba(13,13,13,0.35)",
             backdropFilter: "blur(4px)",
             WebkitBackdropFilter: "blur(4px)",
             padding: "24px",
@@ -1092,9 +1085,9 @@ export default function Admin360Page() {
           <div
             style={{
               background: "white",
-              borderRadius: "14px",
-              border: "1px solid #dde5f5",
-              boxShadow: "0 20px 60px rgba(15,31,61,0.2)",
+              borderRadius: "8px",
+              border: "1px solid #e7e7e7",
+              boxShadow: "var(--ds-shadow-dialog)",
               maxWidth: "700px",
               width: "100%",
               maxHeight: "90vh",
@@ -1112,7 +1105,7 @@ export default function Admin360Page() {
                 zIndex: 1,
                 background: "white",
                 padding: "20px 24px",
-                borderBottom: "1px solid #dde5f5",
+                borderBottom: "1px solid #e7e7e7",
                 display: "flex",
                 alignItems: "flex-start",
                 justifyContent: "space-between",
@@ -1125,26 +1118,25 @@ export default function Admin360Page() {
                     width: "48px",
                     height: "48px",
                     borderRadius: "50%",
-                    background: avatarColor(detailParticipant.participant_employee_id),
+                    ...avatarAccent(detailParticipant.participant_name || detailParticipant.participant_employee_id).style,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     fontSize: "16px",
                     fontWeight: 600,
-                    color: "#0f1f3d",
                     flexShrink: 0,
                   }}
                 >
                   {getInitials(detailParticipant.participant_name, detailParticipant.participant_employee_id)}
                 </div>
                 <div style={{ minWidth: 0 }}>
-                  <h2 id="detail-modal-title" className="font-display" style={{ fontSize: "18px", fontWeight: 600, color: "#0f1f3d", margin: 0 }}>
+                  <h2 id="detail-modal-title" className="font-display" style={{ fontSize: "18px", fontWeight: 600, color: "#0d0d0d", margin: 0 }}>
                     {detailParticipant.participant_name}
                   </h2>
-                  <p style={{ fontSize: "13px", color: "#8a97b8", marginTop: "2px" }}>
+                  <p style={{ fontSize: "13px", color: "#646f79", marginTop: "2px" }}>
                     {[detailParticipant.participant_job_title, detailParticipant.participant_department_name].filter(Boolean).join(" · ") || "—"}
                   </p>
-                  <p style={{ fontSize: "12px", color: "#8a97b8", marginTop: "6px" }}>
+                  <p style={{ fontSize: "12px", color: "#646f79", marginTop: "6px" }}>
                     {cycles.find((c) => c.id === detailCycleId)?.cycle_name ?? ""}
                     {cycles.find((c) => c.id === detailCycleId)?.status && (
                       <span
@@ -1152,7 +1144,7 @@ export default function Admin360Page() {
                           marginLeft: "8px",
                           display: "inline-flex",
                           padding: "2px 8px",
-                          borderRadius: "20px",
+                          borderRadius: "4px",
                           fontSize: "10.5px",
                           fontWeight: 600,
                           textTransform: "uppercase",
@@ -1175,17 +1167,17 @@ export default function Admin360Page() {
                   borderRadius: "8px",
                   cursor: "pointer",
                   background: "transparent",
-                  color: "#64748b",
+                  color: "#646f79",
                   border: "none",
                   flexShrink: 0,
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#f1f5f9";
-                  e.currentTarget.style.color = "#0f1f3d";
+                  e.currentTarget.style.background = "#f3f3f3";
+                  e.currentTarget.style.color = "#0d0d0d";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = "transparent";
-                  e.currentTarget.style.color = "#64748b";
+                  e.currentTarget.style.color = "#646f79";
                 }}
               >
                 <X size={20} />
@@ -1199,7 +1191,7 @@ export default function Admin360Page() {
                 style={{
                   fontSize: "11px",
                   fontWeight: 600,
-                  color: "#8a97b8",
+                  color: "#646f79",
                   marginBottom: "10px",
                   textTransform: "uppercase",
                   letterSpacing: "0.06em",
@@ -1210,7 +1202,7 @@ export default function Admin360Page() {
               {detailResultsLoading ? (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px", marginBottom: "24px" }}>
                   {[1, 2, 3].map((i) => (
-                    <div key={i} style={{ height: "80px", borderRadius: "10px", background: "#f1f5f9" }} />
+                    <div key={i} style={{ height: "80px", borderRadius: "8px", background: "#f3f3f3" }} />
                   ))}
                 </div>
               ) : detailResults ? (
@@ -1231,20 +1223,20 @@ export default function Admin360Page() {
                           key={card.label}
                           style={{
                             padding: "14px 16px",
-                            borderRadius: "10px",
-                            background: card.empty ? "#f8fafc" : "white",
-                            border: "1px solid #dde5f5",
+                            borderRadius: "8px",
+                            background: card.empty ? "#f3f3f3" : "white",
+                            border: "1px solid #e7e7e7",
                             opacity: card.empty ? 0.85 : 1,
                           }}
                         >
-                          <div style={{ fontSize: "10px", fontWeight: 600, color: "#8a97b8", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>
+                          <div style={{ fontSize: "10px", fontWeight: 600, color: "#646f79", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>
                             {card.label}
                           </div>
                           {card.empty ? (
-                            <span style={{ fontSize: "15px", color: "#94a3b8" }}>—</span>
+                            <span style={{ fontSize: "15px", color: "#646f79" }}>—</span>
                           ) : (
                             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                              <div style={{ width: "48px", height: "6px", borderRadius: "3px", background: "#e2e8f0", overflow: "hidden" }}>
+                              <div style={{ width: "48px", height: "6px", borderRadius: "3px", background: "#e7e7e7", overflow: "hidden" }}>
                                 <div
                                   style={{
                                     width: `${((card.value ?? 0) / 5) * 100}%`,
@@ -1265,9 +1257,9 @@ export default function Admin360Page() {
               ) : (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px", marginBottom: "24px" }}>
                   {["Self", "Peer avg", "Direct reports avg"].map((label) => (
-                    <div key={label} style={{ padding: "14px 16px", borderRadius: "10px", background: "#f8fafc", border: "1px solid #dde5f5" }}>
-                      <div style={{ fontSize: "10px", fontWeight: 600, color: "#8a97b8", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>{label}</div>
-                      <span style={{ fontSize: "15px", color: "#94a3b8" }}>—</span>
+                    <div key={label} style={{ padding: "14px 16px", borderRadius: "8px", background: "#f3f3f3", border: "1px solid #e7e7e7" }}>
+                      <div style={{ fontSize: "10px", fontWeight: 600, color: "#646f79", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>{label}</div>
+                      <span style={{ fontSize: "15px", color: "#646f79" }}>—</span>
                     </div>
                   ))}
                 </div>
@@ -1280,7 +1272,7 @@ export default function Admin360Page() {
                   style={{
                     fontSize: "11px",
                     fontWeight: 600,
-                    color: "#8a97b8",
+                    color: "#646f79",
                     margin: 0,
                     textTransform: "uppercase",
                     letterSpacing: "0.06em",
@@ -1289,21 +1281,21 @@ export default function Admin360Page() {
                   Reviewers
                 </h3>
                 {detailParticipant.reviewers.length > 0 && (
-                  <span style={{ fontSize: "12px", color: "#8a97b8" }}>
+                  <span style={{ fontSize: "12px", color: "#646f79" }}>
                     {detailParticipant.reviewers.filter((r) => (r.status || "").toLowerCase() === "completed").length}/{detailParticipant.reviewers.length} completed
                   </span>
                 )}
               </div>
               {cycles.find((c) => c.id === detailCycleId)?.status === "Active" && (
-                <div style={{ marginBottom: "16px", padding: "14px", background: "#f1f5f9", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+                <div style={{ marginBottom: "16px", padding: "14px", background: "#f3f3f3", borderRadius: "8px", border: "1px solid #e7e7e7" }}>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "flex-end" }}>
                     <div>
-                      <label style={{ display: "block", fontSize: "11px", color: "#8a97b8", marginBottom: "4px" }}>Employee ID</label>
+                      <label style={{ display: "block", fontSize: "11px", color: "#646f79", marginBottom: "4px" }}>Employee ID</label>
                       <select
                         value={modalAddReviewerEmployeeId}
                         onChange={(e) => setModalAddReviewerEmployeeId(e.target.value)}
                         disabled={modalEligibleLoading}
-                        style={{ padding: "6px 10px", borderRadius: "6px", border: "1px solid #dde5f5", fontSize: "13px", minWidth: "200px" }}
+                        style={{ padding: "6px 10px", borderRadius: "6px", border: "1px solid #e7e7e7", fontSize: "13px", minWidth: "200px" }}
                       >
                         <option value="">{modalEligibleLoading ? "Loading…" : "Select reviewer…"}</option>
                         {modalEligibleEmployees.map((emp) => (
@@ -1314,14 +1306,14 @@ export default function Admin360Page() {
                       </select>
                     </div>
                     <div>
-                      <label style={{ display: "block", fontSize: "11px", color: "#8a97b8", marginBottom: "4px" }}>Type</label>
+                      <label style={{ display: "block", fontSize: "11px", color: "#646f79", marginBottom: "4px" }}>Type</label>
                       <select
                         value={modalAddReviewerType}
                         onChange={(e) => {
                           setModalAddReviewerType(e.target.value as "PEER" | "DIRECT_REPORT" | "MANAGER");
                           setModalAddReviewerEmployeeId("");
                         }}
-                        style={{ padding: "6px 10px", borderRadius: "6px", border: "1px solid #dde5f5", fontSize: "13px" }}
+                        style={{ padding: "6px 10px", borderRadius: "6px", border: "1px solid #e7e7e7", fontSize: "13px" }}
                       >
                         <option value="PEER">Peer</option>
                         <option value="DIRECT_REPORT">Direct Report</option>
@@ -1338,7 +1330,7 @@ export default function Admin360Page() {
                         fontSize: "13px",
                         fontWeight: 500,
                         cursor: modalAddSubmitting ? "not-allowed" : "pointer",
-                        background: "#7c3aed",
+                        background: "#3d5a78",
                         color: "white",
                         border: "none",
                       }}
@@ -1348,7 +1340,7 @@ export default function Admin360Page() {
                   </div>
                 </div>
               )}
-              <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #dde5f5", borderRadius: "8px", overflow: "hidden" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #e7e7e7", borderRadius: "8px", overflow: "hidden" }}>
                 <thead>
                   <tr>
                     <th style={thStyle}>Reviewer</th>
@@ -1367,20 +1359,19 @@ export default function Admin360Page() {
                               width: "32px",
                               height: "32px",
                               borderRadius: "50%",
-                              background: avatarColor(r.reviewer_employee_id),
+                              ...avatarAccent(r.reviewer_name || r.reviewer_employee_id).style,
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
                               fontSize: "11px",
                               fontWeight: 600,
-                              color: "#0f1f3d",
                             }}
                           >
                             {getInitials(r.reviewer_name, r.reviewer_employee_id)}
                           </div>
                           <div>
                             <div style={{ fontWeight: 500 }}>{r.reviewer_name}</div>
-                            <div style={{ fontSize: "11px", color: "#8a97b8" }}>{r.reviewer_employee_id}</div>
+                            <div style={{ fontSize: "11px", color: "#646f79" }}>{r.reviewer_employee_id}</div>
                           </div>
                         </div>
                       </td>
@@ -1389,7 +1380,7 @@ export default function Admin360Page() {
                           style={{
                             display: "inline-flex",
                             padding: "3px 8px",
-                            borderRadius: "20px",
+                            borderRadius: "4px",
                             fontSize: "10.5px",
                             fontWeight: 600,
                             textTransform: "uppercase",
@@ -1405,7 +1396,7 @@ export default function Admin360Page() {
                           style={{
                             display: "inline-flex",
                             padding: "3px 8px",
-                            borderRadius: "20px",
+                            borderRadius: "4px",
                             fontSize: "10.5px",
                             fontWeight: 600,
                             textTransform: "uppercase",
@@ -1431,7 +1422,7 @@ export default function Admin360Page() {
                                     fontWeight: 500,
                                     cursor: reopenLoading === r.id ? "not-allowed" : "pointer",
                                     background: "none",
-                                    color: "#0d9488",
+                                    color: "#0d0e10",
                                     border: "none",
                                   }}
                                 >
@@ -1449,7 +1440,7 @@ export default function Admin360Page() {
                                     fontWeight: 500,
                                     cursor: removeResponseLoading === r.id ? "not-allowed" : "pointer",
                                     background: "none",
-                                    color: "#b45309",
+                                    color: "#8a5a00",
                                     border: "none",
                                   }}
                                 >
@@ -1465,14 +1456,14 @@ export default function Admin360Page() {
                                   fontWeight: 500,
                                   cursor: "pointer",
                                   background: "none",
-                                  color: "#b91c1c",
+                                  color: "#b42318",
                                   border: "none",
                                 }}
                                 onMouseEnter={(e) => {
-                                  e.currentTarget.style.color = "#991b1b";
+                                  e.currentTarget.style.color = "#b42318";
                                 }}
                                 onMouseLeave={(e) => {
-                                  e.currentTarget.style.color = "#b91c1c";
+                                  e.currentTarget.style.color = "#b42318";
                                 }}
                               >
                                 Remove
@@ -1486,7 +1477,7 @@ export default function Admin360Page() {
                 </tbody>
               </table>
               {detailParticipant.reviewers.length === 0 && (
-                <p style={{ textAlign: "center", fontSize: "13px", color: "#8a97b8", padding: "16px 0" }}>No reviewers assigned.</p>
+                <p style={{ textAlign: "center", fontSize: "13px", color: "#646f79", padding: "16px 0" }}>No reviewers assigned.</p>
               )}
             </div>
           </div>

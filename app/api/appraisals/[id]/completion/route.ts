@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getCurrentUser } from "@/lib/auth";
-import { fetchCompletionReport } from "@/lib/appraisal-completion";
+import { fetchCompletionReport } from "@/lib/appraisal-completion-report";
 import { withRetry } from "@/lib/retry-transient";
 
 function getSupabaseAdmin() {

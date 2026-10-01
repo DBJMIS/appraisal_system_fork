@@ -35,8 +35,8 @@ export default async function FeedbackReportPage({
   if (!user?.id) {
     return (
       <div className="w-full px-7 py-6">
-        <div className="rounded-[14px] border border-[#dde5f5] bg-white p-6 shadow-[0_2px_12px_rgba(15,31,61,.07)]">
-          <p className="text-[13px] text-[#8a97b8]">Please sign in to view your feedback report.</p>
+        <div className="rounded-ds-panel border border-ds-border bg-white p-6">
+          <p className="text-[13px] text-ds-text-secondary">Please sign in to view your feedback report.</p>
         </div>
       </div>
     );
@@ -80,39 +80,29 @@ export default async function FeedbackReportPage({
       <div className="mb-5">
         <Link
           href="/feedback"
-          className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#3b82f6] hover:text-[#1d4ed8] transition-colors"
+          className="inline-flex items-center gap-1.5 text-[13px] font-medium text-ds-text-secondary hover:text-ds-text-primary transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           Back to 360 Feedback
         </Link>
       </div>
-      <div
-        className="rounded-[14px] overflow-hidden mb-6"
-        style={{
-          background: "linear-gradient(135deg, #0a1628 0%, #0f1f3d 40%, #1a3260 75%, #1e3a73 100%)",
-          boxShadow: "0 8px 32px rgba(15,31,61,0.20)",
-        }}
-      >
-        <div className="px-6 py-6">
-          <p className="text-[10px] font-bold uppercase tracking-[.12em] text-white/40 mb-1">
-            360 Feedback Report
-          </p>
-          <h1 className="font-['Sora'] text-[22px] font-extrabold text-white mb-0.5">{cycle.cycle_name}</h1>
-          <p className="text-[13px] text-white/50">Closed {formatDate(cycle.end_date)}</p>
-        </div>
+      <div className="mb-6 border-b border-ds-border pb-5">
+        <p className="m-0 mb-1 text-xs font-medium text-ds-text-secondary">360 Feedback Report</p>
+        <h1 className="m-0 text-ds-page-title text-ds-text-primary">{cycle.cycle_name}</h1>
+        <p className="m-0 mt-1 text-[13px] text-ds-text-secondary">Closed {formatDate(cycle.end_date)}</p>
       </div>
       {employeeId && (
         <div className="mb-6">
           <GapAnalysisCard gaps={gapAnalysis} />
         </div>
       )}
-      <div className="rounded-[14px] border border-[#dde5f5] bg-white shadow-[0_2px_12px_rgba(15,31,61,.07)] overflow-hidden">
+      <div className="rounded-ds-panel border border-ds-border bg-ds-background overflow-hidden">
         <div className="p-5 space-y-3">
-          <p className="text-[13px] text-[#4a5a82]">
+          <p className="text-[13px] text-ds-text-secondary">
             Your consolidated 360 feedback report for this cycle will appear here once the cycle is closed and reports are generated.
           </p>
           {employeeId && (
-            <p className="text-[12px] text-[#8a97b8]">
+            <p className="text-[12px] text-ds-text-secondary">
               Peer feedback visible: {showPeerSection ? "Yes" : "No"} (need ≥2 submitted). Direct report feedback visible: {showDirectReportSection ? "Yes" : "No"} (need ≥2 submitted).
             </p>
           )}

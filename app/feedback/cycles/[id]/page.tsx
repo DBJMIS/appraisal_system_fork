@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 import { notFound } from "next/navigation";
 import { ensureParticipantIfLeader } from "@/lib/feedback-ensure-participant";
+import { avatarAccent } from "@/lib/avatar-accent";
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -10,11 +11,6 @@ function getSupabase() {
   if (!url || !key) throw new Error("Supabase config required");
   return createClient(url, key);
 }
-
-const AVATAR_COLORS = [
-  "#4f46e5", "#f59e0b", "#ef4444",
-  "#10b981", "#3b82f6", "#8b5cf6", "#ec4899",
-];
 
 function getInitials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
@@ -39,16 +35,16 @@ function formatDate(dateStr: string | null) {
 
 function TypeBadge({ type }: { type: string }) {
   const map: Record<string, string> = {
-    ANNUAL: "bg-[#f5f3ff] border-[#ddd6fe] text-[#6d28d9]",
-    MID_YEAR: "bg-[#fffbeb] border-[#fcd34d] text-[#92400e]",
-    PEER: "bg-[#eff6ff] border-[#bfdbfe] text-[#1d4ed8]",
-    DIRECT_REPORT: "bg-[#fdf4ff] border-[#e9d5ff] text-[#6d28d9]",
-    MANAGER: "bg-[#fff7ed] border-[#fed7aa] text-[#9a3412]",
-    SELF: "bg-[#ecfdf5] border-[#6ee7b7] text-[#065f46]",
+    ANNUAL: "bg-ds-info-subtle border-ds-info-border text-ds-info",
+    MID_YEAR: "bg-ds-warning-subtle border-ds-warning-border text-ds-warning",
+    PEER: "bg-ds-surface border-ds-border-strong text-ds-info",
+    DIRECT_REPORT: "bg-ds-info-subtle border-ds-info-border text-ds-info",
+    MANAGER: "bg-ds-warning-subtle border-ds-warning-border text-ds-warning",
+    SELF: "bg-ds-success-subtle border-ds-success-border text-ds-success",
   };
   const label = type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   return (
-    <span className={`inline-flex items-center px-2.5 py-1 rounded-full border text-[10px] font-semibold ${map[type] ?? map.PEER}`}>
+    <span className={`inline-flex items-center px-2.5 py-1 rounded-ds-badge border text-[10px] font-semibold ${map[type] ?? map.PEER}`}>
       {label}
     </span>
   );
@@ -56,17 +52,17 @@ function TypeBadge({ type }: { type: string }) {
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; dot: string; className: string }> = {
-    SUBMITTED: { label: "Submitted", dot: "#3b82f6", className: "bg-[#eff6ff] border-[#bfdbfe] text-[#1d4ed8]" },
-    PENDING: { label: "Pending", dot: "#d97706", className: "bg-[#fffbeb] border-[#fcd34d] text-[#92400e]" },
-    IN_PROGRESS: { label: "In progress", dot: "#d97706", className: "bg-[#fffbeb] border-[#fcd34d] text-[#92400e]" },
-    COMPLETED: { label: "Completed", dot: "#059669", className: "bg-[#ecfdf5] border-[#6ee7b7] text-[#065f46]" },
-    DRAFT: { label: "Draft", dot: "#8a97b8", className: "bg-[#f8faff] border-[#dde5f5] text-[#8a97b8]" },
-    Active: { label: "Active", dot: "#059669", className: "bg-[#ecfdf5] border-[#6ee7b7] text-[#065f46]" },
-    Closed: { label: "Closed", dot: "#8a97b8", className: "bg-[#f8faff] border-[#dde5f5] text-[#8a97b8]" },
+    SUBMITTED: { label: "Submitted", dot: "#34d399", className: "bg-ds-success-subtle border-ds-success-border text-ds-success" },
+    PENDING: { label: "Pending", dot: "#fbbf24", className: "bg-ds-warning-subtle border-ds-warning-border text-ds-warning" },
+    IN_PROGRESS: { label: "In progress", dot: "#a78bfa", className: "bg-ds-lavender-subtle border-ds-lavender-border text-ds-lavender-text" },
+    COMPLETED: { label: "Completed", dot: "#34d399", className: "bg-ds-success-subtle border-ds-success-border text-ds-success" },
+    DRAFT: { label: "Draft", dot: "#646f79", className: "bg-ds-surface border-ds-border text-ds-text-secondary" },
+    Active: { label: "Active", dot: "#34d399", className: "bg-ds-success-subtle border-ds-success-border text-ds-success" },
+    Closed: { label: "Closed", dot: "#646f79", className: "bg-ds-surface border-ds-border text-ds-text-secondary" },
   };
   const s = map[status] ?? map.PENDING;
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-semibold ${s.className}`}>
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-ds-badge border text-[10px] font-semibold ${s.className}`}>
       <span className="w-[5px] h-[5px] rounded-full flex-shrink-0" style={{ background: s.dot }} />
       {s.label}
     </span>
@@ -91,8 +87,8 @@ export default async function FeedbackCyclePage({
   if (!user?.id) {
     return (
       <div className="w-full px-7 py-6">
-        <div className="rounded-[14px] border border-[#dde5f5] bg-white p-6">
-          <p className="text-[13px] text-[#8a97b8]">Please sign in to view this cycle.</p>
+        <div className="rounded-ds-panel border border-ds-border bg-white p-6">
+          <p className="text-[13px] text-ds-text-secondary">Please sign in to view this cycle.</p>
         </div>
       </div>
     );
@@ -247,7 +243,7 @@ export default async function FeedbackCyclePage({
       <div className="mb-5">
         <Link
           href="/feedback"
-          className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#3b82f6] hover:text-[#1d4ed8] transition-colors"
+          className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-ds-accent hover:text-ds-info transition-colors"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="15 18 9 12 15 6" />
@@ -257,75 +253,75 @@ export default async function FeedbackCyclePage({
       </div>
 
       {/* Cycle info card header */}
-      <div className="bg-white border border-[#dde5f5] rounded-[14px] shadow-[0_2px_12px_rgba(15,31,61,0.07)] overflow-hidden mb-4">
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-[#dde5f5] bg-[#f8faff]">
-          <div className="w-9 h-9 rounded-[10px] bg-[#f5f3ff] border border-[#ddd6fe] flex items-center justify-center flex-shrink-0">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2">
+      <div className="bg-white border border-ds-border rounded-ds-panel overflow-hidden mb-4">
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-ds-border bg-ds-surface">
+          <div className="w-9 h-9 rounded-ds-panel bg-ds-info-subtle border border-ds-info-border flex items-center justify-center flex-shrink-0">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3d5a78" strokeWidth="2">
               <circle cx="12" cy="12" r="4" />
               <path d="M16 8v5a3 3 0 006 0v-1a10 10 0 10-3.92 7.94" />
             </svg>
           </div>
           <div className="flex-1">
-            <p className="font-['Sora'] text-[15px] font-bold text-[#0f1f3d]">{cycle.cycle_name}</p>
-            <p className="text-[11px] text-[#8a97b8] mt-0.5">
+            <p className="font-sans text-[15px] font-semibold text-ds-text-primary">{cycle.cycle_name}</p>
+            <p className="text-[11px] text-ds-text-secondary mt-0.5">
               {formatDate(cycle.start_date)} – {formatDate(cycle.end_date)} · {cycle.status}
             </p>
           </div>
           <StatusBadge status={cycleStatusBadge} />
         </div>
-        <div className="grid grid-cols-3 divide-x divide-[#dde5f5]">
+        <div className="grid grid-cols-3 divide-x divide-ds-border">
           <div className="flex flex-col items-center py-4 gap-0.5">
-            <span className="font-['Sora'] text-[22px] font-bold text-[#059669]">{submittedCount}</span>
-            <span className="text-[10px] uppercase tracking-[.06em] text-[#8a97b8]">Submitted</span>
+            <span className="font-sans text-[22px] font-semibold text-ds-success">{submittedCount}</span>
+            <span className="text-[10px] uppercase tracking-[.06em] text-ds-text-secondary">Submitted</span>
           </div>
           <div className="flex flex-col items-center py-4 gap-0.5">
-            <span className="font-['Sora'] text-[22px] font-bold text-[#d97706]">{pendingCount}</span>
-            <span className="text-[10px] uppercase tracking-[.06em] text-[#8a97b8]">Pending</span>
+            <span className="font-sans text-[22px] font-semibold text-ds-warning">{pendingCount}</span>
+            <span className="text-[10px] uppercase tracking-[.06em] text-ds-text-secondary">Pending</span>
           </div>
           <div className="flex flex-col items-center py-4 gap-0.5">
-            <span className="font-['Sora'] text-[22px] font-bold text-[#0f1f3d]">{allForKpi.length}</span>
-            <span className="text-[10px] uppercase tracking-[.06em] text-[#8a97b8]">Total reviewers</span>
+            <span className="font-sans text-[22px] font-semibold text-ds-text-primary">{allForKpi.length}</span>
+            <span className="text-[10px] uppercase tracking-[.06em] text-ds-text-secondary">Total reviewers</span>
           </div>
         </div>
         {weightedOverall != null && (
-          <div className="px-5 py-3 border-t border-[#dde5f5] bg-[#f8faff] flex items-center justify-between">
-            <p className="text-[11px] font-semibold text-[#0f1f3d]">Overall 360 score</p>
-            <p className="text-[16px] font-bold text-[#0d9488]">{weightedOverall.toFixed(2)} / 5.00</p>
+          <div className="px-5 py-3 border-t border-ds-border bg-ds-surface flex items-center justify-between">
+            <p className="text-[11px] font-semibold text-ds-text-primary">Overall 360 score</p>
+            <p className="text-[16px] font-semibold text-ds-accent">{weightedOverall.toFixed(2)} / 5.00</p>
           </div>
         )}
       </div>
 
       {/* Self-assessment section */}
-      <div className="bg-white border border-[#dde5f5] rounded-[14px] shadow-[0_2px_12px_rgba(15,31,61,0.07)] overflow-hidden mb-4">
-        <div className="flex items-center gap-3 px-5 py-3.5 border-b border-[#dde5f5] bg-[#f8faff]">
-          <p className="text-[10px] font-bold uppercase tracking-[.07em] text-[#8a97b8]">Your self-assessment</p>
+      <div className="bg-white border border-ds-border rounded-ds-panel overflow-hidden mb-4">
+        <div className="flex items-center gap-3 px-5 py-3.5 border-b border-ds-border bg-ds-surface">
+          <p className="text-[10px] font-semibold uppercase tracking-[.07em] text-ds-text-secondary">Your self-assessment</p>
         </div>
         <div className="flex items-center gap-3 px-5 py-4">
-          <div className="w-9 h-9 rounded-full bg-[#4f46e5] flex items-center justify-center text-[12px] font-semibold text-white flex-shrink-0">
+          <div className="w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-semibold flex-shrink-0" style={avatarAccent(user.name ?? user.email).style}>
             {getInitials(user.name ?? user.email ?? "U")}
           </div>
           <div className="flex-1">
-            <p className="text-[13px] font-semibold text-[#0f1f3d]">Your self-assessment</p>
-            <p className="text-[11px] text-[#8a97b8] mt-0.5">
+            <p className="text-[13px] font-semibold text-ds-text-primary">Your self-assessment</p>
+            <p className="text-[11px] text-ds-text-secondary mt-0.5">
               {selfAssessment?.status === "SUBMITTED" ? "Completed and submitted" : "Not yet submitted"}
             </p>
           </div>
           {selfAssessment?.score != null && (
             <div className="flex items-center gap-2 mr-4">
-              <div className="w-20 h-1.5 rounded-full bg-[#dde5f5] overflow-hidden">
+              <div className="w-20 h-1.5 rounded-full bg-ds-border overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-[#0d9488]"
+                  className="h-full rounded-full bg-ds-accent"
                   style={{ width: `${(selfAssessment.score / 5) * 100}%` }}
                 />
               </div>
-              <span className="text-[13px] font-semibold text-[#0f1f3d]">{selfAssessment.score.toFixed(1)}</span>
+              <span className="text-[13px] font-semibold text-ds-text-primary">{selfAssessment.score.toFixed(1)}</span>
             </div>
           )}
           <StatusBadge status={selfAssessment?.status ?? "PENDING"} />
           {selfRow && (
             <Link
               href={`/feedback/cycles/${cycleId}/review/${selfRow.id}`}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-[8px] border border-[#dde5f5] text-[11px] font-semibold text-[#4a5a82] hover:border-[#0f1f3d] hover:text-[#0f1f3d] transition-colors ml-2"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-[8px] border border-ds-border text-[11px] font-semibold text-ds-text-secondary hover:border-ds-text-primary hover:text-ds-text-primary transition-colors ml-2"
             >
               {selfAssessment?.status === "SUBMITTED" ? "View" : "Start"}
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -337,41 +333,41 @@ export default async function FeedbackCyclePage({
       </div>
 
       {/* Reviewers section — anonymous when active, revealed when closed */}
-      <div className="bg-white border border-[#dde5f5] rounded-[14px] shadow-[0_2px_12px_rgba(15,31,61,0.07)] overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#dde5f5] bg-[#f8faff]">
-          <p className="text-[10px] font-bold uppercase tracking-[.07em] text-[#8a97b8]">Reviewers</p>
+      <div className="bg-white border border-ds-border rounded-ds-panel overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-ds-border bg-ds-surface">
+          <p className="text-[10px] font-semibold uppercase tracking-[.07em] text-ds-text-secondary">Reviewers</p>
           {isActive && (
             <div className="flex items-center gap-1.5">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8a97b8" strokeWidth="2">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#646f79" strokeWidth="2">
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                 <path d="M7 11V7a5 5 0 0110 0v4" />
               </svg>
-              <span className="text-[10px] text-[#8a97b8]">Reviewer names are hidden until the cycle closes</span>
+              <span className="text-[10px] text-ds-text-secondary">Reviewer names are hidden until the cycle closes</span>
             </div>
           )}
         </div>
         <table className="w-full border-collapse">
           <thead>
-            <tr className="bg-[#f8faff]">
-              <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[.06em] text-[#8a97b8] border-b border-[#dde5f5] w-[35%]">
+            <tr className="bg-ds-surface">
+              <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[.06em] text-ds-text-secondary border-b border-ds-border w-[35%]">
                 Reviewer
               </th>
-              <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[.06em] text-[#8a97b8] border-b border-[#dde5f5] w-[18%]">
+              <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[.06em] text-ds-text-secondary border-b border-ds-border w-[18%]">
                 Type
               </th>
-              <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[.06em] text-[#8a97b8] border-b border-[#dde5f5] w-[20%]">
+              <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[.06em] text-ds-text-secondary border-b border-ds-border w-[20%]">
                 Status
               </th>
-              <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[.06em] text-[#8a97b8] border-b border-[#dde5f5] w-[15%]">
+              <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[.06em] text-ds-text-secondary border-b border-ds-border w-[15%]">
                 Score
               </th>
-              <th className="px-5 py-2.5 border-b border-[#dde5f5]" />
+              <th className="px-5 py-2.5 border-b border-ds-border" />
             </tr>
           </thead>
           <tbody>
             {reviewersForTable.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-5 py-8 text-center text-[12px] text-[#8a97b8]">
+                <td colSpan={5} className="px-5 py-8 text-center text-[12px] text-ds-text-secondary">
                   No other reviewers assigned for this cycle.
                 </td>
               </tr>
@@ -383,30 +379,30 @@ export default async function FeedbackCyclePage({
               const anonymousLabel = `${capitalize(reviewer.reviewType)} reviewer ${sameTypeIndex}`;
 
               return (
-                <tr key={reviewer.id} className="border-t border-[#dde5f5] hover:bg-[#f8faff] transition-colors">
+                <tr key={reviewer.id} className="border-t border-ds-border hover:bg-ds-surface transition-colors">
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-2.5">
                       {isActive ? (
-                        <div className="w-8 h-8 rounded-full bg-[#eef2fb] border border-[#dde5f5] flex items-center justify-center flex-shrink-0">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8a97b8" strokeWidth="2">
+                        <div className="w-8 h-8 rounded-full bg-ds-surface border border-ds-border flex items-center justify-center flex-shrink-0">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#646f79" strokeWidth="2">
                             <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
                             <circle cx="12" cy="7" r="4" />
                           </svg>
                         </div>
                       ) : (
                         <div
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold text-white flex-shrink-0"
-                          style={{ background: AVATAR_COLORS[i % AVATAR_COLORS.length] }}
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold flex-shrink-0"
+                          style={avatarAccent(reviewer.name).style}
                         >
                           {getInitials(reviewer.name || "?")}
                         </div>
                       )}
                       <div>
-                        <p className="text-[12px] font-semibold text-[#0f1f3d]">
+                        <p className="text-[12px] font-semibold text-ds-text-primary">
                           {isActive ? anonymousLabel : reviewer.name}
                         </p>
                         {!isActive && reviewer.department && (
-                          <p className="text-[10px] text-[#8a97b8] mt-0.5">{reviewer.department}</p>
+                          <p className="text-[10px] text-ds-text-secondary mt-0.5">{reviewer.department}</p>
                         )}
                       </div>
                     </div>
@@ -420,23 +416,23 @@ export default async function FeedbackCyclePage({
                   <td className="px-5 py-3.5">
                     {!isActive && reviewer.score != null ? (
                       <div className="flex items-center gap-2">
-                        <div className="w-14 h-1.5 rounded-full bg-[#dde5f5] overflow-hidden">
+                        <div className="w-14 h-1.5 rounded-full bg-ds-border overflow-hidden">
                           <div
-                            className="h-full rounded-full bg-[#0d9488]"
+                            className="h-full rounded-full bg-ds-accent"
                             style={{ width: `${(reviewer.score / 5) * 100}%` }}
                           />
                         </div>
-                        <span className="text-[12px] font-semibold text-[#0f1f3d]">{reviewer.score.toFixed(1)}</span>
+                        <span className="text-[12px] font-semibold text-ds-text-primary">{reviewer.score.toFixed(1)}</span>
                       </div>
                     ) : (
-                      <span className="text-[12px] text-[#8a97b8]">—</span>
+                      <span className="text-[12px] text-ds-text-secondary">—</span>
                     )}
                   </td>
                   <td className="px-5 py-3.5 text-right">
                     {!isActive && reviewer.status === "COMPLETED" && (
                       <Link
                         href={`/feedback/cycles/${cycleId}/report`}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] border border-[#dde5f5] text-[11px] font-semibold text-[#4a5a82] hover:border-[#0f1f3d] hover:text-[#0f1f3d] transition-colors"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] border border-ds-border text-[11px] font-semibold text-ds-text-secondary hover:border-ds-text-primary hover:text-ds-text-primary transition-colors"
                       >
                         View
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -453,29 +449,29 @@ export default async function FeedbackCyclePage({
         </table>
       </div>
 
-      <div className="bg-white border border-[#dde5f5] rounded-[14px] shadow-[0_2px_12px_rgba(15,31,61,0.07)] overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#dde5f5] bg-[#f8faff]">
-          <p className="text-[10px] font-bold uppercase tracking-[.07em] text-[#8a97b8]">Visibility Summary</p>
+      <div className="bg-white border border-ds-border rounded-ds-panel overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-ds-border bg-ds-surface">
+          <p className="text-[10px] font-semibold uppercase tracking-[.07em] text-ds-text-secondary">Visibility Summary</p>
         </div>
         <div className="p-5 space-y-2">
-          <p className="text-[12px] text-[#0f1f3d]">Peers — {(byTypeScores.PEER ?? []).length} reviewer(s), average: {peerAvg != null ? peerAvg.toFixed(2) : "—"}</p>
-          <p className="text-[12px] text-[#0f1f3d]">Direct reports — {(byTypeScores.DIRECT_REPORT ?? []).length} reviewer(s), average: {directAvg != null ? directAvg.toFixed(2) : "—"}</p>
-          <p className="text-[12px] text-[#0f1f3d]">Manager average: {managerAvg != null ? managerAvg.toFixed(2) : "—"}</p>
+          <p className="text-[12px] text-ds-text-primary">Peers — {(byTypeScores.PEER ?? []).length} reviewer(s), average: {peerAvg != null ? peerAvg.toFixed(2) : "—"}</p>
+          <p className="text-[12px] text-ds-text-primary">Direct reports — {(byTypeScores.DIRECT_REPORT ?? []).length} reviewer(s), average: {directAvg != null ? directAvg.toFixed(2) : "—"}</p>
+          <p className="text-[12px] text-ds-text-primary">Manager average: {managerAvg != null ? managerAvg.toFixed(2) : "—"}</p>
           {managerResponses.length > 0 ? (
             <div className="mt-3">
-              <p className="text-[11px] font-semibold text-[#0f1f3d] mb-2">Manager feedback (attributed)</p>
+              <p className="text-[11px] font-semibold text-ds-text-primary mb-2">Manager feedback (attributed)</p>
               <div className="space-y-2">
                 {managerResponses.map((r, idx) => (
-                  <div key={idx} className="border border-[#dde5f5] rounded-[8px] p-3">
-                    <p className="text-[11px] text-[#4a5a82]">{r.question}</p>
-                    <p className="text-[11px] text-[#0f1f3d] mt-1">Score: {r.score != null ? r.score.toFixed(1) : "—"}</p>
-                    {r.comment && <p className="text-[11px] text-[#4a5a82] mt-1">{r.comment}</p>}
+                  <div key={idx} className="border border-ds-border rounded-[8px] p-3">
+                    <p className="text-[11px] text-ds-text-secondary">{r.question}</p>
+                    <p className="text-[11px] text-ds-text-primary mt-1">Score: {r.score != null ? r.score.toFixed(1) : "—"}</p>
+                    {r.comment && <p className="text-[11px] text-ds-text-secondary mt-1">{r.comment}</p>}
                   </div>
                 ))}
               </div>
             </div>
           ) : (
-            <p className="text-[11px] text-[#8a97b8] mt-2">Manager feedback will appear after submission.</p>
+            <p className="text-[11px] text-ds-text-secondary mt-2">Manager feedback will appear after submission.</p>
           )}
         </div>
       </div>

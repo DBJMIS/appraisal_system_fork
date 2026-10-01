@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import Link from "next/link";
+import Link from "next/link";
+import { avatarAccent } from "@/lib/avatar-accent";
 
 interface PendingWorkplan {
   workplan_id: string;
@@ -144,12 +145,12 @@ export function WorkplanApprovalList({ initialPending }: WorkplanApprovalListPro
     padding: "10px 16px",
     textAlign: "left",
     fontSize: "10.5px",
-    fontWeight: 700,
+    fontWeight: 600,
     letterSpacing: "0.07em",
     textTransform: "uppercase",
-    color: "#8a97b8",
-    background: "#f8faff",
-    borderBottom: "1px solid #dde5f5",
+    color: "#646f79",
+    background: "#f3f3f3",
+    borderBottom: "1px solid #e7e7e7",
     whiteSpace: "nowrap",
   };
 
@@ -157,27 +158,27 @@ export function WorkplanApprovalList({ initialPending }: WorkplanApprovalListPro
     padding: "14px 16px",
     fontSize: "13.5px",
     verticalAlign: "middle",
-    borderBottom: "1px solid #dde5f5",
+    borderBottom: "1px solid #e7e7e7",
   };
 
   return (
     <div>
       {/* Alerts */}
       {error && (
-        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", padding: "14px 16px", borderRadius: "10px", background: "#fef2f2", border: "1px solid #fecaca", marginBottom: "16px" }}>
-          <span style={{ color: "#dc2626", marginTop: "2px" }}><AlertIcon /></span>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", padding: "14px 16px", borderRadius: "8px", background: "#fef2f2", border: "1px solid #fbd5d5", marginBottom: "16px" }}>
+          <span style={{ color: "#b42318", marginTop: "2px" }}><AlertIcon /></span>
           <div>
-            <div style={{ fontWeight: 600, fontSize: "13px", color: "#991b1b" }}>Error</div>
-            <div style={{ fontSize: "13px", color: "#b91c1c" }}>{error}</div>
+            <div style={{ fontWeight: 600, fontSize: "13px", color: "#b42318" }}>Error</div>
+            <div style={{ fontSize: "13px", color: "#b42318" }}>{error}</div>
           </div>
         </div>
       )}
 
       {success && (
-        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", padding: "14px 16px", borderRadius: "10px", background: "#f0fdf4", border: "1px solid #bbf7d0", marginBottom: "16px" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", padding: "14px 16px", borderRadius: "8px", background: "#ecfdf5", border: "1px solid #bbf0d9", marginBottom: "16px" }}>
           <div>
-            <div style={{ fontWeight: 600, fontSize: "13px", color: "#166534" }}>Success</div>
-            <div style={{ fontSize: "13px", color: "#15803d" }}>{success}</div>
+            <div style={{ fontWeight: 600, fontSize: "13px", color: "#2e7d4f" }}>Success</div>
+            <div style={{ fontSize: "13px", color: "#2e7d4f" }}>{success}</div>
           </div>
         </div>
       )}
@@ -186,22 +187,22 @@ export function WorkplanApprovalList({ initialPending }: WorkplanApprovalListPro
       <div
         style={{
           background: "white",
-          borderRadius: "14px",
-          border: "1px solid #dde5f5",
-          boxShadow: "0 2px 12px rgba(15,31,61,0.07), 0 0 1px rgba(15,31,61,0.1)",
+          borderRadius: "8px",
+          border: "1px solid #e7e7e7",
+          boxShadow: "none",
           overflow: "hidden",
         }}
       >
         {/* Card header */}
-        <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #dde5f5", display: "flex", alignItems: "center", gap: "10px" }}>
-          <div style={{ width: "32px", height: "32px", borderRadius: "9px", background: "#eff6ff", display: "flex", alignItems: "center", justifyContent: "center", color: "#3b82f6" }}>
+        <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #e7e7e7", display: "flex", alignItems: "center", gap: "10px" }}>
+          <div style={{ width: "32px", height: "32px", borderRadius: "9px", background: "#f3f3f3", display: "flex", alignItems: "center", justifyContent: "center", color: "#0d0e10" }}>
             <ClipboardIcon />
           </div>
           <div>
-            <div style={{ fontFamily: "Sora, sans-serif", fontSize: "15px", fontWeight: 600, color: "#0f1f3d", letterSpacing: "-0.01em" }}>
+            <div style={{ fontFamily: "var(--ds-font-sans)", fontSize: "15px", fontWeight: 600, color: "#0d0d0d", letterSpacing: "-0.01em" }}>
               Pending Approvals
             </div>
-            <div style={{ fontSize: "12px", color: "#8a97b8", marginTop: "1px" }}>
+            <div style={{ fontSize: "12px", color: "#646f79", marginTop: "1px" }}>
               Review workplans submitted by your direct reports
             </div>
           </div>
@@ -214,22 +215,22 @@ export function WorkplanApprovalList({ initialPending }: WorkplanApprovalListPro
                 width: "56px",
                 height: "56px",
                 borderRadius: "50%",
-                background: "#f0fdf4",
+                background: "#ecfdf5",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 margin: "0 auto 16px",
-                color: "#22c55e",
+                color: "#2e7d4f",
               }}
             >
               <svg style={{ width: 28, height: 28 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </div>
-            <div style={{ fontFamily: "Sora, sans-serif", fontSize: "15px", fontWeight: 600, color: "#0f1f3d", marginBottom: "6px" }}>
+            <div style={{ fontFamily: "var(--ds-font-sans)", fontSize: "15px", fontWeight: 600, color: "#0d0d0d", marginBottom: "6px" }}>
               All caught up!
             </div>
-            <p style={{ color: "#8a97b8", fontSize: "13px", maxWidth: "280px", margin: "0 auto", lineHeight: 1.5 }}>
+            <p style={{ color: "#646f79", fontSize: "13px", maxWidth: "280px", margin: "0 auto", lineHeight: 1.5 }}>
               No workplans are currently awaiting your approval. Check back later.
             </p>
           </div>
@@ -252,7 +253,7 @@ export function WorkplanApprovalList({ initialPending }: WorkplanApprovalListPro
                   <tr
                     key={item.workplan_id}
                     style={{ transition: "background 0.13s" }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = "#f4f8ff"; }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "#f3f3f3"; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                   >
                     <td style={tdStyle}>
@@ -262,12 +263,11 @@ export function WorkplanApprovalList({ initialPending }: WorkplanApprovalListPro
                             width: "34px",
                             height: "34px",
                             borderRadius: "50%",
-                            background: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
+                            ...avatarAccent(item.employee_name).style,
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            color: "white",
-                            fontFamily: "Sora, sans-serif",
+                            fontFamily: "var(--ds-font-sans)",
                             fontSize: "12px",
                             fontWeight: 600,
                             flexShrink: 0,
@@ -276,13 +276,13 @@ export function WorkplanApprovalList({ initialPending }: WorkplanApprovalListPro
                           {getInitials(item.employee_name)}
                         </div>
                         <div>
-                          <div style={{ fontWeight: 500, color: "#0f1f3d" }}>{item.employee_name}</div>
-                          <div style={{ fontSize: "11.5px", color: "#8a97b8" }}>{item.job_title}</div>
+                          <div style={{ fontWeight: 500, color: "#0d0d0d" }}>{item.employee_name}</div>
+                          <div style={{ fontSize: "11.5px", color: "#646f79" }}>{item.job_title}</div>
                         </div>
                       </div>
                     </td>
                     <td style={tdStyle}>
-                      <span style={{ color: "#4a5a82" }}>{item.division_name || "—"}</span>
+                      <span style={{ color: "#646f79" }}>{item.division_name || "—"}</span>
                     </td>
                     <td style={tdStyle}>
                       <span
@@ -291,20 +291,20 @@ export function WorkplanApprovalList({ initialPending }: WorkplanApprovalListPro
                           alignItems: "center",
                           gap: "6px",
                           padding: "4px 12px",
-                          borderRadius: "20px",
-                          background: "linear-gradient(135deg, #eff6ff, #dbeafe)",
-                          border: "1px solid #bfdbfe",
-                          fontFamily: "Sora, sans-serif",
+                          borderRadius: "4px",
+                          background: "#f3f3f3",
+                          border: "1px solid #d0d4d8",
+                          fontFamily: "var(--ds-font-sans)",
                           fontSize: "12px",
                           fontWeight: 600,
-                          color: "#1d4ed8",
+                          color: "#3d5a78",
                         }}
                       >
                         {item.fiscal_year}
                       </span>
                     </td>
                     <td style={tdStyle}>
-                      <span style={{ color: "#4a5a82" }}>{formatReviewType(item.review_type)}</span>
+                      <span style={{ color: "#646f79" }}>{formatReviewType(item.review_type)}</span>
                     </td>
                     <td style={tdStyle}>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -316,23 +316,23 @@ export function WorkplanApprovalList({ initialPending }: WorkplanApprovalListPro
                             width: "28px",
                             height: "28px",
                             borderRadius: "8px",
-                            background: "#eff6ff",
-                            border: "1px solid #bfdbfe",
-                            color: "#1d4ed8",
-                            fontFamily: "Sora, sans-serif",
+                            background: "#f3f3f3",
+                            border: "1px solid #d0d4d8",
+                            color: "#3d5a78",
+                            fontFamily: "var(--ds-font-sans)",
                             fontSize: "12px",
-                            fontWeight: 700,
+                            fontWeight: 600,
                           }}
                         >
                           {item.item_count}
                         </span>
-                        <span style={{ fontSize: "12px", color: "#8a97b8" }}>
+                        <span style={{ fontSize: "12px", color: "#646f79" }}>
                           ({item.total_weight}% weight)
                         </span>
                       </div>
                     </td>
                     <td style={tdStyle}>
-                      <span style={{ color: "#8a97b8", fontSize: "13px" }}>{formatDate(item.submitted_at)}</span>
+                      <span style={{ color: "#646f79", fontSize: "13px" }}>{formatDate(item.submitted_at)}</span>
                     </td>
                     <td style={tdStyle}>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -345,10 +345,10 @@ export function WorkplanApprovalList({ initialPending }: WorkplanApprovalListPro
                             padding: "7px 14px",
                             borderRadius: "8px",
                             background: "white",
-                            border: "1px solid #dde5f5",
+                            border: "1px solid #e7e7e7",
                             fontSize: "12.5px",
                             fontWeight: 500,
-                            color: "#4a5a82",
+                            color: "#646f79",
                             textDecoration: "none",
                             cursor: "pointer",
                             transition: "all 0.15s",
@@ -365,13 +365,13 @@ export function WorkplanApprovalList({ initialPending }: WorkplanApprovalListPro
                             gap: "6px",
                             padding: "7px 14px",
                             borderRadius: "8px",
-                            background: loading === item.appraisal_id ? "#e2e8f0" : "linear-gradient(135deg, #059669, #047857)",
+                            background: loading === item.appraisal_id ? "#e7e7e7" : "#0d0e10",
                             border: "none",
                             fontSize: "12.5px",
                             fontWeight: 600,
-                            color: loading === item.appraisal_id ? "#94a3b8" : "white",
+                            color: loading === item.appraisal_id ? "#646f79" : "white",
                             cursor: loading === item.appraisal_id ? "not-allowed" : "pointer",
-                            boxShadow: loading === item.appraisal_id ? "none" : "0 2px 8px rgba(5,150,105,0.35)",
+                            boxShadow: loading === item.appraisal_id ? "none" : "none",
                             transition: "all 0.15s",
                           }}
                         >
@@ -386,11 +386,11 @@ export function WorkplanApprovalList({ initialPending }: WorkplanApprovalListPro
                             gap: "6px",
                             padding: "7px 14px",
                             borderRadius: "8px",
-                            background: "#fff1f2",
-                            border: "1px solid #fecdd3",
+                            background: "#fef2f2",
+                            border: "1px solid #fbd5d5",
                             fontSize: "12.5px",
                             fontWeight: 500,
-                            color: "#e11d48",
+                            color: "#b42318",
                             cursor: loading === item.appraisal_id ? "not-allowed" : "pointer",
                             transition: "all 0.15s",
                             opacity: loading === item.appraisal_id ? 0.5 : 1,
@@ -411,13 +411,13 @@ export function WorkplanApprovalList({ initialPending }: WorkplanApprovalListPro
       {/* Reject Modal */}
       {rejectModalOpen && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-          <div style={{ background: "white", borderRadius: "14px", width: "100%", maxWidth: "480px", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)" }}>
-            <div style={{ padding: "20px 24px", borderBottom: "1px solid #dde5f5" }}>
-              <h3 style={{ fontFamily: "Sora, sans-serif", fontSize: "18px", fontWeight: 600, color: "#0f1f3d", margin: 0 }}>Return Workplan for Revision</h3>
-              <p style={{ fontSize: "13px", color: "#8a97b8", marginTop: "4px", marginBottom: 0 }}>Please provide feedback for the employee</p>
+          <div style={{ background: "white", borderRadius: "8px", width: "100%", maxWidth: "480px", boxShadow: "var(--ds-shadow-dialog)" }}>
+            <div style={{ padding: "20px 24px", borderBottom: "1px solid #e7e7e7" }}>
+              <h3 style={{ fontFamily: "var(--ds-font-sans)", fontSize: "18px", fontWeight: 600, color: "#0d0d0d", margin: 0 }}>Return Workplan for Revision</h3>
+              <p style={{ fontSize: "13px", color: "#646f79", marginTop: "4px", marginBottom: 0 }}>Please provide feedback for the employee</p>
             </div>
             <div style={{ padding: "20px 24px" }}>
-              <label style={{ display: "block", fontSize: "11.5px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#8a97b8", marginBottom: "8px" }}>
+              <label style={{ display: "block", fontSize: "11.5px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#646f79", marginBottom: "8px" }}>
                 Feedback / Reason for Revision
               </label>
               <textarea
@@ -428,29 +428,29 @@ export function WorkplanApprovalList({ initialPending }: WorkplanApprovalListPro
                   width: "100%",
                   padding: "12px 14px",
                   borderRadius: "8px",
-                  border: "1px solid #dde5f5",
+                  border: "1px solid #e7e7e7",
                   fontSize: "13.5px",
-                  color: "#0f1f3d",
-                  background: "#f8faff",
+                  color: "#0d0d0d",
+                  background: "#f3f3f3",
                   resize: "vertical",
                   minHeight: "100px",
                   outline: "none",
-                  fontFamily: "DM Sans, sans-serif",
+                  fontFamily: "var(--ds-font-sans)",
                   lineHeight: 1.6,
                 }}
               />
             </div>
-            <div style={{ padding: "16px 24px", borderTop: "1px solid #dde5f5", display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+            <div style={{ padding: "16px 24px", borderTop: "1px solid #e7e7e7", display: "flex", justifyContent: "flex-end", gap: "10px" }}>
               <button
                 onClick={() => { setRejectModalOpen(null); setRejectReason(""); }}
                 style={{
                   padding: "9px 20px",
                   borderRadius: "8px",
                   background: "white",
-                  border: "1px solid #dde5f5",
+                  border: "1px solid #e7e7e7",
                   fontSize: "13px",
                   fontWeight: 500,
-                  color: "#4a5a82",
+                  color: "#646f79",
                   cursor: "pointer",
                 }}
               >
@@ -462,11 +462,11 @@ export function WorkplanApprovalList({ initialPending }: WorkplanApprovalListPro
                 style={{
                   padding: "9px 20px",
                   borderRadius: "8px",
-                  background: rejectReason.trim() && loading !== rejectModalOpen ? "#e11d48" : "#e2e8f0",
+                  background: rejectReason.trim() && loading !== rejectModalOpen ? "#b42318" : "#e7e7e7",
                   border: "none",
                   fontSize: "13px",
                   fontWeight: 600,
-                  color: rejectReason.trim() && loading !== rejectModalOpen ? "white" : "#94a3b8",
+                  color: rejectReason.trim() && loading !== rejectModalOpen ? "white" : "#646f79",
                   cursor: rejectReason.trim() && loading !== rejectModalOpen ? "pointer" : "not-allowed",
                 }}
               >

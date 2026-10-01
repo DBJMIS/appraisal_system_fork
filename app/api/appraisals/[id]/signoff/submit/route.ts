@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getCurrentUser } from "@/lib/auth";
-import { generateAppraisalPDF } from "@/lib/appraisal-pdf";
+import { generateAppraisalPDFWithScore } from "@/lib/appraisal-pdf";
+import { persistScoreSnapshot } from "@/lib/appraisal-score-snapshot";
 import { uploadTransientDocument, createAgreement } from "@/lib/adobe-sign";
 import { resolveDepartmentHeadSystemUserId } from "@/lib/hrmis-approval-auth";
 import { resolveManagerAccessForAppraisal } from "@/lib/appraisal-manager-access";
+import { allowAppraisalTestBypass } from "@/lib/appraisal-test-bypass";
+import { fetchCompletionReport } from "@/lib/appraisal-completion-report";
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -18,44 +21,12 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // #region agent log
-    const paramsResolved = await params;
-    const appraisalIdFromParams = paramsResolved?.id;
-    fetch("http://127.0.0.1:7442/ingest/3c624e64-95d6-4fd6-a7c9-facfd0a29264", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "d0ea48" },
-      body: JSON.stringify({
-        sessionId: "d0ea48",
-        runId: "signoff-submit",
-        hypothesisId: "A_B",
-        location: "signoff/submit/route.ts:POST entry",
-        message: "signoff/submit POST handler entered",
-        data: { hasParams: !!paramsResolved, appraisalId: appraisalIdFromParams, paramsKeys: paramsResolved ? Object.keys(paramsResolved) : [] },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
     const currentUser = await getCurrentUser();
     if (!currentUser?.id) {
-      // #region agent log
-      fetch("http://127.0.0.1:7442/ingest/3c624e64-95d6-4fd6-a7c9-facfd0a29264", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "d0ea48" },
-        body: JSON.stringify({
-          sessionId: "d0ea48",
-          runId: "signoff-submit",
-          hypothesisId: "E",
-          location: "signoff/submit/route.ts:401",
-          message: "returning 401 Unauthorized",
-          data: {},
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id: appraisalId } = paramsResolved;
+    const { id: appraisalId } = await params;
     const supabase = getSupabaseAdmin();
 
     const { data: appraisal, error: appErr } = await supabase
@@ -64,42 +35,8 @@ export async function POST(
       .eq("id", appraisalId)
       .single();
 
-    // #region agent log
-    fetch("http://127.0.0.1:7442/ingest/3c624e64-95d6-4fd6-a7c9-facfd0a29264", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "d0ea48" },
-      body: JSON.stringify({
-        sessionId: "d0ea48",
-        runId: "signoff-submit",
-        hypothesisId: "C_D",
-        location: "signoff/submit/route.ts:after appraisal query",
-        message: "appraisal fetch result",
-        data: {
-          appraisalId,
-          appErrMessage: appErr?.message ?? null,
-          appErrCode: appErr?.code ?? null,
-          hasAppraisal: !!appraisal,
-          willReturn404: !!(appErr || !appraisal),
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-
     if (appErr || !appraisal) {
-      // #region agent log
-      console.log("[signoff/submit] 404 reason:", {
-        appraisalId,
-        appErrMessage: appErr?.message ?? null,
-        appErrCode: appErr?.code ?? null,
-        appErrDetails: appErr ?? null,
-        hasAppraisal: !!appraisal,
-      });
-      // #endregion
-      return NextResponse.json(
-        { error: "Not found", debug: { appErr: appErr?.message ?? null, appraisalId } },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
     const managerAccess = await resolveManagerAccessForAppraisal({
@@ -127,6 +64,14 @@ export async function POST(
 
     if (existing) {
       return NextResponse.json({ error: "An active sign-off agreement already exists" }, { status: 400 });
+    }
+
+    const report = await fetchCompletionReport(supabase, appraisalId);
+    if (!report?.canSubmit) {
+      const message = report?.blockers?.length
+        ? `Complete all required fields before sign-off: ${report.blockers.join("; ")}`
+        : "Complete all required fields before sign-off.";
+      return NextResponse.json({ error: message, blockers: report?.blockers }, { status: 400 });
     }
 
     const { data: emp } = await supabase
@@ -166,7 +111,7 @@ export async function POST(
     const managerActsAsFinalApprover =
       appraisal.manager_employee_id === hodEmployeeId || !!managerUser;
 
-    const testOnlyEmployeeSigner = process.env.ALLOW_APPRAISAL_TEST_BYPASS === "true";
+    const testOnlyEmployeeSigner = allowAppraisalTestBypass();
 
     const signers: { email: string; name: string }[] = [
       { email: emp.email, name: emp.full_name ?? "Employee" },
@@ -193,7 +138,7 @@ export async function POST(
         .eq("id", appraisalId);
     }
 
-    const pdfBuffer = await generateAppraisalPDF(appraisalId);
+    const { pdf: pdfBuffer, scoreSource } = await generateAppraisalPDFWithScore(appraisalId);
 
     const draftPath = `${appraisalId}/draft-${Date.now()}.pdf`;
     const { error: storageError } = await supabase.storage
@@ -227,6 +172,22 @@ export async function POST(
       .from("appraisals")
       .update({ status: "PENDING_SIGNOFF" })
       .eq("id", appraisalId);
+
+    if (scoreSource) {
+      try {
+        await persistScoreSnapshot({
+          supabase,
+          appraisalId,
+          scoreType: "FINAL",
+          isManagementTrack: scoreSource.isManagementTrack,
+          input: scoreSource.input,
+          result: scoreSource.result,
+          actor: currentUser.id,
+        });
+      } catch (snapshotErr) {
+        console.error("[signoff/submit] FINAL score snapshot not stored:", snapshotErr);
+      }
+    }
 
     try {
       const { createNotificationForEmployeeId } = await import("@/lib/notifications/create");

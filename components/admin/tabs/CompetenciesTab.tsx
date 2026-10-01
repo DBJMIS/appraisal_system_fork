@@ -6,6 +6,7 @@ import {
   ActionButton,
   IconButton,
   ActiveBadge,
+  EmptyTableRow,
   LayersIcon,
   ListIcon,
   PlusIcon,
@@ -25,6 +26,7 @@ export function CompetenciesTab() {
     toggleFactorActive,
     emptyCategoryForm,
     emptyFactorForm,
+    referenceDataLoaded,
   } = useAdminPanel();
 
   return (
@@ -33,8 +35,8 @@ export function CompetenciesTab() {
         title="Competency Categories"
         subtitle="Group competencies by type"
         icon={<LayersIcon />}
-        iconBg="#f3e8ff"
-        iconColor="#7c3aed"
+        iconBg="#f1f4f7"
+        iconColor="#3d5a78"
         delay="0.12s"
         rightAction={<ActionButton variant="primary" onClick={() => setCategoryModal({ open: true, mode: "create", data: emptyCategoryForm })}><PlusIcon /> Create Category</ActionButton>}
       >
@@ -48,14 +50,19 @@ export function CompetenciesTab() {
             </tr>
           </thead>
           <tbody>
+            {categories.length === 0 && (
+              <EmptyTableRow colSpan={4}>
+                {referenceDataLoaded ? "No competency categories configured." : "Competency categories could not be loaded."}
+              </EmptyTableRow>
+            )}
             {categories.map((cat) => (
-              <tr key={cat.id} style={{ transition: "background 0.13s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "#f4f8ff"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
-                <td style={{ ...tdStyle, fontWeight: 600, color: "#0f1f3d" }}>{cat.name}</td>
+              <tr key={cat.id} style={{ transition: "background 0.13s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "#f3f3f3"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
+                <td style={{ ...tdStyle, fontWeight: 600, color: "#0d0d0d" }}>{cat.name}</td>
                 <td style={tdStyle}>{cat.category_type}</td>
-                <td style={tdStyle}>{cat.applies_to.replace("_", " ")}</td>
+                <td style={tdStyle}>{cat.applies_to ? cat.applies_to.replace("_", " ") : "—"}</td>
                 <td style={tdStyle}>
                   <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    <IconButton onClick={() => setCategoryModal({ open: true, mode: "edit", id: cat.id, data: { name: cat.name, category_type: cat.category_type, applies_to: cat.applies_to } })}><PencilIcon /></IconButton>
+                    <IconButton onClick={() => setCategoryModal({ open: true, mode: "edit", id: cat.id, data: { name: cat.name, category_type: cat.category_type, applies_to: cat.applies_to ?? "" } })}><PencilIcon /></IconButton>
                     <IconButton variant="danger" onClick={() => setDeleteConfirm({ open: true, type: "category", id: cat.id, name: cat.name })}><TrashIcon /></IconButton>
                   </div>
                 </td>
@@ -69,8 +76,8 @@ export function CompetenciesTab() {
         title="Competency Factors"
         subtitle="Individual competencies within categories"
         icon={<ListIcon />}
-        iconBg="#f0fdfa"
-        iconColor="#0d9488"
+        iconBg="#f3f3f3"
+        iconColor="#0d0e10"
         delay="0.16s"
         rightAction={<ActionButton variant="primary" onClick={() => setFactorModal({ open: true, mode: "create", data: emptyFactorForm })}><PlusIcon /> Create Factor</ActionButton>}
       >
@@ -86,9 +93,14 @@ export function CompetenciesTab() {
             </tr>
           </thead>
           <tbody>
+            {factors.length === 0 && (
+              <EmptyTableRow colSpan={6}>
+                {referenceDataLoaded ? "No competency factors configured." : "Competency factors could not be loaded."}
+              </EmptyTableRow>
+            )}
             {factors.map((f) => (
-              <tr key={f.id} style={{ transition: "background 0.13s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "#f4f8ff"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
-                <td style={{ ...tdStyle, fontWeight: 600, color: "#0f1f3d" }}>{f.name}</td>
+              <tr key={f.id} style={{ transition: "background 0.13s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "#f3f3f3"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
+                <td style={{ ...tdStyle, fontWeight: 600, color: "#0d0d0d" }}>{f.name}</td>
                 <td style={tdStyle}>{f.category_name}</td>
                 <td style={tdStyle}>{f.display_order}</td>
                 <td style={tdStyle}>{f.weight ?? "—"}</td>

@@ -63,6 +63,27 @@ export async function transitionStatus(
   const fromStatus = (row.status as string) as AppraisalStatus;
   assertTransition(fromStatus, toStatus);
 
+  const updatePayload: Record<string, unknown> = { status: toStatus };
+  if (toStatus === "SUBMITTED" || toStatus === "MANAGER_REVIEW") updatePayload.submitted_at = new Date().toISOString();
+  if (toStatus === "PENDING_SIGNOFF") updatePayload.manager_completed_at = new Date().toISOString();
+  if (toStatus === "COMPLETE") updatePayload.hr_closed_at = new Date().toISOString();
+
+  // Conditional on the status just read, so a concurrent or repeated request cannot apply the same transition twice.
+  const { data: updated, error: updateErr } = await supabase
+    .from("appraisals")
+    .update(updatePayload)
+    .eq("id", appraisalId)
+    .eq("status", fromStatus)
+    .select("id");
+
+  if (updateErr) {
+    console.error("[appraisal-workflow] status update failed", { appraisalId, toStatus, code: updateErr.code });
+    return { error: "Could not update the appraisal status. Please try again." };
+  }
+  if (!updated || updated.length === 0) {
+    return { error: "This appraisal was updated by someone else. Refresh the page and try again." };
+  }
+
   const { error: timelineErr } = await supabase.from("appraisal_timeline").insert({
     appraisal_id: appraisalId,
     from_status: fromStatus,
@@ -70,31 +91,19 @@ export async function transitionStatus(
     changed_by: userId,
     note: note ?? null,
   });
-
   if (timelineErr) {
-    return { error: timelineErr.message };
+    console.error("[appraisal-workflow] timeline insert failed", { appraisalId, toStatus, code: timelineErr.code });
   }
 
   const auditSummary = (note && note.trim()) ? note.trim() : `${fromStatus} → ${toStatus}`;
-  await supabase.from("appraisal_audit").insert({
+  const { error: auditErr } = await supabase.from("appraisal_audit").insert({
     appraisal_id: appraisalId,
     action_type: "status_change",
     actor_id: userId,
     summary: auditSummary,
   });
-
-  const updatePayload: Record<string, unknown> = { status: toStatus };
-  if (toStatus === "SUBMITTED" || toStatus === "MANAGER_REVIEW") updatePayload.submitted_at = new Date().toISOString();
-  if (toStatus === "PENDING_SIGNOFF") updatePayload.manager_completed_at = new Date().toISOString();
-  if (toStatus === "COMPLETE") updatePayload.hr_closed_at = new Date().toISOString();
-
-  const { error: updateErr } = await supabase
-    .from("appraisals")
-    .update(updatePayload)
-    .eq("id", appraisalId);
-
-  if (updateErr) {
-    return { error: updateErr.message };
+  if (auditErr) {
+    console.error("[appraisal-workflow] audit insert failed", { appraisalId, toStatus, code: auditErr.code });
   }
 
   return { error: null };
@@ -119,10 +128,10 @@ export function canEditField(
   const rules: Record<EditableField, boolean> = {
     workplan_structure: draftBoth,
     actual_ytd: status === "SELF_ASSESSMENT" && userRole === "EMPLOYEE",
-    self_rating: (status === "SELF_ASSESSMENT" && userRole === "EMPLOYEE") || draftBoth,
-    self_comments: (status === "SELF_ASSESSMENT" && userRole === "EMPLOYEE") || draftBoth,
-    manager_rating: (status === "MANAGER_REVIEW" && userRole === "MANAGER") || draftBoth,
-    manager_comments: (status === "MANAGER_REVIEW" && userRole === "MANAGER") || draftBoth,
+    self_rating: status === "SELF_ASSESSMENT" && userRole === "EMPLOYEE",
+    self_comments: status === "SELF_ASSESSMENT" && userRole === "EMPLOYEE",
+    manager_rating: status === "MANAGER_REVIEW" && userRole === "MANAGER",
+    manager_comments: status === "MANAGER_REVIEW" && userRole === "MANAGER",
   };
   return rules[field] ?? false;
 }

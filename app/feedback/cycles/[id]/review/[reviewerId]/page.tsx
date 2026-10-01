@@ -21,8 +21,8 @@ export default async function FeedbackReviewPage({
   if (!user?.id || !user?.employee_id) {
     return (
       <div className="w-full px-7 py-6">
-        <div className="rounded-[14px] border border-[#dde5f5] bg-white p-6 shadow-[0_2px_12px_rgba(15,31,61,.07)]">
-          <p className="text-[13px] text-[#8a97b8]">Please sign in to complete this review.</p>
+        <div className="rounded-ds-panel border border-ds-border bg-white p-6">
+          <p className="text-[13px] text-ds-text-secondary">Please sign in to complete this review.</p>
         </div>
       </div>
     );
@@ -113,7 +113,7 @@ export default async function FeedbackReviewPage({
       <div className="mb-5">
         <Link
           href="/feedback"
-          className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#3b82f6] hover:text-[#1d4ed8] transition-colors"
+          className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-ds-accent hover:text-ds-info transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           Back to 360 Feedback

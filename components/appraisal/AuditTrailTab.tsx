@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { History } from "lucide-react";
 
 export interface AuditTrailTabProps {
   appraisalId: string;
@@ -23,6 +22,26 @@ function formatDateTime(iso?: string): string {
   } catch {
     return iso;
   }
+}
+
+const ACTION_LABELS: Record<string, string> = {
+  status_change: "Status change",
+  approval: "Approval",
+  signoff: "Sign-off",
+  check_in_created: "Check-in",
+  hr_recommendations_saved: "HR recommendations",
+  midyear_created: "Mid-Year Review created",
+  midyear_employee_submitted: "Mid-Year Review submitted",
+  midyear_manager_reviewed: "Mid-Year Review manager reviewed",
+  midyear_completed: "Mid-Year Review completed",
+  midyear_cancelled: "Mid-Year Review cancelled",
+  score_snapshot_recorded: "Score recorded",
+};
+
+function formatActionType(actionType: string): string {
+  if (ACTION_LABELS[actionType]) return ACTION_LABELS[actionType];
+  const text = actionType.replace(/_/g, " ").trim();
+  return text ? text.charAt(0).toUpperCase() + text.slice(1) : "Activity";
 }
 
 export function AuditTrailTab({ appraisalId }: AuditTrailTabProps) {
@@ -50,53 +69,43 @@ export function AuditTrailTab({ appraisalId }: AuditTrailTabProps) {
   }, [appraisalId]);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20 text-[#8a97b8] text-sm">
-        Loading...
-      </div>
-    );
+    return <p className="py-4 text-[13px] text-ds-text-secondary">Loading audit trail…</p>;
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="border border-[#dde5f5] rounded-[14px] overflow-hidden">
-        <div className="flex items-center gap-2.5 px-5 py-3.5 bg-[#f8faff] border-b border-[#dde5f5]">
-          <div className="w-8 h-8 rounded-[8px] bg-[#e0f2fe] border border-[#bae6fd] flex items-center justify-center">
-            <History className="w-4 h-4 text-[#0284c7]" />
-          </div>
-          <div>
-            <p className="font-['Sora'] text-[13px] font-bold">Audit trail</p>
-            <p className="text-[11px] text-[#8a97b8]">Who, when, what</p>
-          </div>
-        </div>
-        <div className="p-5">
-          {events.length === 0 ? (
-            <p className="text-[13px] text-[#8a97b8] py-4">No activity recorded yet.</p>
-          ) : (
-            <ul className="flex flex-col gap-0">
-              {events.map((evt, index) => (
-                <li
-                  key={evt.id}
-                  className={index < events.length - 1 ? "border-b border-[#dde5f5]" : ""}
-                  style={{ padding: "12px 0" }}
-                >
-                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                    <span className="text-[12px] text-[#8a97b8] shrink-0">
-                      {formatDateTime(evt.acted_at)}
-                    </span>
-                    <span className="text-[13px] font-medium text-[#0f1f3d]">
-                      {evt.actor_name}
-                    </span>
-                    <span className="text-[13px] text-[#0f1f3d]">
-                      {evt.summary}
-                    </span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+    <section aria-labelledby="audit-trail-heading">
+      <div className="mb-3">
+        <h2 id="audit-trail-heading" className="m-0 text-ds-section text-ds-text-primary">
+          Audit trail
+        </h2>
+        <p className="m-0 mt-0.5 text-[13px] text-ds-text-secondary">Who, when, what</p>
       </div>
-    </div>
+      <div className="overflow-hidden rounded-ds-panel border border-ds-border bg-ds-background">
+        {events.length === 0 ? (
+          <p className="m-0 px-4 py-6 text-center text-[13px] text-ds-text-secondary">No activity recorded yet.</p>
+        ) : (
+          <ol className="m-0 list-none divide-y divide-ds-border p-0">
+            {events.map((evt) => {
+              const actionLabel = formatActionType(evt.action_type);
+              return (
+                <li key={evt.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4 gap-y-0.5 px-4 py-2.5">
+                  <p className="m-0 text-[13px] font-medium leading-[1.45] text-ds-text-primary">
+                    {evt.summary || actionLabel}
+                  </p>
+                  <time dateTime={evt.acted_at} className="whitespace-nowrap text-xs tabular-nums text-ds-text-secondary">
+                    {formatDateTime(evt.acted_at)}
+                  </time>
+                  <p className="col-span-2 m-0 text-xs text-ds-text-secondary sm:col-span-1">
+                    <span className="font-medium text-ds-text-primary">{evt.actor_name}</span>
+                    <span aria-hidden="true"> · </span>
+                    <span>{actionLabel}</span>
+                  </p>
+                </li>
+              );
+            })}
+          </ol>
+        )}
+      </div>
+    </section>
   );
 }

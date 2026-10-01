@@ -2,24 +2,10 @@
 
 import { useState, useCallback } from "react";
 import { ReportingPerson } from "@/lib/reporting-structure";
+import { avatarAccent } from "@/lib/avatar-accent";
 
 interface DirectReportsProps {
   reports: ReportingPerson[];
-}
-
-type AvatarVariant = "teal" | "violet" | "rose" | "amber" | "blue";
-
-const avatarGradients: Record<AvatarVariant, string> = {
-  teal: "linear-gradient(135deg, #0d9488, #0f766e)",
-  violet: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-  rose: "linear-gradient(135deg, #e11d48, #be123c)",
-  amber: "linear-gradient(135deg, #f59e0b, #d97706)",
-  blue: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
-};
-
-function getAvatarVariant(index: number): AvatarVariant {
-  const variants: AvatarVariant[] = ["teal", "violet", "rose", "amber", "blue"];
-  return variants[index % variants.length];
 }
 
 function getInitials(fullname: string): string {
@@ -72,14 +58,13 @@ function PersonCard({
   isLoadingIndirect,
   onChevronClick,
 }: PersonCardProps) {
-  const variant = getAvatarVariant(index);
   const initials = getInitials(person.full_name || "??");
   const showDropdown = !!isDropdownOpen;
 
   return (
     <div className="space-y-1.5">
       <div
-        className="group flex cursor-pointer items-center gap-3 rounded-[10px] px-4 py-3 transition-all duration-200 hover:translate-x-1 hover:bg-white"
+        className="group flex cursor-pointer items-center gap-3 rounded-ds-panel px-4 py-3 transition-all duration-200 hover:translate-x-1 hover:bg-white"
         style={{
           background: "var(--surface)",
           border: "1px solid var(--border-color)",
@@ -95,8 +80,8 @@ function PersonCard({
       >
         {/* Avatar */}
         <div
-          className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full font-display text-[13px] font-semibold text-white"
-          style={{ background: avatarGradients[variant] }}
+          className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full text-[13px] font-semibold"
+          style={avatarAccent(person.full_name).style}
         >
           {initials}
         </div>
@@ -142,7 +127,7 @@ function PersonCard({
       {/* Dropdown: who reports to this person */}
       {showDropdown && (
         <div
-          className="rounded-[10px] border pl-4 pr-3 py-2 ml-2"
+          className="rounded-ds-panel border pl-4 pr-3 py-2 ml-2"
           style={{
             background: "var(--surface)",
             borderColor: "var(--border-color)",
@@ -157,7 +142,6 @@ function PersonCard({
           ) : (
             <ul className="space-y-1.5">
               {(indirectReports ?? []).map((sub, subIdx) => {
-                const subVariant = getAvatarVariant(subIdx);
                 const subInitials = getInitials(sub.full_name || "??");
                 return (
                   <li
@@ -166,8 +150,8 @@ function PersonCard({
                     style={{ background: "var(--surface-2)" }}
                   >
                     <div
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-display text-[12px] font-semibold text-white"
-                      style={{ background: avatarGradients[subVariant] }}
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold"
+                      style={avatarAccent(sub.full_name).style}
                     >
                       {subInitials}
                     </div>
@@ -228,7 +212,7 @@ export function DirectReports({ reports }: DirectReportsProps) {
 
   return (
     <div
-      className="overflow-hidden rounded-[14px] bg-white"
+      className="overflow-hidden rounded-ds-panel bg-white"
       style={{
         boxShadow: "var(--shadow-card)",
         border: "1px solid var(--border-color)",
@@ -242,9 +226,9 @@ export function DirectReports({ reports }: DirectReportsProps) {
         <div className="flex items-center gap-3">
           <div
             className="flex h-8 w-8 items-center justify-center rounded-[9px]"
-            style={{ backgroundColor: "#f3e8ff" }}
+            style={{ backgroundColor: "#f1f4f7" }}
           >
-            <span style={{ color: "#9333ea" }}>
+            <span style={{ color: "#3d5a78" }}>
               <UsersIcon />
             </span>
           </div>
@@ -255,7 +239,7 @@ export function DirectReports({ reports }: DirectReportsProps) {
 
         {/* Count badge */}
         <span
-          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold"
+          className="inline-flex items-center gap-1.5 rounded-ds-badge px-2.5 py-1 text-xs font-semibold"
           style={{
             backgroundColor: "var(--surface-2)",
             border: "1px solid var(--border-color)",
@@ -263,7 +247,7 @@ export function DirectReports({ reports }: DirectReportsProps) {
         >
           <span
             className="h-1.5 w-1.5 rounded-full"
-            style={{ backgroundColor: "#7c3aed" }}
+            style={{ backgroundColor: "#3d5a78" }}
           />
           {reports.length}
         </span>

@@ -81,11 +81,11 @@ export const GRADE_STYLES: Record<
   GradeLetter,
   { bg: string; border: string; text: string; barColor: string; ringStroke: string }
 > = {
-  A: { bg: "bg-emerald-50", border: "border-emerald-300", text: "text-emerald-700", barColor: "#059669", ringStroke: "#34d399" },
-  B: { bg: "bg-blue-50", border: "border-blue-300", text: "text-blue-700", barColor: "#2563eb", ringStroke: "#60a5fa" },
-  C: { bg: "bg-sky-50", border: "border-sky-300", text: "text-sky-700", barColor: "#0284c7", ringStroke: "#38bdf8" },
-  D: { bg: "bg-amber-50", border: "border-amber-300", text: "text-amber-700", barColor: "#d97706", ringStroke: "#fbbf24" },
-  E: { bg: "bg-rose-50", border: "border-rose-300", text: "text-rose-700", barColor: "#dc2626", ringStroke: "#f87171" },
+  A: { bg: "bg-ds-success-subtle", border: "border-ds-success-border", text: "text-ds-success", barColor: "#059669", ringStroke: "#34d399" },
+  B: { bg: "bg-ds-info-subtle", border: "border-ds-info-border", text: "text-ds-info", barColor: "#2563eb", ringStroke: "#60a5fa" },
+  C: { bg: "bg-ds-info-subtle", border: "border-ds-info-border", text: "text-ds-info", barColor: "#0284c7", ringStroke: "#38bdf8" },
+  D: { bg: "bg-ds-warning-subtle", border: "border-ds-warning-border", text: "text-ds-warning", barColor: "#d97706", ringStroke: "#fbbf24" },
+  E: { bg: "bg-ds-error-subtle", border: "border-ds-error-border", text: "text-ds-error", barColor: "#dc2626", ringStroke: "#f87171" },
 };
 
 // ── Average ratings from tab data (fallback when no weights) ──

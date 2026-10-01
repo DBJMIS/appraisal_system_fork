@@ -62,55 +62,85 @@ function rolesSignature(roles: string[]) {
   return [...roles].slice().sort().join(",");
 }
 
+const NO_ROLES_HINT = "No roles selected = standard employee access";
+
 function RoleCheckboxes({
   selected,
   onChange,
+  compact = false,
 }: {
   selected: string[];
   onChange: (r: string[]) => void;
+  /** Table density: tighter spacing, and the no-roles hint is shown once in the column header. */
+  compact?: boolean;
 }) {
   const toggle = (r: string) =>
     onChange(selected.includes(r) ? selected.filter((x) => x !== r) : [...selected, r]);
 
   return (
-    <div className="space-y-3">
+    <div className={compact ? "space-y-1.5" : "space-y-3"} data-role-list>
       {[
         {
           value: "hr",
           label: "HR",
           desc: "All appraisals, 360 reviews, HR administration",
-          color: "bg-[#e1f5ee] text-[#0F6E56]",
+          color: "bg-ds-surface text-ds-accent-hover",
         },
         {
           value: "admin",
           label: "Admin",
           desc: "HR administration, operational plan, user management",
-          color: "bg-[#faeeda] text-[#854F0B]",
+          color: "bg-ds-warning-subtle text-ds-warning",
         },
       ].map(({ value, label, desc, color }) => (
-        <label key={value} className="flex cursor-pointer items-start gap-3">
-          <div
+        <label
+          key={value}
+          data-role-option={value}
+          className={cn("flex cursor-pointer items-start", compact ? "gap-2" : "gap-3")}
+        >
+          <button
+            type="button"
+            role="checkbox"
+            aria-checked={selected.includes(value)}
+            aria-label={label}
             onClick={() => toggle(value)}
             className={cn(
-              "mt-0.5 flex h-4 w-4 flex-shrink-0 cursor-pointer items-center justify-center rounded border-2 transition-colors",
+              "flex h-4 w-4 flex-shrink-0 cursor-pointer items-center justify-center rounded border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-focus focus-visible:ring-offset-1",
+              compact ? "mt-px" : "mt-0.5",
               selected.includes(value)
-                ? "border-[#1D9E75] bg-[#1D9E75]"
-                : "border-[#dde5f5] bg-white hover:border-[#1D9E75]"
+                ? "border-ds-accent bg-ds-accent"
+                : "border-ds-border bg-white hover:border-ds-accent"
             )}
           >
             {selected.includes(value) && (
-              <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+              <svg width="10" height="8" viewBox="0 0 10 8" fill="none" aria-hidden="true">
                 <path d="M1 4l3 3 5-6" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
               </svg>
             )}
-          </div>
-          <div>
-            <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${color}`}>{label}</span>
-            <p className="mt-0.5 text-xs text-[#94a3b8]">{desc}</p>
+          </button>
+          <div className="min-w-0">
+            <span
+              className={cn(
+                "rounded-ds-badge font-semibold",
+                compact ? "px-1.5 py-px text-[11px] leading-4" : "px-2 py-0.5 text-xs",
+                color
+              )}
+            >
+              {label}
+            </span>
+            <p
+              data-role-desc
+              className={cn(
+                "text-ds-text-secondary",
+                compact ? "mt-px text-[11px] leading-snug" : "mt-0.5 text-xs"
+              )}
+            >
+              {desc}
+            </p>
           </div>
         </label>
       ))}
-      <p className="mt-1 text-xs text-[#cbd5e1]">No roles selected = standard employee access</p>
+      {!compact && <p className="mt-1 text-xs text-ds-border-strong">{NO_ROLES_HINT}</p>}
     </div>
   );
 }
@@ -330,7 +360,7 @@ export function UserAdministrationTable() {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
         {error && users.length > 0 && (
-          <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-200">
+          <div className="rounded-lg border border-ds-warning-border bg-ds-warning-subtle px-3 py-2 text-sm text-ds-warning dark:text-amber-200">
             {error}
           </div>
         )}
@@ -349,7 +379,7 @@ export function UserAdministrationTable() {
                     <Label htmlFor="employee-search">Search employee</Label>
                     <div className="relative mt-1.5">
                       <svg
-                        className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]"
+                        className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ds-text-secondary"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
@@ -369,7 +399,7 @@ export function UserAdministrationTable() {
                       />
                       {searchLoading && (
                         <svg
-                          className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[#94a3b8]"
+                          className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-ds-text-secondary"
                           viewBox="0 0 24 24"
                           fill="none"
                           stroke="currentColor"
@@ -380,7 +410,7 @@ export function UserAdministrationTable() {
                       )}
                     </div>
                     {searchResults.length > 0 && (
-                      <div className="mt-2 max-h-64 overflow-auto rounded-xl border border-[#dde5f5] bg-white shadow-sm">
+                      <div className="mt-2 max-h-64 overflow-auto rounded-ds-panel border border-ds-border bg-white">
                         {searchResults.map((user) => (
                           <button
                             key={user.employee_id}
@@ -390,9 +420,9 @@ export function UserAdministrationTable() {
                               setSearchQuery("");
                               setSearchResults([]);
                             }}
-                            className="flex w-full items-center gap-3 border-b border-[#f0f4ff] px-4 py-3 text-left hover:bg-[#f8faff] last:border-b-0"
+                            className="flex w-full items-center gap-3 border-b border-ds-surface px-4 py-3 text-left hover:bg-ds-surface last:border-b-0"
                           >
-                            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[#e1f5ee] text-xs font-semibold text-[#0F6E56]">
+                            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-ds-surface text-xs font-semibold text-ds-accent-hover">
                               {user.full_name
                                 .split(" ")
                                 .map((n) => n[0])
@@ -400,8 +430,8 @@ export function UserAdministrationTable() {
                                 .join("")}
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-[#0f2044]">{user.full_name}</p>
-                              <p className="text-xs text-[#94a3b8]">
+                              <p className="text-sm font-medium text-ds-text-primary">{user.full_name}</p>
+                              <p className="text-xs text-ds-text-secondary">
                                 {user.email}
                                 {user.title ? ` · ${user.title}` : ""}
                               </p>
@@ -411,13 +441,13 @@ export function UserAdministrationTable() {
                       </div>
                     )}
                     {searchQuery.length >= 2 && !searchLoading && searchResults.length === 0 && (
-                      <p className="mt-2 text-sm text-[#94a3b8]">No employees found in Dynamics</p>
+                      <p className="mt-2 text-sm text-ds-text-secondary">No employees found in Dynamics</p>
                     )}
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div className="flex items-center gap-3 rounded-xl border border-[#dde5f5] bg-[#f8faff] p-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#e1f5ee] text-sm font-semibold text-[#0F6E56]">
+                    <div className="flex items-center gap-3 rounded-ds-panel border border-ds-border bg-ds-surface p-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-ds-surface text-sm font-semibold text-ds-accent-hover">
                         {selectedUser.full_name
                           .split(" ")
                           .map((n) => n[0])
@@ -425,13 +455,13 @@ export function UserAdministrationTable() {
                           .join("")}
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-semibold text-[#0f2044]">{selectedUser.full_name}</p>
-                        <p className="text-xs text-[#94a3b8]">{selectedUser.email}</p>
+                        <p className="text-sm font-semibold text-ds-text-primary">{selectedUser.full_name}</p>
+                        <p className="text-xs text-ds-text-secondary">{selectedUser.email}</p>
                       </div>
                       <button
                         type="button"
                         onClick={() => setSelectedUser(null)}
-                        className="text-xs text-[#94a3b8] hover:text-[#ef4444]"
+                        className="text-xs text-ds-text-secondary hover:text-ds-error"
                       >
                         Change
                       </button>
@@ -456,7 +486,7 @@ export function UserAdministrationTable() {
                     type="button"
                     onClick={handleAddUser}
                     disabled={!selectedUser || addSubmitting}
-                    className={!selectedUser ? "cursor-not-allowed bg-[#e8edf8] text-[#94a3b8] hover:bg-[#e8edf8]" : "bg-[#1D9E75] text-white hover:bg-[#178f68]"}
+                    className={!selectedUser ? "cursor-not-allowed bg-ds-border text-ds-text-secondary hover:bg-ds-border" : "bg-ds-accent text-white hover:bg-ds-success"}
                   >
                     {addSubmitting ? "Adding…" : "Add user"}
                   </Button>
@@ -484,56 +514,90 @@ export function UserAdministrationTable() {
           }
         />
       ) : (
-        <div className="animate-fade-up-delay-1 rounded-xl border bg-card">
-          <Table>
+        <div className="animate-fade-up-delay-1 rounded-ds-panel border bg-card">
+          <Table className="min-w-[880px] table-fixed">
+            <colgroup>
+              <col data-col="email" style={{ width: "22%" }} />
+              <col data-col="display-name" style={{ width: "20%" }} />
+              <col data-col="roles" />
+              <col data-col="division" style={{ width: "14%" }} />
+              <col data-col="active" style={{ width: "64px" }} />
+              <col data-col="actions" style={{ width: "104px" }} />
+            </colgroup>
             <TableHeader>
               <TableRow>
-                <TableHead>Email</TableHead>
-                <TableHead>Display name</TableHead>
-                <TableHead>Roles</TableHead>
-                <TableHead>Division</TableHead>
-                <TableHead>Active</TableHead>
-                <TableHead className="w-[100px]">Actions</TableHead>
+                <TableHead className="px-3">Email</TableHead>
+                <TableHead className="px-3">Display name</TableHead>
+                <TableHead className="h-auto px-3 py-2">
+                  Roles
+                  <span data-roles-hint className="block text-[11px] font-normal text-ds-text-muted">
+                    {NO_ROLES_HINT}
+                  </span>
+                </TableHead>
+                <TableHead className="px-3">Division</TableHead>
+                <TableHead className="px-3">Active</TableHead>
+                <TableHead className="px-3 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((u) => (
-                <TableRow key={u.id}>
-                  <TableCell className="font-medium">{u.email ?? "—"}</TableCell>
-                  <TableCell>
-                    <Input
-                      className="h-9 w-[180px]"
-                      value={getDisplayName(u)}
-                      onChange={(e) => setEditDisplayName((prev) => ({ ...prev, [u.id]: e.target.value }))}
-                      placeholder="—"
-                    />
-                  </TableCell>
-                  <TableCell className="max-w-[260px] align-top">
-                    <RoleCheckboxes
-                      selected={editRoles[u.id] ?? normalizeRoles(u)}
-                      onChange={(newRoles) =>
-                        setEditRoles((prev) => ({ ...prev, [u.id]: newRoles }))
-                      }
-                    />
-                  </TableCell>
-                  <TableCell className="max-w-[220px] text-sm text-[#64748b]">
-                    {u.division_name?.trim() ? u.division_name : "—"}
-                  </TableCell>
-                  <TableCell>
-                    <Checkbox
-                      checked={getIsActive(u)}
-                      onCheckedChange={(checked) => setEditIsActive((prev) => ({ ...prev, [u.id]: !!checked }))}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    {hasChanges(u) && (
-                      <Button size="sm" disabled={updatingId === u.id} onClick={() => saveUser(u)}>
-                        {updatingId === u.id ? "Saving…" : "Save"}
+              {users.map((u) => {
+                const dirty = hasChanges(u);
+                const saving = updatingId === u.id;
+                return (
+                  <TableRow key={u.id} data-user-row={u.id}>
+                    <TableCell className="px-3 py-2 text-[13px] font-medium [overflow-wrap:anywhere]">
+                      {u.email?.includes("@") ? (
+                        <>
+                          {u.email.slice(0, u.email.indexOf("@"))}
+                          <wbr />
+                          {u.email.slice(u.email.indexOf("@"))}
+                        </>
+                      ) : (
+                        u.email ?? "—"
+                      )}
+                    </TableCell>
+                    <TableCell className="px-3 py-2">
+                      <Input
+                        className="h-8 w-full text-[13px]"
+                        value={getDisplayName(u)}
+                        onChange={(e) => setEditDisplayName((prev) => ({ ...prev, [u.id]: e.target.value }))}
+                        placeholder="—"
+                        aria-label={`Display name for ${u.email ?? "user"}`}
+                      />
+                    </TableCell>
+                    <TableCell className="px-3 py-2 align-top [&:has([role=checkbox])]:pr-3">
+                      <RoleCheckboxes
+                        compact
+                        selected={editRoles[u.id] ?? normalizeRoles(u)}
+                        onChange={(newRoles) =>
+                          setEditRoles((prev) => ({ ...prev, [u.id]: newRoles }))
+                        }
+                      />
+                    </TableCell>
+                    <TableCell className="px-3 py-2 text-[13px] text-ds-text-secondary [overflow-wrap:anywhere]">
+                      {u.division_name?.trim() ? u.division_name : "—"}
+                    </TableCell>
+                    <TableCell className="px-3 py-2">
+                      <Checkbox
+                        checked={getIsActive(u)}
+                        onCheckedChange={(checked) => setEditIsActive((prev) => ({ ...prev, [u.id]: !!checked }))}
+                      />
+                    </TableCell>
+                    <TableCell className="px-3 py-2 text-right">
+                      <Button
+                        size="sm"
+                        data-row-save
+                        disabled={!dirty || saving}
+                        onClick={() => saveUser(u)}
+                        aria-label={`Save changes for ${u.email ?? "user"}`}
+                        className="h-7 w-[76px] px-2 text-xs disabled:border disabled:border-ds-border disabled:bg-ds-surface disabled:text-ds-text-secondary disabled:opacity-100"
+                      >
+                        {saving ? "Saving…" : "Save"}
                       </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>

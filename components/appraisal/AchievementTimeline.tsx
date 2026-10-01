@@ -79,7 +79,7 @@ export function AchievementTimeline({ employeeId }: AchievementTimelineProps) {
 
   return (
     <div
-      className="overflow-hidden rounded-[14px] bg-white"
+      className="overflow-hidden rounded-ds-panel bg-white"
       style={{
         boxShadow: "var(--shadow-card)",
         border: "1px solid var(--border-color)",
@@ -91,9 +91,9 @@ export function AchievementTimeline({ employeeId }: AchievementTimelineProps) {
       >
         <div
           className="flex h-[30px] w-[30px] items-center justify-center rounded-lg"
-          style={{ backgroundColor: "#eff6ff" }}
+          style={{ backgroundColor: "#f3f3f3" }}
         >
-          <span style={{ color: "#2563eb" }}>
+          <span style={{ color: "#0d0e10" }}>
             <TimelineIcon />
           </span>
         </div>

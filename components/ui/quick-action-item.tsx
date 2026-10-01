@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type ColorVariant = "blue" | "teal" | "violet" | "gold";
@@ -10,63 +11,36 @@ interface QuickActionItemProps {
   icon: React.ReactNode;
   name: string;
   description: string;
+  /** Accepted for compatibility; quick actions are neutral. */
   variant?: ColorVariant;
   className?: string;
 }
-
-const variantStyles: Record<ColorVariant, { bg: string; color: string }> = {
-  blue: { bg: "#eff6ff", color: "var(--accent)" },
-  teal: { bg: "#f0fdfa", color: "var(--teal)" },
-  violet: { bg: "#f3e8ff", color: "#9333ea" },
-  gold: { bg: "#fffbeb", color: "#d97706" },
-};
-
-const ChevronRightIcon = () => (
-  <svg className="h-4 w-4 transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <polyline points="9 18 15 12 9 6" />
-  </svg>
-);
 
 export function QuickActionItem({
   href,
   icon,
   name,
   description,
-  variant = "blue",
   className,
 }: QuickActionItemProps) {
-  const styles = variantStyles[variant];
-
   return (
     <Link
       href={href}
       className={cn(
-        "group flex items-center justify-between px-6 py-3.5 transition-colors hover:bg-surface",
+        "group flex items-center justify-between gap-3 border-b border-ds-border px-4 py-3 transition-colors duration-100 hover:bg-ds-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ds-focus",
         className
       )}
-      style={{ borderBottom: "1px solid var(--border-color)" }}
     >
-      <div className="flex items-center gap-3">
-        <div
-          className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[9px]"
-          style={{ backgroundColor: styles.bg }}
-        >
-          <span style={{ color: styles.color }}>{icon}</span>
-        </div>
-        <div>
-          <p className="text-[13.5px] font-medium text-text-primary">{name}</p>
-          <p className="text-[11.5px] text-text-muted">{description}</p>
+      <div className="flex min-w-0 items-center gap-3">
+        <span className="shrink-0 text-ds-text-secondary [&_svg]:h-4 [&_svg]:w-4" aria-hidden="true">
+          {icon}
+        </span>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-ds-text-primary">{name}</p>
+          <p className="truncate text-xs text-ds-text-secondary">{description}</p>
         </div>
       </div>
-      <div
-        className="flex h-7 w-7 items-center justify-center rounded-md text-text-secondary transition-all group-hover:bg-accent group-hover:text-white"
-        style={{
-          backgroundColor: "var(--surface-2)",
-          border: "1px solid var(--border-color)",
-        }}
-      >
-        <ChevronRightIcon />
-      </div>
+      <ChevronRight className="h-4 w-4 shrink-0 text-ds-text-muted group-hover:text-ds-text-primary" aria-hidden="true" />
     </Link>
   );
 }

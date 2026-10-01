@@ -17,23 +17,23 @@ export default function AdminPage() {
             style={{
               width: "42px",
               height: "42px",
-              borderRadius: "12px",
-              background: "linear-gradient(135deg, #eff6ff, #dbeafe)",
+              borderRadius: "8px",
+              background: "#f3f3f3",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               flexShrink: 0,
-              color: "#3b82f6",
+              color: "#0d0e10",
             }}
           >
             <CogIcon />
           </div>
           <h1
             style={{
-              fontFamily: "Sora, sans-serif",
+              fontFamily: "var(--ds-font-sans)",
               fontSize: "24px",
-              fontWeight: 700,
-              color: "#0f1f3d",
+              fontWeight: 600,
+              color: "#0d0d0d",
               letterSpacing: "-0.02em",
               margin: 0,
             }}
@@ -44,7 +44,7 @@ export default function AdminPage() {
         <p
           style={{
             fontSize: "13.5px",
-            color: "#8a97b8",
+            color: "#646f79",
             marginTop: "2px",
             paddingLeft: "56px",
             margin: 0,

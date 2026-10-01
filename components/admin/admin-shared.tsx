@@ -11,13 +11,17 @@ export interface Cycle {
   end_date: string;
   status: string;
   phase?: string;
+  midyear_review_enabled?: boolean;
+  midyear_scoring_enabled?: boolean;
+  midyear_window_start?: string | null;
+  midyear_due_date?: string | null;
 }
 
 export interface Category {
   id: string;
   name: string;
   category_type: string;
-  applies_to: string;
+  applies_to: string | null;
   active: boolean;
 }
 
@@ -61,12 +65,49 @@ export interface FeedbackCycle {
 export type CategoryForm = { name: string; category_type: string; applies_to: string };
 export type FactorForm = { category_id: string; name: string; description: string; display_order: number; weight: number };
 export type RuleForm = { rating_label: string; recommendation: string; description: string };
-export type CycleForm = { cycle_type: string; fiscal_year: string; start_date: string; end_date: string };
+export type CycleForm = {
+  cycle_type: string;
+  fiscal_year: string;
+  start_date: string;
+  end_date: string;
+  midyear_review_enabled: boolean;
+  midyear_scoring_enabled: boolean;
+  midyear_window_start: string;
+  midyear_due_date: string;
+};
 
 export const emptyCategoryForm: CategoryForm = { name: "", category_type: "core", applies_to: "both" };
 export const emptyFactorForm: FactorForm = { category_id: "", name: "", description: "", display_order: 0, weight: 0 };
 export const emptyRuleForm: RuleForm = { rating_label: "", recommendation: "", description: "" };
-export const emptyCycleForm: CycleForm = { cycle_type: "annual", fiscal_year: "", start_date: "", end_date: "" };
+export const emptyCycleForm: CycleForm = {
+  cycle_type: "annual",
+  fiscal_year: "",
+  start_date: "",
+  end_date: "",
+  midyear_review_enabled: false,
+  midyear_scoring_enabled: false,
+  midyear_window_start: "",
+  midyear_due_date: "",
+};
+
+export function cycleToForm(c: Cycle): CycleForm {
+  return {
+    cycle_type: c.cycle_type,
+    fiscal_year: c.fiscal_year,
+    start_date: c.start_date,
+    end_date: c.end_date,
+    midyear_review_enabled: c.midyear_review_enabled === true,
+    midyear_scoring_enabled: c.midyear_review_enabled === true && c.midyear_scoring_enabled === true,
+    midyear_window_start: c.midyear_window_start ?? "",
+    midyear_due_date: c.midyear_due_date ?? "",
+  };
+}
+
+/** Mid-Year status label for the cycle list. */
+export function cycleMidyearStatus(c: Cycle): "Off" | "On" | "Scored" {
+  if (c.midyear_review_enabled !== true) return "Off";
+  return c.midyear_scoring_enabled === true ? "Scored" : "On";
+}
 
 export const CalendarIcon = () => (
   <svg style={{ width: 16, height: 16 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -169,12 +210,12 @@ export const thStyle: React.CSSProperties = {
   padding: "10px 16px",
   textAlign: "left",
   fontSize: "10.5px",
-  fontWeight: 700,
+  fontWeight: 600,
   letterSpacing: "0.07em",
   textTransform: "uppercase",
-  color: "#8a97b8",
-  background: "#f8faff",
-  borderBottom: "1px solid #dde5f5",
+  color: "#646f79",
+  background: "#f3f3f3",
+  borderBottom: "1px solid #e7e7e7",
   whiteSpace: "nowrap",
 };
 
@@ -182,13 +223,13 @@ export const tdStyle: React.CSSProperties = {
   padding: "12px 16px",
   fontSize: "13.5px",
   verticalAlign: "middle",
-  borderBottom: "1px solid #dde5f5",
+  borderBottom: "1px solid #e7e7e7",
 };
 
 export const statusStyles: Record<string, { bg: string; text: string; border: string; dot: string }> = {
-  draft: { bg: "#f1f5f9", text: "#64748b", border: "#e2e8f0", dot: "#94a3b8" },
-  open: { bg: "#f0fdf4", text: "#166534", border: "#bbf7d0", dot: "#22c55e" },
-  closed: { bg: "#fef2f2", text: "#991b1b", border: "#fecaca", dot: "#dc2626" },
+  draft: { bg: "#f3f3f3", text: "#646f79", border: "#e7e7e7", dot: "#646f79" },
+  open: { bg: "#ecfdf5", text: "#2e7d4f", border: "#bbf0d9", dot: "#34d399" },
+  closed: { bg: "#f3f3f3", text: "#646f79", border: "#e7e7e7", dot: "#8b949e" },
 };
 
 export function CardWrapper({
@@ -214,9 +255,9 @@ export function CardWrapper({
     <div
       style={{
         background: "white",
-        borderRadius: "14px",
-        border: "1px solid #dde5f5",
-        boxShadow: "0 2px 12px rgba(15,31,61,0.07), 0 0 1px rgba(15,31,61,0.1)",
+        borderRadius: "8px",
+        border: "1px solid #e7e7e7",
+        boxShadow: "none",
         overflow: "hidden",
         marginBottom: "20px",
         animation: "fadeUp 0.4s ease both",
@@ -226,7 +267,7 @@ export function CardWrapper({
       <div
         style={{
           padding: "20px 24px 16px",
-          borderBottom: "1px solid #dde5f5",
+          borderBottom: "1px solid #e7e7e7",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -248,8 +289,8 @@ export function CardWrapper({
             {icon}
           </div>
           <div>
-            <div style={{ fontFamily: "Sora, sans-serif", fontSize: "15px", fontWeight: 600, color: "#0f1f3d", letterSpacing: "-0.01em" }}>{title}</div>
-            {subtitle && <div style={{ fontSize: "12px", color: "#8a97b8", marginTop: "1px" }}>{subtitle}</div>}
+            <div style={{ fontFamily: "var(--ds-font-sans)", fontSize: "15px", fontWeight: 600, color: "#0d0d0d", letterSpacing: "-0.01em" }}>{title}</div>
+            {subtitle && <div style={{ fontSize: "12px", color: "#646f79", marginTop: "1px" }}>{subtitle}</div>}
           </div>
         </div>
         {rightAction}
@@ -271,9 +312,9 @@ export function ActionButton({
   disabled?: boolean;
 }) {
   const styles: Record<string, React.CSSProperties> = {
-    primary: { background: "linear-gradient(135deg, #3b82f6, #1d4ed8)", color: "white", border: "none", boxShadow: "0 2px 8px rgba(59,130,246,0.35)" },
-    secondary: { background: "white", color: "#4a5a82", border: "1px solid #dde5f5" },
-    danger: { background: "#fff1f2", color: "#e11d48", border: "1px solid #fecdd3" },
+    primary: { background: "#0d0e10", color: "white", border: "none", boxShadow: "none" },
+    secondary: { background: "white", color: "#646f79", border: "1px solid #e7e7e7" },
+    danger: { background: "#fef2f2", color: "#b42318", border: "1px solid #fbd5d5" },
   };
   return (
     <button
@@ -284,24 +325,24 @@ export function ActionButton({
         if (variant === "primary") {
           e.currentTarget.style.filter = "brightness(1.05)";
         } else if (variant === "danger") {
-          e.currentTarget.style.background = "#ffe4e6";
-          e.currentTarget.style.borderColor = "#fda4af";
+          e.currentTarget.style.background = "#fef2f2";
+          e.currentTarget.style.borderColor = "#fbd5d5";
         } else {
-          e.currentTarget.style.background = "#f8fafc";
-          e.currentTarget.style.borderColor = "#cfd9ee";
+          e.currentTarget.style.background = "#f3f3f3";
+          e.currentTarget.style.borderColor = "#d0d4d8";
         }
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.filter = "";
         if (variant === "primary") {
-          e.currentTarget.style.background = "linear-gradient(135deg, #3b82f6, #1d4ed8)";
+          e.currentTarget.style.background = "#0d0e10";
           e.currentTarget.style.borderColor = "transparent";
         } else if (variant === "danger") {
-          e.currentTarget.style.background = "#fff1f2";
-          e.currentTarget.style.borderColor = "#fecdd3";
+          e.currentTarget.style.background = "#fef2f2";
+          e.currentTarget.style.borderColor = "#fbd5d5";
         } else {
           e.currentTarget.style.background = "white";
-          e.currentTarget.style.borderColor = "#dde5f5";
+          e.currentTarget.style.borderColor = "#e7e7e7";
         }
       }}
       style={{
@@ -339,12 +380,12 @@ export function IconButton({
         width: "30px",
         height: "30px",
         borderRadius: "8px",
-        background: variant === "danger" ? "#fff1f2" : "white",
-        border: `1px solid ${variant === "danger" ? "#fecdd3" : "#dde5f5"}`,
+        background: variant === "danger" ? "#fef2f2" : "white",
+        border: `1px solid ${variant === "danger" ? "#fbd5d5" : "#e7e7e7"}`,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        color: variant === "danger" ? "#e11d48" : "#4a5a82",
+        color: variant === "danger" ? "#b42318" : "#646f79",
         cursor: "pointer",
         transition: "all 0.15s",
       }}
@@ -363,7 +404,7 @@ export function StatusBadge({ status }: { status: string }) {
         alignItems: "center",
         gap: "5px",
         padding: "3px 10px",
-        borderRadius: "20px",
+        borderRadius: "4px",
         fontSize: "11.5px",
         fontWeight: 600,
         background: style.bg,
@@ -378,6 +419,16 @@ export function StatusBadge({ status }: { status: string }) {
   );
 }
 
+export function EmptyTableRow({ colSpan, children }: { colSpan: number; children: React.ReactNode }) {
+  return (
+    <tr>
+      <td colSpan={colSpan} data-empty-state style={{ ...tdStyle, color: "#646f79", fontSize: "13px" }}>
+        {children}
+      </td>
+    </tr>
+  );
+}
+
 export function ActiveBadge({ active }: { active: boolean }) {
   return (
     <span
@@ -386,15 +437,15 @@ export function ActiveBadge({ active }: { active: boolean }) {
         alignItems: "center",
         gap: "5px",
         padding: "3px 10px",
-        borderRadius: "20px",
+        borderRadius: "4px",
         fontSize: "11.5px",
         fontWeight: 600,
-        background: active ? "#f0fdf4" : "#f1f5f9",
-        color: active ? "#166534" : "#64748b",
-        border: `1px solid ${active ? "#bbf7d0" : "#e2e8f0"}`,
+        background: active ? "#ecfdf5" : "#f3f3f3",
+        color: active ? "#2e7d4f" : "#646f79",
+        border: `1px solid ${active ? "#bbf0d9" : "#e7e7e7"}`,
       }}
     >
-      <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: active ? "#22c55e" : "#94a3b8" }} />
+      <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: active ? "#2e7d4f" : "#646f79" }} />
       {active ? "Active" : "Inactive"}
     </span>
   );

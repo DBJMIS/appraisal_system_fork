@@ -25,8 +25,8 @@ export function ScoreDistributionChart({ buckets, meanScore }: Props) {
       datasets: [
         {
           data: buckets.map((b) => b.count),
-          backgroundColor: buckets.map((b) => b.barColor ?? "#0d9488"),
-          borderColor: buckets.map((b) => (b.anomaly ? "#f97316" : "transparent")),
+          backgroundColor: buckets.map((b) => b.barColor ?? "#0d0e10"),
+          borderColor: buckets.map((b) => (b.anomaly ? "#8a5a00" : "transparent")),
           borderWidth: buckets.map((b) => (b.anomaly ? 2 : 0)),
           borderRadius: 3,
         },
@@ -51,12 +51,12 @@ export function ScoreDistributionChart({ buckets, meanScore }: Props) {
       scales: {
         x: {
           grid: { display: false },
-          ticks: { font: { size: 10 }, color: "#8a97b8" },
+          ticks: { font: { size: 10 }, color: "#646f79" },
         },
         y: {
           beginAtZero: true,
-          grid: { color: "#f0f4fa" },
-          ticks: { font: { size: 10 }, color: "#8a97b8", precision: 0 },
+          grid: { color: "#f3f3f3" },
+          ticks: { font: { size: 10 }, color: "#646f79", precision: 0 },
         },
       },
     }),
@@ -74,7 +74,7 @@ export function ScoreDistributionChart({ buckets, meanScore }: Props) {
             style={{
               position: "relative",
               height: 10,
-              background: "#f0f4fa",
+              background: "#f3f3f3",
               borderRadius: 4,
             }}
           >
@@ -85,14 +85,14 @@ export function ScoreDistributionChart({ buckets, meanScore }: Props) {
                 top: -6,
                 bottom: -6,
                 width: 0,
-                borderLeft: "2px dashed #8a97b8",
+                borderLeft: "2px dashed #646f79",
                 transform: "translateX(-1px)",
               }}
               title={`Mean ${meanScore}%`}
             />
           </div>
-          <div style={{ fontSize: 10, color: "#8a97b8", marginTop: 4 }}>
-            Mean overall score: <strong style={{ color: "#0f1f3d" }}>{meanScore}%</strong>
+          <div style={{ fontSize: 10, color: "#646f79", marginTop: 4 }}>
+            Mean overall score: <strong style={{ color: "#0d0d0d" }}>{meanScore}%</strong>
           </div>
         </div>
       )}

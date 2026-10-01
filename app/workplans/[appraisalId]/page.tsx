@@ -232,7 +232,7 @@ export default function WorkplanEditorPage({
               Back to Workplans
             </Link>
           </Button>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight">
+          <h1 className="mt-2 text-ds-page-title text-ds-text-primary">
             Employee Workplan
           </h1>
           <p className="text-muted-foreground">
@@ -261,7 +261,7 @@ export default function WorkplanEditorPage({
       )}
 
       {saveSuccess && (
-        <Alert className="border-green-200 bg-green-50 text-green-900 dark:border-green-900 dark:bg-green-950/30 dark:text-green-100">
+        <Alert className="border-ds-success-border bg-ds-success-subtle text-ds-success dark:border-green-900 dark:bg-green-950/30 dark:text-green-100">
           <AlertTitle>Success</AlertTitle>
           <AlertDescription>Workplan saved successfully.</AlertDescription>
         </Alert>
@@ -271,8 +271,8 @@ export default function WorkplanEditorPage({
         <Alert
           className={
             totalWeight > 100
-              ? "border-red-200 bg-red-50 text-red-900 dark:border-red-900 dark:bg-red-950/30 dark:text-red-100"
-              : "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100"
+              ? "border-ds-error-border bg-ds-error-subtle text-ds-error dark:border-red-900 dark:bg-red-950/30 dark:text-red-100"
+              : "border-ds-warning-border bg-ds-warning-subtle text-ds-warning dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100"
           }
         >
           <AlertTriangle className="h-4 w-4" />
@@ -284,7 +284,7 @@ export default function WorkplanEditorPage({
       )}
 
       {hasEmptyTask && (
-        <Alert className="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30">
+        <Alert className="border-ds-warning-border bg-ds-warning-subtle dark:border-amber-900 dark:bg-amber-950/30">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Required field</AlertTitle>
           <AlertDescription>
@@ -424,9 +424,9 @@ export default function WorkplanEditorPage({
                   <TableCell
                     className={
                       totalWeight > 100
-                        ? "text-red-600 dark:text-red-400"
+                        ? "text-ds-error dark:text-red-400"
                         : totalWeight < 100
-                          ? "text-amber-600 dark:text-amber-400"
+                          ? "text-ds-warning dark:text-amber-400"
                           : ""
                     }
                   >

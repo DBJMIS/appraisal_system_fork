@@ -1,15 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { calculateAppraisalScore } from "@/lib/score-engine";
+import { requireHrOrAdmin } from "@/lib/route-guards";
 
 /**
  * POST /api/appraisals/[id]/calculate-score
  * Runs the scoring engine for the appraisal and stores results in appraisal_section_scores.
+ * HR or admin only.
  */
 export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const guard = await requireHrOrAdmin();
+    if (!guard.ok) return guard.response;
+
     const { id: appraisalId } = await params;
     if (!appraisalId) {
       return NextResponse.json(

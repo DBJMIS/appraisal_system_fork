@@ -22,6 +22,8 @@ export interface AdminPanelContextValue {
   rules: Rule[];
   feedbackCycles: FeedbackCycle[];
   loading: boolean;
+  /** True once reference data (competencies, rating scale, rules) has loaded successfully. */
+  referenceDataLoaded: boolean;
   syncing: boolean;
   error: string | null;
   success: string | null;

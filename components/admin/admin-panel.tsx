@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase";
 import {
   Dialog,
   DialogContent,
@@ -25,13 +24,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AdminPanelContext } from "./AdminPanelContext";
 import { AdminTabs } from "./AdminTabs";
-import type { Cycle, Category, Factor, RatingRow, Rule, FeedbackCycle } from "./admin-shared";
+import type { Cycle, Category, Factor, RatingRow, Rule, FeedbackCycle, CycleForm } from "./admin-shared";
 import {
   emptyCategoryForm,
   emptyFactorForm,
   emptyRuleForm,
   emptyCycleForm,
 } from "./admin-shared";
+import { CycleMidyearFields, midyearRequestFields, validateMidyearForm } from "./CycleMidyearFields";
+import { LOCKED_CYCLE_STATUSES } from "@/lib/midyear-config";
 
 const AlertIcon = () => (
   <svg style={{ width: 16, height: 16 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -44,7 +45,27 @@ const AlertIcon = () => (
 type CategoryForm = { name: string; category_type: string; applies_to: string };
 type FactorForm = { category_id: string; name: string; description: string; display_order: number; weight: number };
 type RuleForm = { rating_label: string; recommendation: string; description: string };
-type CycleForm = { cycle_type: string; fiscal_year: string; start_date: string; end_date: string };
+
+const REFERENCE_API = "/api/admin/reference-data";
+const REFERENCE_LOAD_ERROR = "Could not load competencies, rating scale or recommendation rules. Please try again.";
+
+type ReferenceData = { categories: Category[]; factors: Factor[]; ratingScale: RatingRow[]; rules: Rule[] };
+
+/** Sends a reference-data write; resolves to a user-facing error message, or null on success. */
+async function sendReferenceWrite(path: string, method: "POST" | "PATCH" | "DELETE", body?: unknown): Promise<string | null> {
+  try {
+    const res = await fetch(`${REFERENCE_API}/${path}`, {
+      method,
+      headers: body === undefined ? undefined : { "Content-Type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    if (res.ok) return null;
+    const data = await res.json().catch(() => ({}));
+    return typeof data.error === "string" && data.error ? data.error : "Request failed. Please try again.";
+  } catch {
+    return "Request failed. Please try again.";
+  }
+}
 
 export function AdminPanel() {
   const [cycles, setCycles] = useState<Cycle[]>([]);
@@ -54,6 +75,7 @@ export function AdminPanel() {
   const [rules, setRules] = useState<Rule[]>([]);
   const [feedbackCycles, setFeedbackCycles] = useState<FeedbackCycle[]>([]);
   const [loading, setLoading] = useState(true);
+  const [referenceDataLoaded, setReferenceDataLoaded] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -67,25 +89,28 @@ export function AdminPanel() {
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const supabase = createClient();
     try {
-      const [cyclesRes, feedbackCyclesRes, catResp, facResp, scaleResp, ruleResp] = await Promise.all([
+      const [cyclesRes, feedbackCyclesRes, reference] = await Promise.all([
         fetch("/api/admin/cycles").then((r) => (r.ok ? r.json() : [])),
         fetch("/api/admin/feedback/cycles").then((r) => (r.ok ? r.json() : [])),
-        supabase.from("evaluation_categories").select("*").order("category_type"),
-        supabase.from("evaluation_factors").select("id, category_id, name, description, display_order, weight, active").order("display_order"),
-        supabase.from("rating_scale").select("id, code, factor, label").order("factor", { ascending: false }),
-        supabase.from("recommendation_rules").select("*").order("rating_label"),
+        fetch(REFERENCE_API)
+          .then(async (r) => (r.ok ? ((await r.json()) as Partial<ReferenceData>) : null))
+          .catch(() => null),
       ]);
       setCycles(Array.isArray(cyclesRes) ? (cyclesRes as Cycle[]) : []);
       setFeedbackCycles(Array.isArray(feedbackCyclesRes) ? (feedbackCyclesRes as FeedbackCycle[]) : []);
-      const cats = (catResp.data ?? []) as Category[];
-      setCategories(cats);
-      const catMap = new Map(cats.map((c) => [c.id, c.name]));
-      const facData = (facResp.data ?? []) as Factor[];
-      setFactors(facData.map((f) => ({ ...f, category_name: catMap.get(f.category_id) ?? "—" })));
-      setRatingScale((scaleResp.data ?? []) as RatingRow[]);
-      setRules((ruleResp.data ?? []) as Rule[]);
+      if (reference) {
+        const cats = Array.isArray(reference.categories) ? reference.categories : [];
+        setCategories(cats);
+        const catMap = new Map(cats.map((c) => [c.id, c.name]));
+        const facData = Array.isArray(reference.factors) ? reference.factors : [];
+        setFactors(facData.map((f) => ({ ...f, category_name: catMap.get(f.category_id) ?? "—" })));
+        setRatingScale(Array.isArray(reference.ratingScale) ? reference.ratingScale : []);
+        setRules(Array.isArray(reference.rules) ? reference.rules : []);
+        setReferenceDataLoaded(true);
+      } else {
+        setError(REFERENCE_LOAD_ERROR);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");
     } finally {
@@ -131,12 +156,17 @@ export function AdminPanel() {
       setError("All fields are required.");
       return;
     }
+    const midyearError = validateMidyearForm(data);
+    if (midyearError) {
+      setError(midyearError);
+      return;
+    }
     setError(null);
     if (mode === "create") {
       const res = await fetch("/api/admin/cycles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fiscal_year: data.fiscal_year, cycle_type: data.cycle_type, start_date: data.start_date, end_date: data.end_date }),
+        body: JSON.stringify({ fiscal_year: data.fiscal_year, cycle_type: data.cycle_type, start_date: data.start_date, end_date: data.end_date, ...midyearRequestFields(data) }),
       });
       const result = await res.json().catch(() => ({}));
       if (!res.ok) { setError(result.error ?? "Failed to create cycle"); return; }
@@ -145,7 +175,7 @@ export function AdminPanel() {
       const res = await fetch(`/api/admin/cycles/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fiscal_year: data.fiscal_year, cycle_type: data.cycle_type, start_date: data.start_date, end_date: data.end_date }),
+        body: JSON.stringify(midyearRequestFields(data)),
       });
       const result = await res.json().catch(() => ({}));
       if (!res.ok) { setError(result.error ?? "Failed to update cycle"); return; }
@@ -189,14 +219,14 @@ export function AdminPanel() {
     const { data, mode, id } = categoryModal;
     if (!data.name.trim()) { setError("Name is required."); return; }
     setError(null);
-    const supabase = createClient();
+    const fields = { name: data.name, category_type: data.category_type, applies_to: data.applies_to };
     if (mode === "create") {
-      const { error: e } = await supabase.from("evaluation_categories").insert({ name: data.name, category_type: data.category_type, applies_to: data.applies_to });
-      if (e) { setError(e.message); return; }
+      const e = await sendReferenceWrite("categories", "POST", fields);
+      if (e) { setError(e); return; }
       showSuccess("Category created.");
     } else if (id) {
-      const { error: e } = await supabase.from("evaluation_categories").update({ name: data.name, category_type: data.category_type, applies_to: data.applies_to }).eq("id", id);
-      if (e) { setError(e.message); return; }
+      const e = await sendReferenceWrite(`categories/${encodeURIComponent(id)}`, "PATCH", fields);
+      if (e) { setError(e); return; }
       showSuccess("Category updated.");
     }
     setCategoryModal({ open: false, mode: "create", data: emptyCategoryForm });
@@ -204,14 +234,8 @@ export function AdminPanel() {
   };
 
   const deleteCategory = async (id: string) => {
-    const supabase = createClient();
-    const { error: e } = await supabase.from("evaluation_categories").delete().eq("id", id);
-    if (e) {
-      if (e.code === "23503" || e.message.includes("violates foreign key")) {
-        setError("Cannot delete category: It has related factors. Delete the factors first.");
-      } else { setError(e.message); }
-      return;
-    }
+    const e = await sendReferenceWrite(`categories/${encodeURIComponent(id)}`, "DELETE");
+    if (e) { setError(e); return; }
     showSuccess("Category deleted.");
     load();
   };
@@ -220,14 +244,14 @@ export function AdminPanel() {
     const { data, mode, id } = factorModal;
     if (!data.category_id || !data.name.trim()) { setError("Category and name are required."); return; }
     setError(null);
-    const supabase = createClient();
+    const fields = { category_id: data.category_id, name: data.name, description: data.description || null, display_order: data.display_order, weight: data.weight || null };
     if (mode === "create") {
-      const { error: e } = await supabase.from("evaluation_factors").insert({ category_id: data.category_id, name: data.name, description: data.description || null, display_order: data.display_order, weight: data.weight || null });
-      if (e) { setError(e.message); return; }
+      const e = await sendReferenceWrite("factors", "POST", fields);
+      if (e) { setError(e); return; }
       showSuccess("Factor created.");
     } else if (id) {
-      const { error: e } = await supabase.from("evaluation_factors").update({ category_id: data.category_id, name: data.name, description: data.description || null, display_order: data.display_order, weight: data.weight || null }).eq("id", id);
-      if (e) { setError(e.message); return; }
+      const e = await sendReferenceWrite(`factors/${encodeURIComponent(id)}`, "PATCH", fields);
+      if (e) { setError(e); return; }
       showSuccess("Factor updated.");
     }
     setFactorModal({ open: false, mode: "create", data: emptyFactorForm });
@@ -235,22 +259,15 @@ export function AdminPanel() {
   };
 
   const toggleFactorActive = async (factor: Factor) => {
-    const supabase = createClient();
-    const { error: e } = await supabase.from("evaluation_factors").update({ active: !factor.active }).eq("id", factor.id);
-    if (e) { setError(e.message); return; }
+    const e = await sendReferenceWrite(`factors/${encodeURIComponent(factor.id)}`, "PATCH", { active: !factor.active });
+    if (e) { setError(e); return; }
     showSuccess("Factor updated.");
     load();
   };
 
   const deleteFactor = async (id: string) => {
-    const supabase = createClient();
-    const { error: e } = await supabase.from("evaluation_factors").delete().eq("id", id);
-    if (e) {
-      if (e.code === "23503" || e.message.includes("violates foreign key")) {
-        setError("Cannot delete factor: It has related appraisal ratings. Deactivate it instead.");
-      } else { setError(e.message); }
-      return;
-    }
+    const e = await sendReferenceWrite(`factors/${encodeURIComponent(id)}`, "DELETE");
+    if (e) { setError(e); return; }
     showSuccess("Factor deleted.");
     load();
   };
@@ -259,14 +276,14 @@ export function AdminPanel() {
     const { data, mode, id } = ruleModal;
     if (!data.rating_label.trim() || !data.recommendation.trim()) { setError("Rating label and recommendation are required."); return; }
     setError(null);
-    const supabase = createClient();
+    const fields = { rating_label: data.rating_label, recommendation: data.recommendation, description: data.description || null };
     if (mode === "create") {
-      const { error: e } = await supabase.from("recommendation_rules").insert({ rating_label: data.rating_label, recommendation: data.recommendation, description: data.description || null });
-      if (e) { setError(e.message); return; }
+      const e = await sendReferenceWrite("rules", "POST", fields);
+      if (e) { setError(e); return; }
       showSuccess("Rule created.");
     } else if (id) {
-      const { error: e } = await supabase.from("recommendation_rules").update({ rating_label: data.rating_label, recommendation: data.recommendation, description: data.description || null }).eq("id", id);
-      if (e) { setError(e.message); return; }
+      const e = await sendReferenceWrite(`rules/${encodeURIComponent(id)}`, "PATCH", fields);
+      if (e) { setError(e); return; }
       showSuccess("Rule updated.");
     }
     setRuleModal({ open: false, mode: "create", data: emptyRuleForm });
@@ -274,22 +291,15 @@ export function AdminPanel() {
   };
 
   const toggleRuleActive = async (rule: Rule) => {
-    const supabase = createClient();
-    const { error: e } = await supabase.from("recommendation_rules").update({ active: !rule.active }).eq("id", rule.id);
-    if (e) { setError(e.message); return; }
+    const e = await sendReferenceWrite(`rules/${encodeURIComponent(rule.id)}`, "PATCH", { active: !rule.active });
+    if (e) { setError(e); return; }
     showSuccess("Rule updated.");
     load();
   };
 
   const deleteRule = async (id: string) => {
-    const supabase = createClient();
-    const { error: e } = await supabase.from("recommendation_rules").delete().eq("id", id);
-    if (e) {
-      if (e.code === "23503" || e.message.includes("violates foreign key")) {
-        setError("Cannot delete rule: It has related records. Deactivate it instead.");
-      } else { setError(e.message); }
-      return;
-    }
+    const e = await sendReferenceWrite(`rules/${encodeURIComponent(id)}`, "DELETE");
+    if (e) { setError(e); return; }
     showSuccess("Rule deleted.");
     load();
   };
@@ -317,7 +327,12 @@ export function AdminPanel() {
     }
   };
 
-  if (loading) return <p style={{ color: "#8a97b8", padding: "16px 0" }}>Loading admin…</p>;
+  if (loading) return <p style={{ color: "#646f79", padding: "16px 0" }}>Loading admin…</p>;
+
+  // The cycle PATCH API updates status and Mid-Year settings only, so core fields are read-only when editing.
+  const isEditingCycle = cycleModal.mode === "edit";
+  const editingCycleStatus = isEditingCycle ? cycles.find((c) => c.id === cycleModal.id)?.status : undefined;
+  const editingCycleLocked = editingCycleStatus != null && LOCKED_CYCLE_STATUSES.includes(editingCycleStatus);
 
   const contextValue = {
     cycles,
@@ -327,6 +342,7 @@ export function AdminPanel() {
     rules,
     feedbackCycles,
     loading,
+    referenceDataLoaded,
     syncing,
     error,
     success,
@@ -365,19 +381,19 @@ export function AdminPanel() {
     <AdminPanelContext.Provider value={contextValue}>
       <div>
         {error && (
-          <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", padding: "14px 16px", borderRadius: "10px", background: "#fef2f2", border: "1px solid #fecaca", marginBottom: "20px" }}>
-            <span style={{ color: "#dc2626", marginTop: "2px" }}><AlertIcon /></span>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", padding: "14px 16px", borderRadius: "8px", background: "#fef2f2", border: "1px solid #fbd5d5", marginBottom: "20px" }}>
+            <span style={{ color: "#b42318", marginTop: "2px" }}><AlertIcon /></span>
             <div>
-              <div style={{ fontWeight: 600, fontSize: "13px", color: "#991b1b" }}>Error</div>
-              <div style={{ fontSize: "13px", color: "#b91c1c" }}>{error}</div>
+              <div style={{ fontWeight: 600, fontSize: "13px", color: "#b42318" }}>Error</div>
+              <div style={{ fontSize: "13px", color: "#b42318" }}>{error}</div>
             </div>
           </div>
         )}
         {success && (
-          <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", padding: "14px 16px", borderRadius: "10px", background: "#f0fdf4", border: "1px solid #bbf7d0", marginBottom: "20px" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", padding: "14px 16px", borderRadius: "8px", background: "#ecfdf5", border: "1px solid #bbf0d9", marginBottom: "20px" }}>
             <div>
-              <div style={{ fontWeight: 600, fontSize: "13px", color: "#166534" }}>Success</div>
-              <div style={{ fontSize: "13px", color: "#15803d" }}>{success}</div>
+              <div style={{ fontWeight: 600, fontSize: "13px", color: "#2e7d4f" }}>Success</div>
+              <div style={{ fontSize: "13px", color: "#2e7d4f" }}>{success}</div>
             </div>
           </div>
         )}
@@ -394,17 +410,22 @@ export function AdminPanel() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>Type</Label>
-              <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={cycleModal.data.cycle_type} onChange={(e) => setCycleModal((p) => ({ ...p, data: { ...p.data, cycle_type: e.target.value } }))}>
+              <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" disabled={isEditingCycle} value={cycleModal.data.cycle_type} onChange={(e) => setCycleModal((p) => ({ ...p, data: { ...p.data, cycle_type: e.target.value } }))}>
                 <option value="annual">Annual</option>
               </select>
             </div>
-            <div className="space-y-2"><Label>Fiscal Year</Label><Input placeholder="2026" value={cycleModal.data.fiscal_year} onChange={(e) => setCycleModal((p) => ({ ...p, data: { ...p.data, fiscal_year: e.target.value } }))} /></div>
-            <div className="space-y-2"><Label>Start Date</Label><Input type="date" value={cycleModal.data.start_date} onChange={(e) => setCycleModal((p) => ({ ...p, data: { ...p.data, start_date: e.target.value } }))} /></div>
-            <div className="space-y-2"><Label>End Date</Label><Input type="date" value={cycleModal.data.end_date} onChange={(e) => setCycleModal((p) => ({ ...p, data: { ...p.data, end_date: e.target.value } }))} /></div>
+            <div className="space-y-2"><Label>Fiscal Year</Label><Input placeholder="2026" disabled={isEditingCycle} value={cycleModal.data.fiscal_year} onChange={(e) => setCycleModal((p) => ({ ...p, data: { ...p.data, fiscal_year: e.target.value } }))} /></div>
+            <div className="space-y-2"><Label>Start Date</Label><Input type="date" disabled={isEditingCycle} value={cycleModal.data.start_date} onChange={(e) => setCycleModal((p) => ({ ...p, data: { ...p.data, start_date: e.target.value } }))} /></div>
+            <div className="space-y-2"><Label>End Date</Label><Input type="date" disabled={isEditingCycle} value={cycleModal.data.end_date} onChange={(e) => setCycleModal((p) => ({ ...p, data: { ...p.data, end_date: e.target.value } }))} /></div>
+            <CycleMidyearFields
+              value={cycleModal.data}
+              locked={editingCycleLocked}
+              onChange={(patch) => setCycleModal((p) => ({ ...p, data: { ...p.data, ...patch } }))}
+            />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCycleModal({ ...cycleModal, open: false })}>Cancel</Button>
-            <Button onClick={saveCycle}>{cycleModal.mode === "create" ? "Create" : "Save"}</Button>
+            <Button onClick={saveCycle} disabled={editingCycleLocked}>{cycleModal.mode === "create" ? "Create" : "Save"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

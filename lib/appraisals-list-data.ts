@@ -1,7 +1,13 @@
 import { createClient } from "@supabase/supabase-js";
 import type { AuthUser } from "@/lib/auth";
 import { getReportingStructureFromDynamics } from "@/lib/reporting-structure";
-import { getDirectReports } from "@/lib/dynamics-org-service";
+import {
+  getDirectReports,
+  getDirectReportsForManagers,
+  type Xrm1Employee,
+} from "@/lib/dynamics-org-service";
+import { summarizeTeamStatuses, type TeamStatusSummary } from "@/lib/team-status-summary";
+import { OVERSIGHT_MAX_DEPTH } from "@/lib/appraisal-oversight";
 
 /**
  * Server-side data for appraisals list by role.
@@ -30,6 +36,12 @@ export interface AppraisalListItem {
   isDelegated?: boolean;
   delegatedByName?: string | null;
   delegatedToName?: string | null;
+  /** Team-section only: status counts for this employee's own direct reports in the same cycle. */
+  teamSummary?: TeamStatusSummary | null;
+  /** Team-section only: this employee's own team appraisals in the same cycle (read-only oversight). */
+  team?: AppraisalListItem[];
+  /** Team-section only: "direct" opens with the viewer's normal permissions; "oversight" is view-only. */
+  access?: "direct" | "oversight";
 }
 
 export interface AppraisalsListResult {
@@ -93,7 +105,111 @@ async function getAppraisalsForDirectReportsFromDynamics(
     .order("created_at", { ascending: false });
 
   if (appError || !appraisals?.length) return [];
-  return hydrateList(appraisals, supabase);
+  const items = await hydrateList(appraisals, supabase);
+  return attachTeamHierarchy(structure.employee_id, reports, items, supabase);
+}
+
+function guidKey(value: string | null | undefined): string {
+  return String(value ?? "").replace(/^\{|\}$/g, "").trim().toLowerCase();
+}
+
+const TEAM_APPRAISAL_CHUNK = 200;
+
+/**
+ * Nests each direct report's own team appraisals (same cycle) under their row, down to
+ * OVERSIGHT_MAX_DEPTH levels below the viewer, as read-only oversight rows. One batched
+ * Dynamics call per level; records already seen are skipped so circular data cannot loop.
+ * Failures leave the direct-report rows unchanged.
+ */
+async function attachTeamHierarchy(
+  viewerXrmId: string | null,
+  reports: Xrm1Employee[],
+  items: AppraisalListItem[],
+  supabase: ReturnType<typeof getSupabase>
+): Promise<AppraisalListItem[]> {
+  const direct = items.map((item) => ({ ...item, access: "direct" as const }));
+  try {
+    const seen = new Set<string>();
+    if (viewerXrmId) seen.add(guidKey(viewerXrmId));
+    const userIdByXrmId = new Map<string, string>();
+    let frontier: string[] = [];
+    for (const r of reports) {
+      const key = guidKey(r.xrm1_employeeid);
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      if (r._xrm1_employee_user_id_value) {
+        userIdByXrmId.set(key, r._xrm1_employee_user_id_value);
+        frontier.push(key);
+      }
+    }
+
+    const directReportCount = new Map<string, number>();
+    const managerByMember = new Map<string, string>();
+    for (let depth = 2; depth <= OVERSIGHT_MAX_DEPTH && frontier.length > 0; depth++) {
+      const subReports = await getDirectReportsForManagers(frontier);
+      const next: string[] = [];
+      for (const s of subReports) {
+        const managerUserId = userIdByXrmId.get(guidKey(s._xrm1_manager_employee_id_value));
+        const key = guidKey(s.xrm1_employeeid);
+        if (!managerUserId || !key || seen.has(key)) continue;
+        seen.add(key);
+        directReportCount.set(managerUserId, (directReportCount.get(managerUserId) ?? 0) + 1);
+        const memberUserId = s._xrm1_employee_user_id_value;
+        if (!memberUserId) continue;
+        managerByMember.set(memberUserId, managerUserId);
+        if (depth < OVERSIGHT_MAX_DEPTH) {
+          userIdByXrmId.set(key, memberUserId);
+          next.push(key);
+        }
+      }
+      frontier = next;
+    }
+    if (directReportCount.size === 0) return direct;
+
+    const memberIds = [...managerByMember.keys()];
+    const teamRows: { id: string; employee_id: string; cycle_id: string; review_type: string | null; status: string }[] = [];
+    for (let i = 0; i < memberIds.length; i += TEAM_APPRAISAL_CHUNK) {
+      const { data, error } = await supabase
+        .from("appraisals")
+        .select("id, employee_id, cycle_id, review_type, status")
+        .in("employee_id", memberIds.slice(i, i + TEAM_APPRAISAL_CHUNK))
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
+      if (error) throw new Error("team appraisals unavailable");
+      teamRows.push(...((data ?? []) as typeof teamRows));
+    }
+    const teamItems = teamRows.length > 0 ? await hydrateList(teamRows, supabase) : [];
+
+    const childrenByTeamCycle = new Map<string, AppraisalListItem[]>();
+    for (const child of teamItems) {
+      const managerUserId = managerByMember.get(child.employeeId);
+      if (!managerUserId) continue;
+      const key = `${managerUserId}|${child.cycleId}`;
+      const list = childrenByTeamCycle.get(key) ?? [];
+      list.push({ ...child, access: "oversight" });
+      childrenByTeamCycle.set(key, list);
+    }
+
+    const withTeam = (item: AppraisalListItem, depth: number): AppraisalListItem => {
+      const children = depth < OVERSIGHT_MAX_DEPTH ? childrenByTeamCycle.get(`${item.employeeId}|${item.cycleId}`) ?? [] : [];
+      const team = children
+        .map((child) => withTeam(child, depth + 1))
+        .sort((a, b) => a.employeeName.localeCompare(b.employeeName));
+      const teamSummary = summarizeTeamStatuses(
+        directReportCount.get(item.employeeId) ?? 0,
+        team.map((t) => t.status)
+      );
+      return {
+        ...item,
+        ...(teamSummary ? { teamSummary } : {}),
+        ...(team.length > 0 ? { team } : {}),
+      };
+    };
+    return direct.map((item) => withTeam(item, 1));
+  } catch (err) {
+    console.warn("[appraisals-list] team hierarchy unavailable:", err instanceof Error ? err.message : err);
+    return direct;
+  }
 }
 
 /**

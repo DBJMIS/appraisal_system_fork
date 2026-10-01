@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { Users, UserCircle, ArrowLeft, Building2, UserCog } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,7 @@ import { getReportingStructureFromDynamics } from "@/lib/reporting-structure";
 import { ExpandableDirectReports } from "@/components/ExpandableDirectReports";
 
 export default async function ReportingTestPage() {
+  if (process.env.NODE_ENV !== "development") notFound();
   const user = await getCurrentUser();
   const structure = await getReportingStructureFromDynamics(user?.employee_id ?? null, user?.email ?? null);
   const employeeId = structure.employee_id;
@@ -16,7 +18,7 @@ export default async function ReportingTestPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="text-ds-page-title text-ds-text-primary">
           Reporting structure (HR test)
         </h1>
         <p className="text-muted-foreground">
@@ -24,7 +26,7 @@ export default async function ReportingTestPage() {
           <code className="rounded bg-muted px-1">xrm1_employee</code> entity).
         </p>
         {isPlaceholder && (
-          <p className="mt-2 text-sm text-amber-600 dark:text-amber-400">
+          <p className="mt-2 text-sm text-ds-warning dark:text-amber-400">
             Set <code className="rounded bg-muted px-1">SEED_USER_EMAIL</code> in .env to your work email to pull your data from HR, or sign in with Microsoft.
           </p>
         )}
@@ -47,7 +49,7 @@ export default async function ReportingTestPage() {
           <p>
             <span className="text-muted-foreground">Employee ID (xrm1_employeeid):</span>{" "}
             {employeeId ?? (
-              <span className="text-amber-600">Not found in Dynamics (xrm1_employee by user/email)</span>
+              <span className="text-ds-warning">Not found in Dynamics (xrm1_employee by user/email)</span>
             )}
           </p>
           {profile && (

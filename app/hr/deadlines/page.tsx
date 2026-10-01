@@ -65,7 +65,7 @@ const ENDING_ROWS: KanbanRowEmployment[] = [
 export default function HRDeadlinesPage() {
   return (
     <PowerAppsShell>
-      <div className="rounded-sm bg-white border border-ms-border shadow-sm overflow-hidden">
+      <div className="rounded-sm bg-white border border-ms-border overflow-hidden">
         <div className="border-b border-ms-border px-4 py-3">
           <h1 className="text-[20px] font-semibold text-ms-text flex items-center gap-1">
             HR Deadline Dashboard

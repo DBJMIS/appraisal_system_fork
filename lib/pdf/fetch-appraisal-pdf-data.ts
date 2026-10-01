@@ -5,8 +5,9 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildSummaryInput } from "@/lib/appraisal-summary-input";
+import { resolveManagementTrack } from "@/lib/management-track";
 import { getReportingStructure, getReportingStructureFromDynamics } from "@/lib/reporting-structure";
-import { calcSummary, GRADE_BANDS, type SummaryResult } from "@/lib/summary-calc";
+import { calcSummary, GRADE_BANDS, type SummaryCalcProps, type SummaryResult } from "@/lib/summary-calc";
 
 export interface WorkplanItemRow {
   corporate_objective: string;
@@ -65,6 +66,14 @@ export interface AppraisalPDFData {
   /** Summary components (key, name, weight, points) for Section F table; order matches calcSummary. */
   summaryComponents: { key: string; name: string; weight: number; points: number }[];
   hrRecommendation: { recommendation: string; comments: string };
+  /** The exact calcSummary input and result behind the printed scores; null when the calculation failed. Not rendered. */
+  scoreSource: PDFScoreSource | null;
+}
+
+export interface PDFScoreSource {
+  isManagementTrack: boolean;
+  input: SummaryCalcProps;
+  result: SummaryResult;
 }
 
 function weightTimesFactor(code: string | null): number {
@@ -109,8 +118,10 @@ export async function fetchAppraisalPDFData(
   } catch {
     structure = await getReportingStructure(appraisal.employee_id);
   }
-  const hasDirectReports = (structure.directReports?.length ?? 0) > 0;
-  const showLeadership = !!appraisal.is_management || hasDirectReports;
+  const showLeadership = await resolveManagementTrack({
+    employee_id: appraisal.employee_id,
+    is_management: appraisal.is_management,
+  });
 
   const [empRes, mgrRes, cycleRes, hrRes] = await Promise.all([
     supabase.from("employees").select("full_name, job_title, division_name, department_name").eq("employee_id", appraisal.employee_id).single(),
@@ -242,9 +253,11 @@ export async function fetchAppraisalPDFData(
   }));
 
   let summaryResult: SummaryResult | null = null;
+  let scoreSource: PDFScoreSource | null = null;
   try {
     const input = await buildSummaryInput(appraisalId, supabase, { showLeadership });
     summaryResult = calcSummary(input);
+    scoreSource = { isManagementTrack: input.isManagementTrack, input, result: summaryResult };
   } catch {
     // leave scores as defaults
   }
@@ -336,5 +349,6 @@ export async function fetchAppraisalPDFData(
       recommendation: recLabels.length ? recLabels.join(", ") : "—",
       comments: (hrRec?.other_notes as string) ?? "",
     },
+    scoreSource,
   };
 }

@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { loadOfficialScoreTotals } from "@/lib/official-scores";
 
 /**
  * HR Performance Trends: long-term score trends, division trends over cycles,
@@ -98,7 +99,7 @@ export async function getHRTrendsData(
   const employeeIds = [...new Set(appraisals.map((a) => a.employee_id))];
   const cycleIds = [...new Set(appraisals.map((a) => a.cycle_id))];
 
-  const [{ data: employees }, { data: cycles }, { data: scores }, { data: recs }] =
+  const [{ data: employees }, { data: cycles }, scoreMap, { data: recs }] =
     await Promise.all([
       supabase
         .from("employees")
@@ -109,10 +110,7 @@ export async function getHRTrendsData(
         .select("id, name, end_date")
         .in("id", cycleIds)
         .order("end_date", { ascending: true }),
-      supabase
-        .from("appraisal_section_scores")
-        .select("appraisal_id, total_score")
-        .in("appraisal_id", appraisalIds),
+      loadOfficialScoreTotals(supabase, appraisalIds),
       supabase
         .from("appraisal_recommendations")
         .select("appraisal_id, system_recommendation")
@@ -153,12 +151,6 @@ export async function getHRTrendsData(
     );
   }
 
-  const scoreMap = new Map(
-    (scores ?? []).map((s) => [
-      s.appraisal_id,
-      s.total_score != null ? Number(s.total_score) : null,
-    ])
-  );
   const recMap = new Map(
     (recs ?? []).map((r) => [r.appraisal_id, r.system_recommendation ?? ""])
   );

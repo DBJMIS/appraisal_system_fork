@@ -5,9 +5,15 @@ import { createClient } from "@supabase/supabase-js";
 import { getReportingStructureFromDynamics, getReportingStructure } from "@/lib/reporting-structure";
 import { resolveDepartmentHeadSystemUserId } from "@/lib/hrmis-approval-auth";
 import { resolveManagerAccessForAppraisal } from "@/lib/appraisal-manager-access";
+import { hasOversightReadAccess } from "@/lib/appraisal-oversight";
 import type { AppraisalStatus } from "@/types/appraisal";
 import { AppraisalTabs, AppraisalData, type AppraisalAgreement } from "@/components/appraisal/AppraisalTabs";
 import { CompletionBarWrapperClient } from "@/components/appraisal/CompletionBarWrapperClient";
+import { statusConfig, statusToneClasses } from "@/lib/appraisal-status-display";
+import { AppraisalWorkflowSteps, WORKFLOW_STEPS } from "@/components/appraisal/AppraisalWorkflowSteps";
+import { MidyearSubStatus } from "@/components/appraisal/MidyearSubStatus";
+import { midyearConfigFromRow, type MidyearConfig, type MidyearCycleFields } from "@/lib/midyear-config";
+import { pickCurrentFormalReview, type FormalReviewLike } from "@/lib/midyear-display";
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -20,7 +26,7 @@ function getSupabase() {
 
 async function getAppraisalDetail(
   appraisalId: string
-): Promise<(AppraisalData & { review_type?: string; cyclePhase: string }) | null> {
+): Promise<(AppraisalData & { review_type?: string; cyclePhase: string; midyear: MidyearConfig }) | null> {
   const supabase = getSupabase();
 
   const { data: appraisal, error: appError } = await supabase
@@ -139,6 +145,7 @@ async function getAppraisalDetail(
     cycleEndDate: cycleData?.end_date != null ? String(cycleData.end_date) : undefined,
     review_type: appraisal.review_type ?? undefined,
     cyclePhase: cycleData?.phase != null ? String(cycleData.phase) : "",
+    midyear: midyearConfigFromRow(cycleData as Partial<MidyearCycleFields> | null),
     approvals,
     signoffs,
     agreement,
@@ -165,45 +172,20 @@ function canAccessAppraisal(
   return false;
 }
 
-const statusConfig: Record<string, { bg: string; text: string; border: string; dot: string; label: string }> = {
-  DRAFT: { bg: "#f1f5f9", text: "#64748b", border: "#e2e8f0", dot: "#94a3b8", label: "Draft" },
-  PENDING_APPROVAL: { bg: "#fffbeb", text: "#92400e", border: "#fde68a", dot: "#f59e0b", label: "Pending Approval" },
-  IN_PROGRESS: { bg: "#f0fdfa", text: "#0f766e", border: "#99f6e4", dot: "#0d9488", label: "In progress" },
-  SELF_ASSESSMENT: { bg: "#eff6ff", text: "#1d4ed8", border: "#bfdbfe", dot: "#3b82f6", label: "Self Assessment" },
-  SUBMITTED: { bg: "#f0fdf4", text: "#166534", border: "#bbf7d0", dot: "#22c55e", label: "Submitted" },
-  MANAGER_REVIEW: { bg: "#f3e8ff", text: "#6d28d9", border: "#ddd6fe", dot: "#7c3aed", label: "Manager Review" },
-  PENDING_SIGNOFF: { bg: "#fffbeb", text: "#92400e", border: "#fde68a", dot: "#f59e0b", label: "Pending Sign-off" },
-  HR_REVIEW: { bg: "#f0fdfa", text: "#0f766e", border: "#99f6e4", dot: "#0d9488", label: "HR Review" },
-  COMPLETE: { bg: "#f0fdf4", text: "#166534", border: "#bbf7d0", dot: "#22c55e", label: "Complete" },
-};
-
-const WORKFLOW_STEPS = [
-  { status: "DRAFT", label: "Draft", short: "1" },
-  { status: "PENDING_APPROVAL", label: "Approval", short: "2" },
-  { status: "IN_PROGRESS", label: "In progress", short: "3" },
-  { status: "SELF_ASSESSMENT", label: "Self Assessment", short: "4" },
-  { status: "MANAGER_REVIEW", label: "Manager Review", short: "5" },
-  { status: "PENDING_SIGNOFF", label: "Sign-off", short: "6" },
-  { status: "HR_REVIEW", label: "HR Review", short: "7" },
-  { status: "COMPLETE", label: "Complete", short: "8" },
-] as const;
-
 function formatReviewType(type?: string): string {
   if (!type) return "Review";
   return type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) + " Review";
 }
 
-const DocumentIcon = () => (
-  <svg style={{ width: 22, height: 22 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-    <polyline points="14 2 14 8 20 8" />
-    <line x1="16" y1="13" x2="8" y2="13" />
-    <line x1="16" y1="17" x2="8" y2="17" />
-  </svg>
-);
+function formatCycleDate(value?: string): string | null {
+  if (!value) return null;
+  const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T00:00:00Z` : value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+}
 
 const ArrowLeftIcon = () => (
-  <svg style={{ width: 14, height: 14 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg style={{ width: 14, height: 14 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
     <line x1="19" y1="12" x2="5" y2="12" />
     <polyline points="12 19 5 12 12 5" />
   </svg>
@@ -250,18 +232,36 @@ export default async function AppraisalDetailPage({
     appraisalManagerEmployeeId: appraisal.manager_employee_id,
     currentEmployeeId: currentUserEmployeeId,
   });
-  if (!canAccessAppraisal(user, appraisal, currentUserEmployeeId, managerAccess.hasManagerAccess)) {
+  const directAccess = canAccessAppraisal(user, appraisal, currentUserEmployeeId, managerAccess.hasManagerAccess);
+  const oversight = !directAccess && (await hasOversightReadAccess(user, appraisal));
+  if (!directAccess && !oversight) {
     notFound();
   }
 
   const roles = user?.roles ?? [];
-  const isManager = managerAccess.hasManagerAccess || roles.includes("manager");
-  const isHR = roles.includes("hr") || roles.includes("admin");
-  const hodSystemUserId = await resolveDepartmentHeadSystemUserId(appraisal.employee_id);
+  const isManager = !oversight && (managerAccess.hasManagerAccess || roles.includes("manager"));
+  const isHR = !oversight && (roles.includes("hr") || roles.includes("admin"));
+  const hodSystemUserId = oversight ? null : await resolveDepartmentHeadSystemUserId(appraisal.employee_id);
   const isHOD =
-    (hodSystemUserId != null && hodSystemUserId === currentUserEmployeeId) ||
-    roles.includes("gm") ||
-    roles.includes("admin");
+    !oversight &&
+    ((hodSystemUserId != null && hodSystemUserId === currentUserEmployeeId) ||
+      roles.includes("gm") ||
+      roles.includes("admin"));
+  const tabsAppraisal: typeof appraisal = oversight
+    ? {
+        ...appraisal,
+        agreement: appraisal.agreement
+          ? {
+              id: appraisal.agreement.id,
+              status: appraisal.agreement.status,
+              employee_signed_at: appraisal.agreement.employee_signed_at ?? null,
+              manager_signed_at: appraisal.agreement.manager_signed_at ?? null,
+              hr_signed_at: appraisal.agreement.hr_signed_at ?? null,
+            }
+          : null,
+        signoffs: (appraisal.signoffs ?? []).map(({ role, stage, signed_at }) => ({ role, stage, signed_at })),
+      }
+    : appraisal;
 
   let structure;
   try {
@@ -283,170 +283,126 @@ export default async function AppraisalDetailPage({
     hrRecommendationsSaved = !!data;
   }
 
+  let formalMidyearReview: FormalReviewLike | null = null;
+  if (appraisal.midyear.enabled) {
+    const { data: formalRows } = await supabase
+      .from("check_ins")
+      .select("status, review_mode, created_at")
+      .eq("appraisal_id", appraisal.id)
+      .in("review_mode", ["FORMAL", "FORMAL_SCORED"])
+      .order("created_at", { ascending: false });
+    const current = pickCurrentFormalReview((formalRows ?? []) as FormalReviewLike[]);
+    formalMidyearReview = current ? { status: current.status, review_mode: current.review_mode ?? null } : null;
+  }
+
   const status = statusConfig[appraisal.status] ?? statusConfig.DRAFT;
+  const statusTone = statusToneClasses[status.tone];
   const effectiveStatus = appraisal.status === "SUBMITTED" ? "MANAGER_REVIEW" : appraisal.status;
   const currentStepIndex = WORKFLOW_STEPS.findIndex((s) => s.status === effectiveStatus);
   const safeStepIndex = currentStepIndex >= 0 ? currentStepIndex : 0;
 
+  const periodStart = formatCycleDate(appraisal.cycleStartDate);
+  const periodEnd = formatCycleDate(appraisal.cycleEndDate);
+  const metadata: { label: string; value: string }[] = [
+    { label: "Review", value: formatReviewType(appraisal.review_type) },
+    { label: "Cycle", value: appraisal.cycleName },
+    ...(periodStart && periodEnd ? [{ label: "Period", value: `${periodStart} – ${periodEnd}` }] : []),
+    ...(appraisal.managerName && appraisal.managerName !== "—" ? [{ label: "Manager", value: appraisal.managerName }] : []),
+  ];
+
   return (
-    <div style={{ animation: "fadeUp 0.4s ease both" }}>
-      {/* Back link */}
+    <div className="w-full">
       <Link
         href="/appraisals"
-        className="back-link"
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: "6px",
-          fontSize: "13px",
-          fontWeight: 500,
-          color: "#4a5a82",
-          textDecoration: "none",
-          marginBottom: "20px",
-          transition: "color 0.15s",
-        }}
+        className="mb-3 inline-flex items-center gap-1.5 rounded-[4px] text-[13px] font-medium text-ds-text-secondary no-underline transition-colors duration-100 hover:text-ds-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-focus focus-visible:ring-offset-2"
       >
         <ArrowLeftIcon />
         Back to Appraisals
       </Link>
 
-      {/* Header row */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          marginBottom: "28px",
-          flexWrap: "wrap",
-          gap: "16px",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-          {/* Icon tile */}
-          <div
-            style={{
-              width: "42px",
-              height: "42px",
-              borderRadius: "12px",
-              background: "linear-gradient(135deg, #eff6ff, #dbeafe)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-              color: "#3b82f6",
-            }}
-          >
-            <DocumentIcon />
-          </div>
-
-          <div>
-            <h1
-              style={{
-                fontFamily: "Sora, sans-serif",
-                fontSize: "24px",
-                fontWeight: 700,
-                color: "#0f1f3d",
-                letterSpacing: "-0.02em",
-                lineHeight: 1.1,
-                margin: 0,
-              }}
-            >
-              {appraisal.employeeName}
-            </h1>
-            <p style={{ fontSize: "13.5px", color: "#8a97b8", margin: "4px 0 0 0" }}>
-              {appraisal.cycleName} · {formatReviewType(appraisal.review_type)}
-            </p>
-          </div>
-        </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+      <header className="mb-4 border-b border-ds-border pb-4" data-appraisal-header>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <h1 className="m-0 text-ds-page-title tracking-[-0.01em] text-ds-text-primary">{appraisal.employeeName}</h1>
           <span
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "5px 14px",
-              borderRadius: "20px",
-              fontSize: "12px",
-              fontWeight: 600,
-              background: status.bg,
-              color: status.text,
-              border: `1px solid ${status.border}`,
-            }}
+            className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-ds-badge border px-1.5 py-0.5 text-xs font-medium leading-4 ${statusTone.badge}`}
+            data-appraisal-status
           >
-            <span
-              style={{
-                width: "6px",
-                height: "6px",
-                borderRadius: "50%",
-                background: status.dot,
-                display: "inline-block",
-              }}
-            />
+            <span className={`h-1.5 w-1.5 rounded-full ${statusTone.dot}`} aria-hidden="true" />
+            <span className="sr-only">Status: </span>
             {status.label}
           </span>
         </div>
-      </div>
+        <dl className="mt-2 flex flex-wrap items-center gap-y-1 text-[13px] leading-[1.45]">
+          {metadata.map((item, i) => (
+            <div
+              key={item.label}
+              className={`flex items-baseline gap-1.5 ${i > 0 ? "ml-3 border-l border-ds-border pl-3" : ""}`}
+            >
+              <dt className="text-ds-text-secondary">{item.label}</dt>
+              <dd className="m-0 font-medium text-ds-text-primary">{item.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </header>
 
-      {/* Stepper + tabs: full-width section */}
-      <div className="w-full px-6 py-4 border-b border-slate-100">
-        {/* Progress stepper — full width, steps and connectors evenly spaced */}
-        <div className="w-full flex items-center justify-between mb-6 py-3 px-4 rounded-lg bg-[#f8faff] border border-[#e2e8f0]">
-          {WORKFLOW_STEPS.map((step, i) => {
-            const isCompleted = i < safeStepIndex;
-            const isCurrent = i === safeStepIndex;
-            return (
-              <span key={step.status} className="contents">
-                <div className="flex-1 flex items-center justify-center gap-1.5">
-                  <span
-                    className="shrink-0 w-[22px] h-[22px] rounded-full inline-flex items-center justify-center text-xs font-medium text-white"
-                    style={{
-                      background: isCompleted ? "#3b82f6" : isCurrent ? "#1e3a5f" : "#e2e8f0",
-                      color: isCompleted || isCurrent ? "white" : "#94a3b8",
-                      boxShadow: isCurrent ? "0 0 0 2px rgba(59,130,246,0.3)" : "none",
-                    }}
-                  >
-                    {isCompleted ? "✓" : step.short}
-                  </span>
-                  <span className="whitespace-nowrap text-xs font-medium" style={{ color: isCompleted ? "#3b82f6" : isCurrent ? "#0f1f3d" : "#94a3b8" }}>
-                    {step.label}
-                  </span>
-                </div>
-                {i < WORKFLOW_STEPS.length - 1 && (
-                  <div className="flex-1 flex items-center justify-center text-slate-300 text-xs">→</div>
-                )}
-              </span>
-            );
-          })}
+      {oversight && (
+        <div
+          data-oversight-banner
+          role="note"
+          className="mb-4 rounded-ds-panel border border-ds-border bg-ds-surface px-4 py-3 text-[13px] leading-[1.45]"
+        >
+          <p className="m-0 font-medium text-ds-text-primary">Read-only oversight</p>
+          <p className="m-0 mt-0.5 text-ds-text-secondary">
+            You can view this appraisal because this employee is within your reporting hierarchy.
+          </p>
         </div>
+      )}
 
-        <CompletionBarWrapperClient
-          appraisalId={appraisal.id}
-          status={appraisal.status as AppraisalStatus}
-          userRole={isHR ? "HR" : roles.includes("gm") ? "HOD" : appraisal.manager_employee_id === currentUserEmployeeId ? "MANAGER" : currentUserEmployeeId === appraisal.employee_id ? "EMPLOYEE" : "MANAGER"}
-          showLeadership={showLeadership}
-          isEmployee={currentUserEmployeeId === appraisal.employee_id}
-          isManager={appraisal.manager_employee_id === currentUserEmployeeId}
-          isHR={isHR}
-          approvals={appraisal.approvals}
-          signoffs={appraisal.signoffs}
+      <div className="w-full">
+        <AppraisalWorkflowSteps
+          currentStepIndex={safeStepIndex}
+          inProgressMilestone={
+            appraisal.midyear.enabled ? (
+              <MidyearSubStatus
+                appraisalId={appraisal.id}
+                scoringEnabled={appraisal.midyear.scoringEnabled}
+                initialReview={formalMidyearReview}
+              />
+            ) : undefined
+          }
         />
 
+        {!oversight && (
+          <CompletionBarWrapperClient
+            appraisalId={appraisal.id}
+            status={appraisal.status as AppraisalStatus}
+            userRole={isHR ? "HR" : roles.includes("gm") ? "HOD" : appraisal.manager_employee_id === currentUserEmployeeId ? "MANAGER" : currentUserEmployeeId === appraisal.employee_id ? "EMPLOYEE" : "MANAGER"}
+            showLeadership={showLeadership}
+            isEmployee={currentUserEmployeeId === appraisal.employee_id}
+            isManager={appraisal.manager_employee_id === currentUserEmployeeId}
+            isHR={isHR}
+            approvals={appraisal.approvals}
+            signoffs={appraisal.signoffs}
+          />
+        )}
+
         <AppraisalTabs
-        appraisal={appraisal}
+        appraisal={tabsAppraisal}
         cyclePhase={appraisal.cyclePhase}
         currentUserId={user?.id ?? null}
         currentUserEmployeeId={currentUserEmployeeId}
         isManager={isManager}
-        isDelegated={managerAccess.isDelegated}
-        isPrimaryManager={managerAccess.isPrimaryManager}
+        isDelegated={!oversight && managerAccess.isDelegated}
+        isPrimaryManager={!oversight && managerAccess.isPrimaryManager}
         delegatedByName={appraisal.managerName ?? null}
         isHR={isHR}
         isHOD={isHOD}
         showLeadership={showLeadership}
         approvals={appraisal.approvals}
-        signoffs={appraisal.signoffs}
+        signoffs={tabsAppraisal.signoffs}
         hrRecommendationsSaved={hrRecommendationsSaved}
+        midyearEnabled={appraisal.midyear.enabled}
+        readOnly={oversight}
       />
       </div>
     </div>

@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { withRetry } from "@/lib/retry-transient";
 import { parseWorkplanDateForDb } from "@/lib/workplan-excel-parse";
 import { resolveManagerAccessForAppraisal } from "@/lib/appraisal-manager-access";
+import { hasOversightReadAccess } from "@/lib/appraisal-oversight";
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -51,8 +52,9 @@ export async function GET(req: NextRequest, context: RouteContext) {
         appraisal.employee_id === user.employee_id ||
         managerAccess.hasManagerAccess ||
         (user.roles?.includes("gm") && appraisal.division_id === user.division_id);
+      const oversightOnly = !canAccess && (await hasOversightReadAccess(user, appraisal));
 
-      if (!canAccess) {
+      if (!canAccess && !oversightOnly) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
 
@@ -62,6 +64,11 @@ export async function GET(req: NextRequest, context: RouteContext) {
         .select("*")
         .eq("appraisal_id", appraisalId)
         .maybeSingle();
+
+      if (!workplan && oversightOnly) {
+        if (wpErr && wpErr.code !== "PGRST116") throw new Error(wpErr.message || "Failed to get workplan");
+        return { workplan: null, items: [] };
+      }
 
       // If no workplan found (not an error, just not exists), create one
       if (!workplan) {
@@ -149,6 +156,8 @@ export async function GET(req: NextRequest, context: RouteContext) {
   }
 }
 
+const WORKPLAN_LOCKED_STATUSES = new Set(["PENDING_SIGNOFF", "HOD_REVIEW", "HR_REVIEW", "COMPLETE"]);
+
 // POST /api/appraisals/[id]/workplan - Save workplan items
 export async function POST(req: NextRequest, context: RouteContext) {
   try {
@@ -197,7 +206,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
     // Verify user can access this appraisal
     const { data: appraisal, error: appErr } = await supabase
       .from("appraisals")
-      .select("id, employee_id, manager_employee_id")
+      .select("id, employee_id, manager_employee_id, status")
       .eq("id", appraisalId)
       .single();
 
@@ -214,11 +223,28 @@ export async function POST(req: NextRequest, context: RouteContext) {
     });
     const canEdit =
       user.roles?.some((r) => r === "hr" || r === "admin") ||
-      appraisal.employee_id === user.employee_id ||
+      (!!user.employee_id && appraisal.employee_id === user.employee_id) ||
       managerAccess.hasManagerAccess;
 
     if (!canEdit) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    if (WORKPLAN_LOCKED_STATUSES.has(String(appraisal.status ?? "").toUpperCase())) {
+      return NextResponse.json(
+        { error: "The workplan can no longer be changed at this stage.", code: "WORKPLAN_LOCKED" },
+        { status: 409 }
+      );
+    }
+
+    const { data: ownedWorkplan } = await supabase
+      .from("workplans")
+      .select("id")
+      .eq("id", workplanId)
+      .eq("appraisal_id", appraisalId)
+      .maybeSingle();
+    if (!ownedWorkplan) {
+      return NextResponse.json({ error: "Workplan not found" }, { status: 404 });
     }
 
     // Delete removed items
@@ -226,6 +252,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
       const { error: delErr } = await supabase
         .from("workplan_items")
         .delete()
+        .eq("workplan_id", workplanId)
         .in("id", idsToDelete);
       if (delErr) {
         return NextResponse.json({ error: delErr.message }, { status: 500 });
@@ -286,7 +313,8 @@ export async function POST(req: NextRequest, context: RouteContext) {
         const { error: upErr } = await supabase
           .from("workplan_items")
           .update(payload)
-          .eq("id", item.id);
+          .eq("id", item.id)
+          .eq("workplan_id", workplanId);
         if (upErr) {
           return NextResponse.json({ error: upErr.message }, { status: 500 });
         }

@@ -23,6 +23,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/utils/cn";
+import { avatarAccent } from "@/lib/avatar-accent";
 import { NotificationBell } from "@/components/layout/notification-bell";
 
 interface TopNavProps {
@@ -129,29 +130,29 @@ export function TopNav({ onMenuClick, className }: TopNavProps) {
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 flex h-[60px] shrink-0 items-center justify-between bg-white px-6",
+        "sticky top-0 z-50 flex h-14 shrink-0 items-center justify-between border-b border-ds-border bg-ds-background px-6",
         className
       )}
-      style={{ borderBottom: "1px solid var(--border-color)" }}
     >
       {/* Left: Mobile menu + Breadcrumb */}
       <div className="flex items-center gap-4">
         <button
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-text-secondary hover:bg-surface lg:hidden"
+          type="button"
+          className="flex h-9 w-9 items-center justify-center rounded-ds-button text-ds-text-secondary transition-colors duration-100 hover:bg-ds-surface-hover hover:text-ds-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-focus lg:hidden"
           onClick={onMenuClick}
           aria-label="Toggle sidebar"
         >
           <MenuIcon />
         </button>
         
-        <nav className="flex items-center gap-1.5 text-sm">
+        <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-[13px]">
           {breadcrumb.parent && (
             <>
-              <span className="text-text-muted">{breadcrumb.parent}</span>
-              <ChevronRightIcon />
+              <span className="text-ds-text-secondary">{breadcrumb.parent}</span>
+              <span className="text-ds-text-muted" aria-hidden="true"><ChevronRightIcon /></span>
             </>
           )}
-          <span className="font-semibold text-text-primary">{breadcrumb.current}</span>
+          <span className="font-medium text-ds-text-primary">{breadcrumb.current}</span>
         </nav>
       </div>
 
@@ -161,9 +162,10 @@ export function TopNav({ onMenuClick, className }: TopNavProps) {
 
         {/* Help button */}
         <button
-          className="flex h-[34px] w-[34px] items-center justify-center rounded-lg border text-text-secondary transition-colors hover:bg-surface hover:text-text-primary"
-          style={{ borderColor: "var(--border-color)" }}
+          type="button"
+          className="flex h-8 w-8 items-center justify-center rounded-ds-button text-ds-text-secondary transition-colors duration-100 hover:bg-ds-surface-hover hover:text-ds-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-focus"
           title="Help"
+          aria-label="Help"
         >
           <HelpIcon />
         </button>
@@ -171,12 +173,9 @@ export function TopNav({ onMenuClick, className }: TopNavProps) {
         {/* User dropdown */}
         <DropdownMenu open={open} onOpenChange={setOpen}>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative ml-2 h-9 w-9 rounded-full p-0">
-              <Avatar className="h-9 w-9">
-                <AvatarFallback
-                  className="font-display text-xs font-semibold text-white"
-                  style={{ background: "linear-gradient(135deg, #3b82f6, #1d4ed8)" }}
-                >
+            <Button variant="ghost" className="relative ml-2 h-8 w-8 rounded-full p-0" aria-label="Account menu">
+              <Avatar className="h-8 w-8">
+                <AvatarFallback className={cn("border text-xs font-semibold", avatarAccent(user?.name).className)}>
                   {initials}
                 </AvatarFallback>
               </Avatar>
@@ -185,10 +184,10 @@ export function TopNav({ onMenuClick, className }: TopNavProps) {
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>
               <div className="flex flex-col space-y-1">
-                <p className="font-display text-sm font-medium">{user?.name ?? "User"}</p>
-                <p className="text-xs text-text-muted">{user?.email ?? "—"}</p>
+                <p className="text-sm font-medium text-ds-text-primary">{user?.name ?? "User"}</p>
+                <p className="text-xs font-normal text-ds-text-secondary">{user?.email ?? "—"}</p>
                 {user?.roles?.length ? (
-                  <p className="text-xs text-text-muted capitalize">
+                  <p className="text-xs font-normal capitalize text-ds-text-secondary">
                     {user.roles.join(", ")}
                   </p>
                 ) : null}
@@ -218,7 +217,7 @@ export function TopNav({ onMenuClick, className }: TopNavProps) {
         <Dialog open={signOutOpen} onOpenChange={setSignOutOpen}>
           <DialogContent showClose={false} className="sm:max-w-[400px]">
             <DialogHeader>
-              <DialogTitle className="font-display">Sign out</DialogTitle>
+              <DialogTitle>Sign out</DialogTitle>
               <DialogDescription>Are you sure you want to sign out?</DialogDescription>
             </DialogHeader>
             <DialogFooter className="gap-2 sm:gap-0">

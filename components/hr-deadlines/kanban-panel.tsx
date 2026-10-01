@@ -131,7 +131,7 @@ export function KanbanPanel({
 }: KanbanPanelProps) {
   return (
     <div
-      className="flex w-80 shrink-0 flex-col overflow-hidden rounded-sm bg-white shadow-sm"
+      className="flex w-80 shrink-0 flex-col overflow-hidden rounded-sm bg-white"
       style={{
         border: "1px solid #edebe9",
         borderLeftWidth: 4,
